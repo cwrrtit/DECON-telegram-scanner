@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- THE KEY FOR MOBILE: Force page to follow device resolution and disable micro-zooming -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Live Continuous Barcode Scanner</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -26,7 +25,6 @@
       box-sizing: border-box;
     }
 
-    /* Fully responsive container that expands elegantly to any phone width */
     #scanner-container {
       width: 100%;
       max-width: 100%;
@@ -37,13 +35,11 @@
       margin-bottom: 12px;
     }
 
-    /* Let the camera view determine its sizing fluidly based on the container */
     #interactive {
       width: 100% !important;
       height: auto !important;
     }
 
-    /* Force html5-qrcode's video frame internal component to look correct on mobile layout */
     #interactive video {
       width: 100% !important;
       height: auto !important;
@@ -130,7 +126,7 @@
   <script>
     const tg = window.Telegram?.WebApp;
     tg?.ready();
-    tg?.expand(); // Tells Telegram to fully expand to maximum screen height instantly
+    tg?.expand();
 
     const scannedCodes = [];
     const listElement = document.getElementById('scanned-list');
@@ -142,27 +138,26 @@
     function startScanner() {
       html5QrcodeScanner = new Html5Qrcode("interactive");
       
-      // DYNAMIC BOX SCALING: Determines real-time calculations matching form factors
       const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
         let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-        let boxWidth = Math.floor(minEdgeSize * 0.75); // 75% wide box area
-        let boxHeight = Math.floor(minEdgeSize * 0.35); // Shallow height ideal for reading wide asset labels/barcodes
+        let boxWidth = Math.floor(minEdgeSize * 0.75);
+        let boxHeight = Math.floor(minEdgeSize * 0.35);
         return { width: boxWidth, height: boxHeight };
       }
 
       const config = { 
-        fps: 15, // Smooth framework speed
+        fps: 15, 
         qrbox: qrboxFunction, 
-        aspectRatio: 1.333334 // Enforce clean standard native camera preview constraints
+        aspectRatio: 1.333334 
       };
       
       html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
       .catch((err) => alert("Camera configuration failure: " + err));
     }
 
+    // Capture scans smoothly
     function onScanSuccess(decodedText) {
       const now = Date.now();
-      // Anti-bounce filter: Block duplicates within a tight 2-second logging loop
       if (decodedText === lastScannedCode && (now - lastScannedTime) < 2000) return;
 
       lastScannedCode = decodedText;
@@ -176,39 +171,18 @@
         li.innerHTML = `<span>${decodedText}</span><span class="status-flash">✓ Logged</span>`;
         listElement.insertBefore(li, listElement.firstChild);
         
-        // Native device vibration pattern feedback confirmation
         tg?.HapticFeedback?.notificationOccurred('success');
       }
     }
 
-    async function sendSerialsBack(serialList) {
-      const user = tg?.initDataUnsafe?.user;
-      const chatId = user?.id;
-
-      if (!chatId) {
-        alert("Session verification failure. Re-open within Telegram.");
-        return;
-      }
-
-      // 🔴 REWRITE THIS PLACEHOLDER INDIVIDUAL VALUE WITH YOUR CURRENT GOOGLE EXEC URL
-      const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxihZdHp6Qq89TYYBbrRbP7zEwHE4Uf9vB9DGdS75lrFFswR8Qa8ApZZV3k_rqRJ0FJXQ/exec";
-
-      try {
-        await fetch(GOOGLE_SCRIPT_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: chatId, scanned_data: serialList })
-        });
-        
-        // Pass programmatic confirmation state right back into Telegram context to complete loops
-        if (tg && tg.sendData) {
-          tg.sendData(JSON.stringify({ status: "done" }));
-        }
-        
-        tg?.close();
-      } catch (error) {
-        alert("Transmission failure: " + error.message);
+    // Send data back natively to Telegram chat context
+    function sendSerialsBack(serialList) {
+      if (tg && tg.sendData) {
+        // Send the scanned codes as a basic string array directly back to the bot
+        tg.sendData(JSON.stringify(serialList));
+        tg.close();
+      } else {
+        alert("Please use this app inside the Telegram mobile application.");
       }
     }
 
