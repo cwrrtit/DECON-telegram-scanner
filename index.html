@@ -126,6 +126,13 @@
     .btn:active {
       opacity: 0.85;
     }
+
+    /* Force dynamically injected camera corners to remain thin and precise */
+    #interactive div div[style*="border"] {
+      border-width: 2px !important;
+      width: 15px !important;
+      height: 15px !important;
+    }
   </style>
 </head>
 <body>
