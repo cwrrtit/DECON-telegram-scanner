@@ -1,80 +1,238 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DECON Mini App</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Scanner</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    :root {
+      --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    }
     
-    <!-- External styling or scripts (like html5-qrcode library) -->
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    body {
+      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace; 
+      background-color: #000000;
+      color: #ffffff;
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
 
-    <style>
-        /* ==========================================
-           YOUR EXISTING APP STYLES (Keep yours here)
-           ========================================== */
-        body {
-            background-color: #000000;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0;
-            padding: 20px;
-        }
+    #scanner-container {
+      width: 100%;
+      max-width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000000;
+      margin-bottom: 16px;
+    }
 
-        /* Example styles for the scan container */
-        #reader {
-            width: 100%;
-            max-width: 500px;
-            margin: 0 auto;
-            border-radius: 12px;
-            overflow: hidden;
-        }
+    #interactive {
+      width: 100% !important;
+      height: auto !important;
+    }
 
-        /* ==========================================
-           NEW OVERRIDES FOR SLIMMING DOWN THE CORNERS
-           ========================================== */
-        
-        /* 1. Force the dynamic corner shapes to stay thin, regardless of color */
-        #reader div div[style*="border"] {
-            border-width: 2px !important; /* Forces 2px thickness instead of the blocky default */
-            width: 15px !important;       /* Makes the corner arms slightly shorter and sleeker */
-            height: 15px !important;      /* Makes the corner legs slightly shorter and sleeker */
-            
-            /* Note: We DO NOT specify border-color here. 
-               This preserves your existing JavaScript code's ability 
-               to turn them green on success! */
-        }
+    #interactive video {
+      width: 100% !important;
+      height: auto !important;
+      object-fit: cover;
+    }
 
-        /* 2. Smoothly transition color changes (like turning green on successful scans) */
-        #reader div div[style*="border"] {
-            transition: border-color 0.2s ease-in-out;
-        }
-    </style>
+    #log-container {
+      width: 100%;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 20px;
+    }
+
+    h3 {
+      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+      margin: 0 0 8px 4px;
+      font-size: 13px;
+      text-transform: uppercase;
+      color: #8e8e93; 
+      letter-spacing: 0.4px;
+      font-weight: 600;
+    }
+
+    #scanned-list {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #2c2c2e; 
+      border-radius: 10px;
+      background-color: #000000;
+      overflow: hidden;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    #scanned-list li {
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 400;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #000000;
+      border-bottom: 1px solid #2c2c2e; 
+    }
+
+    #scanned-list li:last-child {
+      border-bottom: none;
+    }
+
+    #scanned-list li span:first-child {
+      color: #ffffff;
+    }
+
+    .status-flash { 
+      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+      color: #34c759; 
+      font-weight: 500; 
+      font-size: 15px; 
+    }
+
+    #control-panel {
+      width: 100%;
+      padding-bottom: calc(8px + var(--safe-area-inset-bottom));
+    }
+
+    .btn {
+      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+      width: 100%;
+      padding: 16px;
+      font-size: 17px;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      background-color: #ffe600; 
+      color: #000000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: opacity 0.1s ease;
+    }
+
+    .btn:active {
+      opacity: 0.85;
+    }
+  </style>
 </head>
 <body>
 
-    <!-- Main App UI wrapper -->
-    <div class="app-container">
+  <div id="scanner-container">
+    <div id="interactive"></div>
+  </div>
+
+  <div id="log-container">
+    <h3>LOGGED SERIALS (<span id="count">0</span>)</h3>
+    <ul id="scanned-list"></ul>
+  </div>
+
+  <div id="control-panel">
+    <button type="button" class="btn" id="done-btn">Complete</button>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    tg?.ready();
+    tg?.expand();
+
+    const scannedCodes = [];
+    const listElement = document.getElementById('scanned-list');
+    const countElement = document.getElementById('count');
+    let html5QrcodeScanner = null;
+    let lastScannedCode = "";
+    let lastScannedTime = 0;
+
+    function startScanner() {
+      html5QrcodeScanner = new Html5Qrcode("interactive");
+      
+      const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
+        let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+        let boxWidth = Math.floor(minEdgeSize * 0.75);
+        let boxHeight = Math.floor(minEdgeSize * 0.35);
+        return { width: boxWidth, height: boxHeight };
+      }
+
+      const config = { 
+        fps: 15, 
+        qrbox: qrboxFunction, 
+        aspectRatio: 1.333334 
+      };
+      
+      html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
+      .catch((err) => alert("Camera configuration failure: " + err));
+    }
+
+    function onScanSuccess(decodedText) {
+      const now = Date.now();
+      if (decodedText === lastScannedCode && (now - lastScannedTime) < 2000) return;
+
+      lastScannedCode = decodedText;
+      lastScannedTime = now;
+
+      if (!scannedCodes.includes(decodedText)) {
+        scannedCodes.unshift(decodedText);
+        countElement.innerText = scannedCodes.length;
         
-        <!-- The interactive scan feed box -->
-        <div id="reader"></div>
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${decodedText}</span><span class="status-flash">✓ Logged</span>`;
+        listElement.insertBefore(li, listElement.firstChild);
+        
+        tg?.HapticFeedback?.notificationOccurred('success');
+      }
+    }
 
-        <!-- Serial logging metadata indicator -->
-        <div class="logged-serials-container">
-            <span class="label">LOGGED SERIALS (0)</span>
-            <hr class="divider">
-        </div>
+    function sendSerialsBack(serialList) {
+      const initDataUnsafe = tg?.initDataUnsafe;
+      const chatId = initDataUnsafe?.user?.id;
+      
+      if (!chatId) {
+        alert("System Error: Telegram chat context is unavailable.");
+        return;
+      }
 
-        <!-- Complete / Submit Action Button -->
-        <button class="complete-btn">Complete</button>
+      // ⚠️ DOCK YOUR FRESH GOOGLE DEPLOYMENT LINK PARAMETER HERE
+      const scriptBaseUrl = "https://script.google.com/macros/s/AKfycbwb1tV24CFzbcPD70iA09hprOUg7oMSq7hGCxavDbvr7WmRbsFfHuEtvPtQy2Y9flbtMQ/exec";
 
-    </div>
+      const serialsParam = encodeURIComponent(serialList.join(","));
+      const finalUrl = `${scriptBaseUrl}?chatId=${chatId}&serials=${serialsParam}`;
 
-    <script>
-        /* ==========================================
-           YOUR EXISTING JAVASCRIPT SCAN LOGIC 
-           ========================================== */
-        // Inside your scanning callback, the engine will still handle color swaps,
-        // but the CSS above will guarantee the corners remain beautifully thin!
-    </script>
+      // Clean browser parameter transmission bypasses blocked Telegram pipelines
+      fetch(finalUrl, { method: "GET" })
+      .then(() => {
+        setTimeout(() => {
+          tg?.close();
+        }, 150);
+      })
+      .catch((err) => {
+        // Fallback structural safety layout closure
+        tg?.close();
+      });
+    }
+
+    document.getElementById('done-btn').addEventListener('click', () => {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop()
+          .then(() => sendSerialsBack(scannedCodes))
+          .catch(() => sendSerialsBack(scannedCodes));
+      } else {
+        sendSerialsBack(scannedCodes);
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', startScanner);
+  </script>
 </body>
 </html>
