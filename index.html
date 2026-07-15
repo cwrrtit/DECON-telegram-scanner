@@ -13,7 +13,7 @@
     }
     
     body {
-      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace; /* Set monospace globally */
+      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace; 
       background-color: #000000;
       color: #ffffff;
       margin: 0;
@@ -195,15 +195,38 @@
     }
 
     function sendSerialsBack(serialList) {
-      if (tg && tg.sendData) {
-        tg.sendData(JSON.stringify(serialList));
-        
-        setTimeout(() => {
-          tg.close();
-        }, 150);
-      } else {
-        alert("Please use this app inside the Telegram mobile application.");
+      // Safely extract the Telegram chat identifier context
+      const initDataUnsafe = tg?.initDataUnsafe;
+      const chatId = initDataUnsafe?.user?.id;
+      
+      if (!chatId) {
+        alert("System Error: Telegram chat context is unavailable.");
+        return;
       }
+
+      // ⚠️ CHANGE THIS LINE: Paste your actual Google Script Web App URL here
+      const scriptUrl = "https://script.google.com/macros/library/d/1nNQS9dWXHDGQNm7Fx_TFNCkByKFf7upgs3LF7AspkFvpRjX_ByFdf_-M/31";
+
+      // Dispatch directly over standard HTTPS POST request
+      fetch(scriptUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "submit_scans",
+          chatId: chatId,
+          serials: serialList
+        })
+      })
+      .then(() => {
+        // Quick buffer pause allowing network packets to clear, then close window
+        setTimeout(() => {
+          tg?.close();
+        }, 200);
+      })
+      .catch((err) => {
+        alert("Network Error: Data transfer failed: " + err);
+      });
     }
 
     document.getElementById('done-btn').addEventListener('click', () => {
