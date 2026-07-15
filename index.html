@@ -1,296 +1,175 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Decon Inventory Scanner</title>
-  
-  <!-- Telegram Web App SDK -->
+  <meta charset="UTF-8">
+  <title>Live Continuous Barcode Scanner</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  
-  <!-- html5-qrcode Library for Live Camera Scanning -->
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
-    :root {
-      --bg-color: #0f172a;
-      --card-bg: #1e293b;
-      --accent-color: #3b82f6;
-      --accent-hover: #2563eb;
-      --danger-color: #ef4444;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-
     body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--tg-theme-bg-color, #ffffff);
+      color: var(--tg-theme-text-color, #000000);
+      margin: 0;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      min-height: 100vh;
-      padding: 16px;
+      align-items: center;
+      box-sizing: border-box;
     }
-
-    header {
-      text-align: center;
-      margin-bottom: 16px;
-    }
-
-    h1 {
-      font-size: 1.25rem;
-      font-weight: 600;
-    }
-
-    #reader {
+    #scanner-container {
       width: 100%;
-      background-color: var(--card-bg);
+      max-width: 450px;
       border-radius: 12px;
       overflow: hidden;
-      margin-bottom: 16px;
-      border: 1px solid #334155;
+      background: #000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
-
-    .list-container {
-      flex: 1;
-      background-color: var(--card-bg);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 16px;
-      border: 1px solid #334155;
-      display: flex;
-      flex-direction: column;
+    #interactive {
+      width: 100%;
+      aspect-ratio: 4/3;
     }
-
-    .list-title {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      margin-bottom: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    #control-panel {
+      width: 100%;
+      max-width: 450px;
+      margin-top: 15px;
+      text-align: center;
     }
-
-    .scanned-count {
-      background-color: var(--accent-color);
-      color: white;
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-weight: bold;
-      font-size: 0.75rem;
+    .btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background-color: var(--tg-theme-button-color, #2481cc);
+      color: var(--tg-theme-button-text-color, #ffffff);
     }
-
-    #serialList {
-      list-style: none;
+    #log-container {
+      width: 100%;
+      max-width: 450px;
+      margin-top: 20px;
+      width: 100%;
+    }
+    h3 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      text-transform: uppercase;
+      color: var(--tg-theme-hint-color, #707579);
+    }
+    #scanned-list {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
       max-height: 200px;
       overflow-y: auto;
-    }
-
-    #serialList li {
-      background-color: #0f172a;
-      padding: 10px 12px;
+      border: 1px solid var(--tg-theme-secondary-bg-color, #f4f4f5);
       border-radius: 8px;
-      margin-bottom: 8px;
+      background-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
+    }
+    #scanned-list li {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      font-family: monospace;
+      font-size: 15px;
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      font-family: monospace;
-      font-size: 0.95rem;
-      border: 1px solid #334155;
     }
-
-    .delete-btn {
-      background: none;
-      border: none;
-      color: var(--danger-color);
-      font-size: 1.1rem;
-      cursor: pointer;
-      padding: 0 4px;
-    }
-
-    .action-btn {
-      width: 100%;
-      background-color: var(--accent-color);
-      color: white;
-      border: none;
-      padding: 14px;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .action-btn:active {
-      background-color: var(--accent-hover);
-    }
-
-    .empty-state {
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 0.875rem;
-      padding: 20px 0;
-    }
+    .status-flash { color: #34c759; font-weight: bold; }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>📸 Barcode Scanner</h1>
-  </header>
-
-  <!-- Scanner Viewfinder Container -->
-  <div id="reader"></div>
-
-  <!-- Scanned Serial Numbers Output List -->
-  <div class="list-container">
-    <div class="list-title">
-      <span>Scanned Items</span>
-      <span class="scanned-count" id="count">0</span>
-    </div>
-    <ul id="serialList">
-      <li class="empty-state" id="emptyState">Align barcode inside camera viewer</li>
-    </ul>
+  <div id="scanner-container">
+    <div id="interactive"></div>
   </div>
 
-  <!-- Finalize Button -->
-  <button class="action-btn" id="submitBtn" onclick="submitScannedData()">
-    ✅ Complete & Send To Chat
-  </button>
+  <div id="log-container">
+    <h3>Scanned Serials (<span id="count">0</span>)</h3>
+    <ul id="scanned-list"></ul>
+  </div>
+
+  <div id="control-panel">
+    <button type="button" class="btn" id="done-btn">Done & Compile List</button>
+  </div>
 
   <script>
-    // Initialize Telegram WebApp SDK
     const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand(); // Expand mini app to fill maximum native frame height
-    }
+    tg?.ready();
+    tg?.expand();
 
-    // Replace this string with your active Google Script /exec WebApp URL
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzqSXIHxlE7Kra4G-3IcS3IY0WnjdGPsyfxqjiEH4pLqtupkxAJoYjJwxYLISVsqbOjKQ/exec
-";
+    const scannedCodes = [];
+    const listElement = document.getElementById('scanned-list');
+    const countElement = document.getElementById('count');
+    let html5QrcodeScanner = null;
+    let lastScannedCode = "";
+    let lastScannedTime = 0;
 
-    let scannedSerials = [];
-    let html5QrCode;
-
-    // Initialize Camera Feed
-    function startCamera() {
-      html5QrCode = new Html5Qrcode("reader");
-      const config = { 
-        fps: 15, 
-        qrbox: { width: 250, height: 150 },
-        aspectRatio: 1.333333
-      };
-
-      html5QrCode.start(
-        { facingMode: "environment" }, 
-        config, 
-        onScanSuccess
-      ).catch(err => {
-        console.error("Camera access failed: ", err);
-      });
-    }
-
-    // Callback when camera captures code
-    function onScanSuccess(decodedText) {
-      const cleanCode = decodedText.trim();
+    function startScanner() {
+      html5QrcodeScanner = new Html5Qrcode("interactive");
+      const config = { fps: 10, qrbox: (w, h) => ({ width: w * 0.7, height: h * 0.4 }) };
       
-      // Avoid duplicate entries in immediate succession
-      if (scannedSerials.includes(cleanCode)) return;
+      html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
+      .catch((err) => alert("Camera error: " + err));
+    }
 
-      scannedSerials.unshift(cleanCode);
-      renderList();
+    function onScanSuccess(decodedText) {
+      const now = Date.now();
+      if (decodedText === lastScannedCode && (now - lastScannedTime) < 2000) return;
 
-      // Trigger standard haptic vibration feedback on scan
-      if (tg?.HapticFeedback) {
-        tg.HapticFeedback.impactOccurred("medium");
+      lastScannedCode = decodedText;
+      lastScannedTime = now;
+
+      if (!scannedCodes.includes(decodedText)) {
+        scannedCodes.unshift(decodedText);
+        countElement.innerText = scannedCodes.length;
+        
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${decodedText}</span><span class="status-flash">✓ Logged</span>`;
+        listElement.insertBefore(li, listElement.firstChild);
+        
+        tg?.HapticFeedback?.notificationOccurred('success');
       }
     }
 
-    // Render local scanned inventory array
-    function renderList() {
-      const listElement = document.getElementById("serialList");
-      const countElement = document.getElementById("count");
-
-      countElement.textContent = scannedSerials.length;
-
-      if (scannedSerials.length === 0) {
-        listElement.innerHTML = `<li class="empty-state" id="emptyState">Align barcode inside camera viewer</li>`;
-        return;
-      }
-
-      listElement.innerHTML = scannedSerials.map((serial, index) => `
-        <li>
-          <span>${escapeHtml(serial)}</span>
-          <button class="delete-btn" onclick="removeItem(${index})">✕</button>
-        </li>
-      `).join('');
-    }
-
-    function removeItem(index) {
-      scannedSerials.splice(index, 1);
-      renderList();
-    }
-
-    function escapeHtml(text) {
-      return text.replace(/[&<>"']/g, function(m) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
-      });
-    }
-
-    // Send Payload back to Google Apps Script
-    async function submitScannedData() {
-      const submitBtn = document.getElementById("submitBtn");
-      const chatId = tg?.initDataUnsafe?.user?.id;
+    // Direct background submit handling to bypass Telegram restrictions
+    async function sendSerialsBack(serialList) {
+      const user = tg?.initDataUnsafe?.user;
+      const chatId = user?.id;
 
       if (!chatId) {
-        alert("Unable to verify user session. Open this interface through your Telegram bot.");
+        alert("Telegram Session ID not found. Open this inside your Telegram bot.");
         return;
       }
 
-      submitBtn.disabled = true;
-      submitBtn.style.opacity = "0.6";
-      submitBtn.innerHTML = "⏳ Transmitting...";
+      // 🔴 REWRITE THIS INDIVIDUAL VALUE WITH YOUR GOOGLE EXEC URL
+      const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwCeYdZuwTo_cRjsFl9NKEq6e1p0K8dLSHjdeOOoyk44jXoN3MxE2bBfgY09M83wYK8qA/exec";
 
       try {
         await fetch(GOOGLE_SCRIPT_URL, {
           method: "POST",
           mode: "no-cors",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            scanned_data: scannedSerials
-          })
+          body: JSON.stringify({ chat_id: chatId, scanned_data: serialList })
         });
-
-        // Shutdown view and signal Telegram exit sequence
-        if (html5QrCode) {
-          await html5QrCode.stop().catch(() => {});
-        }
         
-        if (tg) {
-          tg.close();
-        }
+        tg?.close();
       } catch (error) {
-        alert("Transmission error: " + error.message);
-        submitBtn.disabled = false;
-        submitBtn.style.opacity = "1";
-        submitBtn.innerHTML = "✅ Complete & Send To Chat";
+        alert("Transmission failure: " + error.message);
       }
     }
 
-    // Auto launch camera feed on page render
-    window.addEventListener("DOMContentLoaded", startCamera);
+    document.getElementById('done-btn').addEventListener('click', () => {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop().then(() => sendSerialsBack(scannedCodes)).catch(() => sendSerialsBack(scannedCodes));
+      } else {
+        sendSerialsBack(scannedCodes);
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', startScanner);
   </script>
 </body>
 </html>
