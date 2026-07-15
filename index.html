@@ -45,6 +45,17 @@
       object-fit: cover;
     }
 
+    /* --- THE RETICULE THICKNESS FIX --- */
+    /* Target the corner borders dynamically drawn by the html5-qrcode engine */
+    #interactive div[style*="border-left"], 
+    #interactive div[style*="border-right"], 
+    #interactive div[style*="border-top"], 
+    #interactive div[style*="border-bottom"] {
+      /* Force the chunky border elements down to a clean, tactical 2px line thickness */
+      border-width: 2px !important;
+      border-color: #ffffff !important; /* Keep them bright white */
+    }
+
     #log-container {
       width: 100%;
       flex-grow: 1;
