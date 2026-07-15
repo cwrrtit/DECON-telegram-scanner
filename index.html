@@ -1,0 +1,43 @@
+<script>
+  const tg = window.Telegram?.WebApp;
+  tg?.ready();
+
+  // Function to send scanned serials back to Google Script
+  async function sendSerialsBack(serialList) {
+    // 1. Get user details from Telegram context
+    const user = tg?.initDataUnsafe?.user;
+    const chatId = user?.id; 
+
+    if (!chatId) {
+      alert("Could not detect Telegram Chat ID. Make sure you open this inside Telegram.");
+      return;
+    }
+
+    // 2. Prepare payload
+    const payload = {
+      chat_id: chatId,
+      scanned_data: serialList
+    };
+
+    try {
+      // 3. Send direct POST request to your Google Script Web App
+      // Replace this URL with your exact Google Apps Script Exec URL
+      const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbya1OQuGqfC-1-dgsaUpFtdD3-OybABq1jmrerATq_XeT50neN2jIr2ZugErIkx8BBByQ/exec"; 
+
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors", // Crucial to prevent iOS CORS pre-flight blocks
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      // Show success and close the app smoothly
+      tg?.showAlert("Scans successfully sent to chat!");
+      tg?.close();
+    } catch (error) {
+      alert("Error sending to bot: " + error.message);
+    }
+  }
+</script>
