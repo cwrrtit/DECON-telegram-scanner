@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Live Continuous Barcode Scanner</title>
+  <title>Scanner</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -14,8 +14,8 @@
     
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--tg-theme-bg-color, #ffffff);
-      color: var(--tg-theme-text-color, #000000);
+      background-color: #000000; /* Force pure black background */
+      color: #ffffff;            /* Force pure white text */
       margin: 0;
       padding: 12px;
       display: flex;
@@ -30,8 +30,7 @@
       max-width: 100%;
       border-radius: 12px;
       overflow: hidden;
-      background: #000;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      background: #000000;
       margin-bottom: 12px;
     }
 
@@ -56,11 +55,12 @@
     }
 
     h3 {
-      margin: 0 0 6px 0;
+      margin: 0 0 8px 4px;
       font-size: 13px;
       text-transform: uppercase;
-      color: var(--tg-theme-hint-color, #707579);
+      color: #8e8e93; /* Muted slate grey header text */
       letter-spacing: 0.5px;
+      font-weight: 600;
     }
 
     #scanned-list {
@@ -68,26 +68,33 @@
       padding: 0;
       margin: 0;
       flex-grow: 1;
-      max-height: 220px;
+      max-height: 240px;
       overflow-y: auto;
-      border: 1px solid var(--tg-theme-secondary-bg-color, #f4f4f5);
-      border-radius: 8px;
-      background-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
+      background-color: #000000;
     }
 
     #scanned-list li {
-      padding: 12px 14px;
-      border-bottom: 1px solid rgba(0,0,0,0.04);
-      font-family: monospace;
-      font-size: 15px;
+      padding: 14px 16px;
+      font-size: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: var(--tg-theme-bg-color, #ffffff);
-      margin-bottom: 2px;
+      background: #000000;
+      border-top: 1px solid #1c1c1e; /* Subtle separating line between records */
+      border-bottom: 1px solid #1c1c1e;
+      margin-bottom: -1px;
     }
 
-    .status-flash { color: #34c759; font-weight: bold; font-size: 13px; }
+    #scanned-list li span:first-child {
+      color: #ffffff; /* White color for serial values */
+      font-weight: 400;
+    }
+
+    .status-flash { 
+      color: #34c759; /* Green text matching image profile */ 
+      font-weight: 500; 
+      font-size: 14px; 
+    }
 
     #control-panel {
       width: 100%;
@@ -96,15 +103,20 @@
 
     .btn {
       width: 100%;
-      padding: 15px;
+      padding: 16px;
       font-size: 16px;
       font-weight: 600;
       border: none;
-      border-radius: 10px;
+      border-radius: 14px;
       cursor: pointer;
-      background-color: var(--tg-theme-button-color, #2481cc);
-      color: var(--tg-theme-button-text-color, #ffffff);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      background-color: #ffe600; /* High-visibility exact yellow profile button */
+      color: #000000;            /* Black text inside yellow button container */
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: opacity 0.1s ease;
+    }
+
+    .btn:active {
+      opacity: 0.85;
     }
   </style>
 </head>
@@ -115,7 +127,7 @@
   </div>
 
   <div id="log-container">
-    <h3>Logged Serials (<span id="count">0</span>)</h3>
+    <h3>LOGGED SERIALS (<span id="count">0</span>)</h3>
     <ul id="scanned-list"></ul>
   </div>
 
@@ -155,7 +167,6 @@
       .catch((err) => alert("Camera configuration failure: " + err));
     }
 
-    // Capture scans smoothly
     function onScanSuccess(decodedText) {
       const now = Date.now();
       if (decodedText === lastScannedCode && (now - lastScannedTime) < 2000) return;
@@ -175,12 +186,14 @@
       }
     }
 
-    // Send data back natively to Telegram chat context
     function sendSerialsBack(serialList) {
       if (tg && tg.sendData) {
-        // Send the scanned codes as a basic string array directly back to the bot
         tg.sendData(JSON.stringify(serialList));
-        tg.close();
+        
+        // Safety timeout ensures data transmission finishes completely before closure
+        setTimeout(() => {
+          tg.close();
+        }, 150);
       } else {
         alert("Please use this app inside the Telegram mobile application.");
       }
