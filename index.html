@@ -307,8 +307,12 @@
         }
       });
       
-      // Extract specific item headers, pushing OTHERS explicitly out of standard alphabetical order
-      const itemHeaders = Object.keys(groups).filter(h => h !== "OTHERS").sort();
+      // 1. Sort the named item headers using natural alphanumeric ordering
+      const itemHeaders = Object.keys(groups)
+        .filter(h => h !== "OTHERS")
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+      
+      // 2. Pin OTHERS explicitly to the absolute end of the list
       if (groups["OTHERS"]) {
         itemHeaders.push("OTHERS");
       }
@@ -319,6 +323,9 @@
         headerLi.className = 'list-category-header';
         headerLi.innerText = headerName;
         listElement.appendChild(headerLi);
+        
+        // 3. Sort the serial numbers under this specific header alphanumerically
+        groups[headerName].sort((a, b) => a.display.localeCompare(b.display, undefined, { numeric: true, sensitivity: 'base' }));
         
         groups[headerName].forEach(item => {
           const li = document.createElement('li');
