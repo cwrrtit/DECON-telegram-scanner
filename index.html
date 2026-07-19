@@ -10,6 +10,8 @@
   <style>
     :root {
       --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+      /* 🎨 CUSTOM COLOR PREFERENCE: Edit this Hex code to change your scan success green! */
+      --success-green-glow: #00db62; 
     }
     
     body {
@@ -43,6 +45,26 @@
       width: 100% !important;
       height: auto !important;
       object-fit: cover;
+    }
+
+    /* 🎨 VIEW FINDER MODIFICATIONS */
+    /* Safely target the dynamically generated corner element borders */
+    .custom-scan-corner {
+      border-width: 4px !important; /* Adjust thickness here */
+      width: 24px !important;       /* Shorter, sleeker corner tracking lines */
+      height: 24px !important;
+    }
+
+    /* Target individual elements to apply the capsules curves safely */
+    .custom-scan-corner-0 { border-radius: 12px 0 0 0 !important; } /* Top Left */
+    .custom-scan-corner-1 { border-radius: 0 12px 0 0 !important; } /* Top Right */
+    .custom-scan-corner-2 { border-radius: 0 0 0 12px !important; } /* Bottom Left */
+    .custom-scan-corner-3 { border-radius: 0 0 12px 0 !important; } /* Bottom Right */
+
+    /* Intercept the inline style green injection to match your precise aesthetic preference */
+    #interactive div div[style*="border-color: rgb(0, 128, 0)"],
+    #interactive div div[style*="border-color: green"] {
+      border-color: var(--success-green-glow) !important;
     }
 
     #log-container {
@@ -172,7 +194,30 @@
       };
       
       html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
+      .then(() => {
+        // Run injection strategy to intercept library DOM generation safely
+        observeScannerDOM();
+      })
       .catch((err) => alert("Camera configuration failure: " + err));
+    }
+
+    /* 🎨 STYLING ENGINE INJECTION */
+    function observeScannerDOM() {
+      const container = document.getElementById('interactive');
+      
+      const observer = new MutationObserver((mutations, obs) => {
+        // Check if the library has rendered the 4 corner border divs yet
+        const borders = container.querySelectorAll('div[style*="border-color"]');
+        if (borders.length === 4) {
+          borders.forEach((el, index) => {
+            el.classList.add('custom-scan-corner');
+            el.classList.add(`custom-scan-corner-${index}`);
+          });
+          obs.disconnect(); // Stop observing once stylized to save battery power
+        }
+      });
+
+      observer.observe(container, { childList: true, subtree: true });
     }
 
     function onScanSuccess(decodedText) {
@@ -203,13 +248,10 @@
         return;
       }
 
-      // ⚠️ DOCK YOUR FRESH GOOGLE DEPLOYMENT LINK PARAMETER HERE
       const scriptBaseUrl = "https://script.google.com/macros/s/AKfycbwb1tV24CFzbcPD70iA09hprOUg7oMSq7hGCxavDbvr7WmRbsFfHuEtvPtQy2Y9flbtMQ/exec";
-
       const serialsParam = encodeURIComponent(serialList.join(","));
       const finalUrl = `${scriptBaseUrl}?chatId=${chatId}&serials=${serialsParam}`;
 
-      // Clean browser parameter transmission bypasses blocked Telegram pipelines
       fetch(finalUrl, { method: "GET" })
       .then(() => {
         setTimeout(() => {
@@ -217,7 +259,6 @@
         }, 150);
       })
       .catch((err) => {
-        // Fallback structural safety layout closure
         tg?.close();
       });
     }
