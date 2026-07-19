@@ -1,328 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Scanner</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+/* STRUCTURAL BASE FOR ALL FOUR CUSTOM CORNERS */
+.scanner-corner {
+  position: absolute;
+  width: 36px;  /* Expanded width to comfortably hold the thicker 5px stroke */
+  height: 36px; /* Expanded height to comfortably hold the thicker 5px stroke */
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, filter 0.2s ease;
+}
 
-  <style>
-    :root {
-      --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
-    }
-    
-    body {
-      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace; 
-      background-color: #000000;
-      color: #ffffff;
-      margin: 0;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      box-sizing: border-box;
-    }
+/* RADIUS AND BORDER MAPS - Moving the thickness here overrides the block completely */
+.tl {
+  top: 0; left: 0;
+  border-top: 5px solid #ffffff !important;
+  border-left: 5px solid #ffffff !important;
+  border-right: none !important; 
+  border-bottom: none !important;
+  border-top-left-radius: 20px;
+}
 
-    #scanner-container {
-      position: relative; 
-      width: 100%;
-      max-width: 100%;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #000000;
-      margin-bottom: 16px;
-    }
+.tr {
+  top: 0; right: 0;
+  border-top: 5px solid #ffffff !important;
+  border-right: 5px solid #ffffff !important;
+  border-left: none !important; 
+  border-bottom: none !important;
+  border-top-right-radius: 20px;
+}
 
-    #interactive {
-      width: 100% !important;
-      height: auto !important;
-    }
+.bl {
+  bottom: 0; left: 0;
+  border-bottom: 5px solid #ffffff !important;
+  border-left: 5px solid #ffffff !important;
+  border-right: none !important; 
+  border-top: none !important;
+  border-bottom-left-radius: 20px;
+}
 
-    #interactive video {
-      width: 100% !important;
-      height: auto !important;
-      object-fit: cover;
-    }
+.br {
+  bottom: 0; right: 0;
+  border-bottom: 5px solid #ffffff !important;
+  border-right: 5px solid #ffffff !important;
+  border-left: none !important; 
+  border-top: none !important;
+  border-bottom-right-radius: 20px;
+}
 
-    /* 🛑 THE ULTIMATE OVERRIDE: Wipes out the library's default sharp corners entirely */
-    #interactive * {
-      border: none !important;
-      border-color: transparent !important;
-    }
-
-    /* 🛡️ CUSTOM OVERLAY CONTAINER */
-    #custom-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none; 
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-    }
-
-    /* CUSTOM VIEWFINDER BOX (Synchronized with the dynamic JS dimensions) */
-    #custom-viewfinder {
-      position: relative;
-      box-sizing: border-box;
-      width: 75vw; 
-      height: 55vw; 
-      max-width: 75%;
-      max-height: 55%;
-    }
-
-    /* STRUCTURAL BASE FOR ALL FOUR CUSTOM CORNERS */
-    .scanner-corner {
-      position: absolute;
-      width: 24px;
-      height: 24px;
-      /* Using border shorthand directly inside an explicit class overrides the wildcard reset */
-      border: 3px solid #ffffff !important; 
-      box-sizing: border-box;
-      /* Transitioning filter instead of box-shadow for drop-shadow engine performance */
-      transition: border-color 0.2s ease, filter 0.2s ease;
-    }
-
-    /* CORNER CONFIGURATIONS */
-    .tl {
-      top: 0; left: 0;
-      border-right: none !important; border-bottom: none !important;
-      border-top-left-radius: 12px;
-    }
-
-    .tr {
-      top: 0; right: 0;
-      border-left: none !important; border-bottom: none !important;
-      border-top-right-radius: 12px;
-    }
-
-    .bl {
-      bottom: 0; left: 0;
-      border-right: none !important; border-top: none !important;
-      border-bottom-left-radius: 12px;
-    }
-
-    .br {
-      bottom: 0; right: 0;
-      border-left: none !important; border-top: none !important;
-      border-bottom-right-radius: 12px;
-    }
-
-    /* 🟢 SUCCESS GLOW - HUGS RADIUS CURVES DIRECTLY WITHOUT SQUARE OUTLINES */
-    #custom-viewfinder.scan-success .scanner-corner {
-      border-color: #00db62 !important; 
-      filter: drop-shadow(0px 0px 6px rgba(0, 219, 98, 0.8));
-    }
-
-    #log-container {
-      width: 100%;
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
-      margin-bottom: 20px;
-    }
-
-    h3 {
-      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
-      margin: 0 0 8px 4px;
-      font-size: 13px;
-      text-transform: uppercase;
-      color: #8e8e93; 
-      letter-spacing: 0.4px;
-      font-weight: 600;
-    }
-
-    #scanned-list {
-      list-style-type: none;
-      padding: 0;
-      margin: 0;
-      width: 100%;
-      box-sizing: border-box;
-      border: 1px solid #2c2c2e; 
-      border-radius: 10px;
-      background-color: #000000;
-      overflow: hidden;
-      max-height: 280px;
-      overflow-y: auto;
-    }
-
-    #scanned-list li {
-      padding: 14px 16px;
-      font-size: 16px;
-      font-weight: 400;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #000000;
-      border-bottom: 1px solid #2c2c2e; 
-    }
-
-    #scanned-list li:last-child {
-      border-bottom: none;
-    }
-
-    #scanned-list li span:first-child {
-      color: #ffffff;
-    }
-
-    .status-flash { 
-      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
-      color: #00db62; 
-      font-weight: 500; 
-      font-size: 15px; 
-    }
-
-    #control-panel {
-      width: 100%;
-      padding-bottom: calc(8px + var(--safe-area-inset-bottom));
-    }
-
-    .btn {
-      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
-      width: 100%;
-      padding: 16px;
-      font-size: 17px;
-      font-weight: 600;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      background-color: #ffe600; 
-      color: #000000;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      transition: opacity 0.1s ease;
-    }
-
-    .btn:active {
-      opacity: 0.85;
-    }
-  </style>
-</head>
-<body>
-
-  <div id="scanner-container">
-    <div id="interactive"></div>
-    
-    <div id="custom-overlay">
-      <div id="custom-viewfinder">
-        <div class="scanner-corner tl"></div>
-        <div class="scanner-corner tr"></div>
-        <div class="scanner-corner bl"></div>
-        <div class="scanner-corner br"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="log-container">
-    <h3>LOGGED SERIALS (<span id="count">0</span>)</h3>
-    <ul id="scanned-list"></ul>
-  </div>
-
-  <div id="control-panel">
-    <button type="button" class="btn" id="done-btn">Complete</button>
-  </div>
-
-  <script>
-    const tg = window.Telegram?.WebApp;
-    tg?.ready();
-    tg?.expand();
-
-    const scannedCodes = [];
-    const listElement = document.getElementById('scanned-list');
-    const countElement = document.getElementById('count');
-    const viewfinder = document.getElementById('custom-viewfinder');
-    let html5QrcodeScanner = null;
-    let lastScannedCode = "";
-    let lastScannedTime = 0;
-    let flashTimeout = null;
-
-    function startScanner() {
-      html5QrcodeScanner = new Html5Qrcode("interactive");
-      
-      const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
-        let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-        let boxWidth = Math.floor(minEdgeSize * 0.75);
-        let boxHeight = Math.floor(minEdgeSize * 0.55);
-        return { width: boxWidth, height: boxHeight };
-      }
-
-      const config = { 
-        fps: 15, 
-        qrbox: qrboxFunction, 
-        aspectRatio: 1.333334 
-      };
-      
-      html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
-      .catch((err) => alert("Camera configuration failure: " + err));
-    }
-
-    function onScanSuccess(decodedText) {
-      const now = Date.now();
-      
-      if (viewfinder) {
-        clearTimeout(flashTimeout);
-        viewfinder.classList.add('scan-success');
-        flashTimeout = setTimeout(() => {
-          viewfinder.classList.remove('scan-success');
-        }, 500); 
-      }
-
-      if (decodedText === lastScannedCode && (now - lastScannedTime) < 2000) return;
-
-      lastScannedCode = decodedText;
-      lastScannedTime = now;
-
-      if (!scannedCodes.includes(decodedText)) {
-        scannedCodes.unshift(decodedText);
-        countElement.innerText = scannedCodes.length;
-        
-        const li = document.createElement('li');
-        li.innerHTML = `<span>${decodedText}</span><span class="status-flash">✓</span>`;
-        listElement.insertBefore(li, listElement.firstChild);
-        
-        tg?.HapticFeedback?.notificationOccurred('success');
-      }
-    }
-
-    function sendSerialsBack(serialList) {
-      const initDataUnsafe = tg?.initDataUnsafe;
-      const chatId = initDataUnsafe?.user?.id;
-      
-      if (!chatId) {
-        alert("System Error: Telegram chat context is unavailable.");
-        return;
-      }
-
-      const scriptBaseUrl = "https://script.google.com/macros/s/AKfycbwb1tV24CFzbcPD70iA09hprOUg7oMSq7hGCxavDbvr7WmRbsFfHuEtvPtQy2Y9flbtMQ/exec";
-      const serialsParam = encodeURIComponent(serialList.join(","));
-      const finalUrl = `${scriptBaseUrl}?chatId=${chatId}&serials=${serialsParam}`;
-
-      fetch(finalUrl, { method: "GET" })
-      .then(() => {
-        setTimeout(() => {
-          tg?.close();
-        }, 150);
-      })
-      .catch((err) => {
-        tg?.close();
-      });
-    }
-
-    document.getElementById('done-btn').addEventListener('click', () => {
-      if (html5QrcodeScanner) {
-        html5QrcodeScanner.stop()
-          .then(() => sendSerialsBack(scannedCodes))
-          .catch(() => sendSerialsBack(scannedCodes));
-      } else {
-        sendSerialsBack(scannedCodes);
-      }
-    });
-
-    window.addEventListener('DOMContentLoaded', startScanner);
-  </script>
-</body>
-</html>
+/* 🟢 SUCCESS GLOW - TRACES THE NEW BOLD CURVES PERFECTLY */
+#custom-viewfinder.scan-success .scanner-corner {
+  border-color: #00E676 !important; 
+  filter: drop-shadow(0px 0px 8px rgba(0, 230, 118, 0.9));
+}
