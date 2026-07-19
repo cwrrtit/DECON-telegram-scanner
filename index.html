@@ -142,14 +142,40 @@
       margin-bottom: 20px;
     }
 
+    /* Flex container header to push the Title and Undo link to opposite edges */
+    .log-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 0 4px 8px 4px;
+    }
+
     h3 {
       font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
-      margin: 0 0 8px 4px;
+      margin: 0;
       font-size: 13px;
       text-transform: uppercase;
       color: #8e8e93; 
       letter-spacing: 0.4px;
       font-weight: 600;
+    }
+
+    /* Borderless blue interactive link text styled for dark layouts */
+    .undo-trigger {
+      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+      color: #007aff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      background: none;
+      border: none;
+      padding: 0;
+      user-select: none;
+    }
+
+    .undo-trigger:active {
+      opacity: 0.6;
     }
 
     #scanned-list {
@@ -245,7 +271,10 @@
   </div>
 
   <div id="log-container">
-    <h3>LOGGED SERIALS (<span id="count">0</span>)</h3>
+    <div class="log-header-row">
+      <h3>LOGGED SERIALS (<span id="count">0</span>)</h3>
+      <button type="button" class="undo-trigger" id="undo-btn">↩ Undo</button>
+    </div>
     <ul id="scanned-list"></ul>
   </div>
 
@@ -386,6 +415,27 @@
         tg?.close();
       });
     }
+
+    // Chronologically extract elements out from the tracking array stack
+    document.getElementById('undo-btn').addEventListener('click', () => {
+      if (scannedCodes.length > 0) {
+        // Remove index 0 element (the absolute last item scanned via unshift)
+        scannedCodes.shift();
+        
+        // Match standard stack limits to display properties
+        countElement.innerText = scannedCodes.length;
+        
+        // Wipe local deduplication blockers so the item can be scanned again instantly
+        lastScannedCode = "";
+        lastScannedTime = 0;
+        
+        // Rebuild presentation layer structures completely clean
+        renderGroupedUI();
+        
+        // Provide physical mechanical tap feedback confirmation
+        tg?.HapticFeedback?.impactOccurred('medium');
+      }
+    });
 
     document.getElementById('done-btn').addEventListener('click', () => {
       if (html5QrcodeScanner) {
