@@ -48,22 +48,21 @@
     }
 
     /* 🎨 VIEW FINDER MODIFICATIONS */
-    /* Safely target the dynamically generated corner element borders */
-    .custom-scan-corner {
+    /* Target the corner elements explicitly via attributes to intercept library overrides */
+    #interactive div div[style*="border"] {
       border-width: 4px !important; /* Adjust thickness here */
       width: 24px !important;       /* Shorter, sleeker corner tracking lines */
       height: 24px !important;
     }
 
-    /* Target individual elements to apply the capsules curves safely */
-    .custom-scan-corner-0 { border-radius: 12px 0 0 0 !important; } /* Top Left */
-    .custom-scan-corner-1 { border-radius: 0 12px 0 0 !important; } /* Top Right */
-    .custom-scan-corner-2 { border-radius: 0 0 0 12px !important; } /* Bottom Left */
-    .custom-scan-corner-3 { border-radius: 0 0 12px 0 !important; } /* Bottom Right */
+    /* Apply the smooth curves to individual corner components based on style signatures */
+    #interactive div div[style*="border-top"][style*="border-left"] { border-radius: 12px 0 0 0 !important; }
+    #interactive div div[style*="border-top"][style*="border-right"] { border-radius: 0 12px 0 0 !important; }
+    #interactive div div[style*="border-bottom"][style*="border-left"] { border-radius: 0 0 0 12px !important; }
+    #interactive div div[style*="border-bottom"][style*="border-right"] { border-radius: 0 0 12px 0 !important; }
 
-    /* Intercept the inline style green injection to match your precise aesthetic preference */
-    #interactive div div[style*="border-color: rgb(0, 128, 0)"],
-    #interactive div div[style*="border-color: green"] {
+    /* Forcibly grab ANY color change the library throws out and bend it to your custom success color */
+    #interactive div div[style*="border-color"] {
       border-color: var(--success-green-glow) !important;
     }
 
@@ -195,7 +194,6 @@
       
       html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
       .then(() => {
-        // Run injection strategy to intercept library DOM generation safely
         observeScannerDOM();
       })
       .catch((err) => alert("Camera configuration failure: " + err));
@@ -205,19 +203,22 @@
     function observeScannerDOM() {
       const container = document.getElementById('interactive');
       
-      const observer = new MutationObserver((mutations, obs) => {
-        // Check if the library has rendered the 4 corner border divs yet
+      // Kept open to safely clamp down attributes whenever the library forces mutations
+      const observer = new MutationObserver(() => {
         const borders = container.querySelectorAll('div[style*="border-color"]');
         if (borders.length === 4) {
           borders.forEach((el, index) => {
-            el.classList.add('custom-scan-corner');
-            el.classList.add(`custom-scan-corner-${index}`);
+            // Apply the custom hooks continuously so the CSS sheet remains securely attached
+            if (!el.classList.contains('custom-scan-corner')) {
+              el.classList.add('custom-scan-corner');
+              el.classList.add(`custom-scan-corner-${index}`);
+            }
           });
-          obs.disconnect(); // Stop observing once stylized to save battery power
         }
       });
 
-      observer.observe(container, { childList: true, subtree: true });
+      // Track child changes and attributes where inline properties shift
+      observer.observe(container, { childList: true, subtree: true, attributes: true });
     }
 
     function onScanSuccess(decodedText) {
