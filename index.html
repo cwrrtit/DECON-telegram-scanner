@@ -92,9 +92,9 @@
       transition: border-color 0.2s ease, filter 0.2s ease;
     }
 
-    /* RADIUS AND BORDER MAPS - Moving the thickness here overrides the block completely */
+    /* RADIUS AND BORDER MAPS - Shifted outwards by -5px to sit on top of the shadow perfectly */
     .tl {
-      top: 0; left: 0;
+      top: -5px; left: -5px;
       border-top: 5px solid #ffffff !important;
       border-left: 5px solid #ffffff !important;
       border-right: none !important; 
@@ -103,7 +103,7 @@
     }
 
     .tr {
-      top: 0; right: 0;
+      top: -5px; right: -5px;
       border-top: 5px solid #ffffff !important;
       border-right: 5px solid #ffffff !important;
       border-left: none !important; 
@@ -112,7 +112,7 @@
     }
 
     .bl {
-      bottom: 0; left: 0;
+      bottom: -5px; left: -5px;
       border-bottom: 5px solid #ffffff !important;
       border-left: 5px solid #ffffff !important;
       border-right: none !important; 
@@ -121,7 +121,7 @@
     }
 
     .br {
-      bottom: 0; right: 0;
+      bottom: -5px; right: -5px;
       border-bottom: 5px solid #ffffff !important;
       border-right: 5px solid #ffffff !important;
       border-left: none !important; 
