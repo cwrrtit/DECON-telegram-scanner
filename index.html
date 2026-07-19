@@ -76,7 +76,6 @@
       max-height: 55%;
       
       /* 🕵️‍♂️ THE DIMMED MASK EFFECT */
-      /* Casts a massive, semi-transparent black shroud outside the viewfinder area */
       box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
       
       /* Smoothly matches the internal radius curve of the custom corners */
@@ -92,7 +91,7 @@
       transition: border-color 0.2s ease, filter 0.2s ease;
     }
 
-    /* RADIUS AND BORDER MAPS - Shifted outwards by -5px to sit on top of the shadow perfectly */
+    /* RADIUS AND BORDER MAPS - Shifted outwards by -3px to sit on top of the shadow perfectly */
     .tl {
       top: -3px; left: -3px;
       border-top: 5px solid #ffffff !important;
@@ -165,6 +164,18 @@
       overflow: hidden;
       max-height: 280px;
       overflow-y: auto;
+    }
+
+    /* UI Category Subheaders Generated On The Fly */
+    .list-category-header {
+      background-color: #1c1c1e;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #a2a2a7;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #2c2c2e;
     }
 
     #scanned-list li {
@@ -276,6 +287,47 @@
       .catch((err) => alert("Camera configuration failure: " + err));
     }
 
+    function renderGroupedUI() {
+      // Clear container list entirely before structural re-render
+      listElement.innerHTML = "";
+      
+      const groups = {};
+      
+      // Process internal dynamic arrays into categorized segments
+      scannedCodes.forEach(code => {
+        const match = code.match(/^\(([^)]+)\)(.*)$/);
+        if (match) {
+          const type = match[1].trim().toUpperCase();
+          const sn = match[2].trim();
+          if (!groups[type]) groups[type] = [];
+          groups[type].push({ display: sn, raw: code });
+        } else {
+          if (!groups["OTHERS"]) groups["OTHERS"] = [];
+          groups["OTHERS"].push({ display: code, raw: code });
+        }
+      });
+      
+      // Extract specific item headers, pushing OTHERS explicitly out of standard alphabetical order
+      const itemHeaders = Object.keys(groups).filter(h => h !== "OTHERS").sort();
+      if (groups["OTHERS"]) {
+        itemHeaders.push("OTHERS");
+      }
+      
+      // Build DOM structures item by item
+      itemHeaders.forEach(headerName => {
+        const headerLi = document.createElement('div');
+        headerLi.className = 'list-category-header';
+        headerLi.innerText = headerName;
+        listElement.appendChild(headerLi);
+        
+        groups[headerName].forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = `<span>${item.display}</span><span class="status-flash">✓</span>`;
+          listElement.appendChild(li);
+        });
+      });
+    }
+
     function onScanSuccess(decodedText) {
       const now = Date.now();
       
@@ -293,12 +345,12 @@
       lastScannedTime = now;
 
       if (!scannedCodes.includes(decodedText)) {
+        // Maintain continuous tracking stack
         scannedCodes.unshift(decodedText);
         countElement.innerText = scannedCodes.length;
         
-        const li = document.createElement('li');
-        li.innerHTML = `<span>${decodedText}</span><span class="status-flash">✓</span>`;
-        listElement.insertBefore(li, listElement.firstChild);
+        // Refresh structural categorized UI rendering context
+        renderGroupedUI();
         
         tg?.HapticFeedback?.notificationOccurred('success');
       }
