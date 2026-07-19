@@ -84,7 +84,8 @@
       /* Using border shorthand directly inside an explicit class overrides the wildcard reset */
       border: 3px solid #ffffff !important; 
       box-sizing: border-box;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      /* Transitioning filter instead of box-shadow for drop-shadow engine performance */
+      transition: border-color 0.2s ease, filter 0.2s ease;
     }
 
     /* CORNER CONFIGURATIONS */
@@ -112,10 +113,10 @@
       border-bottom-right-radius: 12px;
     }
 
-    /* 🟢 SUCCESS GLOW */
+    /* 🟢 SUCCESS GLOW - HUGS RADIUS CURVES DIRECTLY WITHOUT SQUARE OUTLINES */
     #custom-viewfinder.scan-success .scanner-corner {
       border-color: #00E676 !important; 
-      box-shadow: 0 0 12px rgba(0, 230, 118, 0.5);
+      filter: drop-shadow(0px 0px 6px rgba(0, 230, 118, 0.8));
     }
 
     #log-container {
