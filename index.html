@@ -12,6 +12,18 @@
   <style>
     :root {
       --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+
+      /* 🎨 STATUS INDICATOR HEX CUSTOMIZATION */
+      --status-red: #FF5F56;
+      --status-red-border: #E0443E;
+
+      --status-amber: #FFBD2E;
+      --status-amber-border: #DEA123;
+
+      --status-green: #27C93F;
+      --status-green-border: #1AAB29;
+
+      --status-idle-border: #3a3a3c;
     }
     
     body {
@@ -175,27 +187,27 @@
       border-radius: 50%;
       box-sizing: border-box;
       background-color: transparent;
-      border: 1.5px solid #3a3a3c; /* Hollow stroke state at rest */
+      border: 1.5px solid var(--status-idle-border); /* Hollow stroke state at rest */
       transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     }
 
-    /* Active Solid macOS States */
+    /* Active Solid macOS States using CSS Variables */
     .status-dot.dot-red.active {
-      background-color: #FF5F56;
-      border-color: #E0443E;
-      box-shadow: 0 0 6px rgba(255, 95, 86, 0.4);
+      background-color: var(--status-red);
+      border-color: var(--status-red-border);
+      box-shadow: 0 0 6px var(--status-red);
     }
 
     .status-dot.dot-amber.active {
-      background-color: #FFBD2E;
-      border-color: #DEA123;
-      box-shadow: 0 0 6px rgba(255, 189, 46, 0.4);
+      background-color: var(--status-amber);
+      border-color: var(--status-amber-border);
+      box-shadow: 0 0 6px var(--status-amber);
     }
 
     .status-dot.dot-green.active {
-      background-color: #27C93F;
-      border-color: #1AAB29;
-      box-shadow: 0 0 6px rgba(39, 201, 63, 0.4);
+      background-color: var(--status-green);
+      border-color: var(--status-green-border);
+      box-shadow: 0 0 6px var(--status-green);
     }
 
     /* Borderless blue interactive link text styled for dark layouts */
