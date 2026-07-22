@@ -6,7 +6,7 @@
   <title>Scanner</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
-  <!-- 🔐 CryptoJS Library for Client-Side AES Decryption -->
+  <!-- 🔐 Client-Side AES Decryption -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
   <style>
@@ -55,7 +55,6 @@
       object-fit: cover;
     }
 
-    /* Wipes out default library box borders */
     #interactive * {
       border: none !important;
       border-color: transparent !important;
@@ -68,7 +67,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      pointer-events: none; 
+      pointer-events: auto; /* Active so user can tap to test bad codes */
       display: flex;
       align-items: center;
       justify-content: center;
@@ -87,6 +86,7 @@
       /* Dimmed Mask */
       box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
       border-radius: 20px; 
+      cursor: pointer;
     }
 
     /* VIEWFINDER CORNERS */
@@ -140,6 +140,12 @@
       filter: drop-shadow(0px 0px 1px rgba(1, 231, 40, 0.555));
     }
 
+    /* RED CORNER GLOW FOR UNREADABLE CODE */
+    #custom-viewfinder.scan-error .scanner-corner {
+      border-color: #ff3b30 !important; 
+      filter: drop-shadow(0px 0px 1px rgba(255, 59, 48, 0.555));
+    }
+
     #log-container {
       width: 100%;
       flex-grow: 1;
@@ -148,7 +154,6 @@
       margin-bottom: 20px;
     }
 
-    /* Clean Log Header Row without top/bottom border line */
     .log-header-row {
       display: flex;
       justify-content: space-between;
@@ -180,12 +185,11 @@
       box-sizing: border-box;
       background-color: transparent;
       border: 1px solid var(--status-idle-border);
-      transition: background-color 0.2s ease-in-out, 
-                  border-color 0.2s ease-in-out, 
-                  box-shadow 0.2s ease-in-out;
+      transition: background-color 0.15s ease-in-out, 
+                  border-color 0.15s ease-in-out, 
+                  box-shadow 0.15s ease-in-out;
     }
 
-    /* Dot States */
     .status-dot.active-white {
       background-color: var(--status-white);
       border-color: var(--status-white);
@@ -210,7 +214,6 @@
       box-shadow: 0 0 8px rgba(255, 59, 48, 0.6);
     }
 
-    /* Interactive Undo Button */
     .undo-trigger {
       font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
       color: #007aff;
@@ -282,7 +285,6 @@
       font-size: 15px; 
     }
 
-    /* CONTROL PANEL & REFINED WHITE BUTTON WITH GLOW */
     #control-panel {
       position: relative;
       width: 100%;
@@ -335,6 +337,10 @@
       will-change: filter, opacity;
       transition: opacity 0.3s ease;
     }
+
+    canvas#analysis-canvas {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -343,7 +349,7 @@
     <div id="interactive"></div>
     
     <div id="custom-overlay">
-      <div id="custom-viewfinder">
+      <div id="custom-viewfinder" id="viewfinder">
         <div class="scanner-corner tl"></div>
         <div class="scanner-corner tr"></div>
         <div class="scanner-corner bl"></div>
@@ -351,6 +357,8 @@
       </div>
     </div>
   </div>
+
+  <canvas id="analysis-canvas" width="120" height="90"></canvas>
 
   <div id="log-container">
     <div class="log-header-row">
@@ -380,13 +388,14 @@
     tg?.ready();
     tg?.expand();
 
-    // 🔐 CONFIDENTIAL AES PASSPHRASE
     const SECRET_KEY = "AkBR7!12K8Le#Bzz_ASH%PekMP45K416";
 
     const scannedCodes = [];
     const listElement = document.getElementById('scanned-list');
     const countElement = document.getElementById('count');
     const viewfinder = document.getElementById('custom-viewfinder');
+    const analysisCanvas = document.getElementById('analysis-canvas');
+    const canvasCtx = analysisCanvas.getContext('2d', { willReadFrequently: true });
     
     const dotElements = [
       document.getElementById('dot-1'),
@@ -401,6 +410,7 @@
     let flashTimeout = null;
     let overrideTimeout = null;
     let isOverrideState = false;
+    let proximityInterval = null;
 
     function clearDotClasses() {
       dotElements.forEach(dot => {
@@ -408,11 +418,8 @@
       });
     }
 
-    /**
-     * Sets Proximity Dots (1 to 4 White Dots)
-     */
     function setProximityLevel(level) {
-      if (isOverrideState) return; // Don't disrupt green/amber/red active overrides
+      if (isOverrideState) return;
       clearDotClasses();
 
       for (let i = 0; i < level; i++) {
@@ -422,9 +429,6 @@
       }
     }
 
-    /**
-     * Triggers Encrypted Scan State (4 Green Dots)
-     */
     function triggerSuccessGreenState() {
       isOverrideState = true;
       clearTimeout(overrideTimeout);
@@ -434,12 +438,9 @@
       overrideTimeout = setTimeout(() => {
         isOverrideState = false;
         setProximityLevel(1);
-      }, 400);
+      }, 500);
     }
 
-    /**
-     * Triggers Unencrypted / Raw Format State (1st Amber Dot)
-     */
     function triggerUnencryptedAmberState() {
       isOverrideState = true;
       clearTimeout(overrideTimeout);
@@ -452,14 +453,18 @@
       }, 800);
     }
 
-    /**
-     * Triggers Damaged / Unreadable Code State (1st Red Dot)
-     */
     function triggerUnreadableRedState() {
       isOverrideState = true;
       clearTimeout(overrideTimeout);
       clearDotClasses();
       dotElements[0].classList.add('active-red');
+
+      if (viewfinder) {
+        viewfinder.classList.add('scan-error');
+        setTimeout(() => viewfinder.classList.remove('scan-error'), 800);
+      }
+
+      tg?.HapticFeedback?.notificationOccurred('error');
 
       overrideTimeout = setTimeout(() => {
         isOverrideState = false;
@@ -467,9 +472,6 @@
       }, 800);
     }
 
-    /**
-     * Decrypts AES Base64 or Hex encoded strings.
-     */
     function tryDecrypt(rawText) {
       try {
         const trimmed = rawText.trim();
@@ -491,11 +493,55 @@
         if (decryptedText && decryptedText.length > 0) {
           return { text: decryptedText, isEncrypted: true };
         }
-      } catch (err) {
-        // Fallback for unencrypted barcodes
-      }
+      } catch (err) {}
 
       return { text: rawText, isEncrypted: false };
+    }
+
+    /**
+     * Light-weight frame analyzer for gradual Dot fill (1 to 4 White Dots)
+     */
+    function analyzeFrameProximity() {
+      if (isOverrideState) return;
+
+      const videoElement = document.querySelector("#interactive video");
+      if (!videoElement || videoElement.readyState < 2) return;
+
+      try {
+        canvasCtx.drawImage(videoElement, 0, 0, 120, 90);
+        const imgData = canvasCtx.getImageData(30, 22, 60, 45).data; // Center bounding box crop
+        
+        let totalContrast = 0;
+        let luminanceSum = 0;
+
+        for (let i = 0; i < imgData.length; i += 8) {
+          const r = imgData[i];
+          const g = imgData[i + 1];
+          const b = imgData[i + 2];
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+          luminanceSum += lum;
+
+          if (i > 8) {
+            const prevR = imgData[i - 8];
+            totalContrast += Math.abs(r - prevR);
+          }
+        }
+
+        const avgContrast = totalContrast / (imgData.length / 8);
+
+        // Scaled thresholding for 1 to 4 White Dots
+        if (avgContrast < 12) {
+          setProximityLevel(1); // Idle / Distant (> elbow length)
+        } else if (avgContrast >= 12 && avgContrast < 22) {
+          setProximityLevel(2); // Object entering frame (~ elbow length)
+        } else if (avgContrast >= 22 && avgContrast < 35) {
+          setProximityLevel(3); // Object centered & close
+        } else if (avgContrast >= 35) {
+          setProximityLevel(4); // Code aligned & sharp
+        }
+      } catch (e) {
+        // Fallback
+      }
     }
 
     function startScanner() {
@@ -509,32 +555,24 @@
       }
 
       const config = { 
-        fps: 20, 
+        fps: 15, 
         qrbox: qrboxFunction, 
         aspectRatio: 1.333334 
       };
       
       html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess, onScanError)
       .then(() => {
-        setProximityLevel(1); // Default idle state (1 White Dot)
+        setProximityLevel(1);
+        // Start non-blocking proximity analyzer loop at 100ms intervals
+        proximityInterval = setInterval(analyzeFrameProximity, 100);
       })
-      .catch((err) => alert("Camera configuration failure: " + err));
+      .catch((err) => alert("Camera setup error: " + err));
     }
 
-    /**
-     * Handles frame evaluation & proximity estimation
-     */
     function onScanError(errorMessage) {
-      // If camera detects partial barcode metadata that couldn't be decoded
-      if (errorMessage && (errorMessage.includes("ChecksumException") || errorMessage.includes("FormatException"))) {
+      // Handles rare exceptions
+      if (errorMessage && errorMessage.includes("ChecksumException")) {
         triggerUnreadableRedState();
-        return;
-      }
-
-      // Smooth proximity simulation based on camera feed framing
-      if (!isOverrideState) {
-        // Keeps state at baseline 1 dot when clear/idle
-        setProximityLevel(1);
       }
     }
 
@@ -586,16 +624,11 @@
       const processedText = result.text;
       const isEncrypted = result.isEncrypted;
 
-      // Pulse all 4 dots white briefly for focus depth hit right before locking scan state
-      setProximityLevel(4);
-
-      setTimeout(() => {
-        if (isEncrypted) {
-          triggerSuccessGreenState();
-        } else {
-          triggerUnencryptedAmberState();
-        }
-      }, 80);
+      if (isEncrypted) {
+        triggerSuccessGreenState();
+      } else {
+        triggerUnencryptedAmberState();
+      }
 
       if (viewfinder) {
         clearTimeout(flashTimeout);
@@ -618,12 +651,19 @@
       }
     }
 
+    // Tap Viewfinder to trigger Red indicator test on covered/unreadable barcodes
+    document.getElementById('custom-overlay').addEventListener('click', () => {
+      triggerUnreadableRedState();
+    });
+
     function sendSerialsBack(serialList) {
+      if (proximityInterval) clearInterval(proximityInterval);
+      
       const initDataUnsafe = tg?.initDataUnsafe;
       const chatId = initDataUnsafe?.user?.id;
       
       if (!chatId) {
-        alert("System Error: Telegram chat context is unavailable.");
+        alert("System Error: Telegram chat context unavailable.");
         return;
       }
 
@@ -633,13 +673,9 @@
 
       fetch(finalUrl, { method: "GET" })
       .then(() => {
-        setTimeout(() => {
-          tg?.close();
-        }, 150);
+        setTimeout(() => tg?.close(), 150);
       })
-      .catch((err) => {
-        tg?.close();
-      });
+      .catch(() => tg?.close());
     }
 
     document.getElementById('undo-btn').addEventListener('click', () => {
