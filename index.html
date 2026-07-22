@@ -6,6 +6,8 @@
   <title>Scanner</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <!-- 🔐 CryptoJS Library for Client-Side AES Decryption -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
   <style>
     :root {
@@ -287,6 +289,9 @@
     tg?.ready();
     tg?.expand();
 
+    // 🔐 CONFIDENTIAL AES PASSPHRASE
+    const SECRET_KEY = "AkBR7!12K8Le#Bzz_ASH%PekMP45";
+
     const scannedCodes = [];
     const listElement = document.getElementById('scanned-list');
     const countElement = document.getElementById('count');
@@ -295,6 +300,42 @@
     let lastScannedCode = "";
     let lastScannedTime = 0;
     let flashTimeout = null;
+
+    /**
+     * Decrypts AES Base64 or Hex encoded strings.
+     * Falls back to raw text for unencrypted/standard barcodes.
+     */
+    function tryDecrypt(rawText) {
+      try {
+        const trimmed = rawText.trim();
+        let decryptedText = "";
+
+        // 1. Attempt standard Base64 OpenSSL AES decryption
+        let bytes = CryptoJS.AES.decrypt(trimmed, SECRET_KEY);
+        decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+
+        // 2. If Base64 yields empty text and payload is valid Hex, attempt Hex parsing
+        if (!decryptedText && /^[0-9a-fA-F]+$/.test(trimmed)) {
+          const cipherTextWordArray = CryptoJS.enc.Hex.parse(trimmed);
+          const cipherParams = CryptoJS.lib.CipherParams.create({
+            ciphertext: cipherTextWordArray
+          });
+          
+          bytes = CryptoJS.AES.decrypt(cipherParams, SECRET_KEY);
+          decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+        }
+
+        // Return decrypted string if valid
+        if (decryptedText && decryptedText.length > 0) {
+          return decryptedText;
+        }
+      } catch (err) {
+        // Harmless fallback for unencrypted barcodes
+      }
+
+      // Return original text if not encrypted or key fails
+      return rawText;
+    }
 
     function startScanner() {
       html5QrcodeScanner = new Html5Qrcode("interactive");
@@ -377,12 +418,15 @@
 
       if (decodedText === lastScannedCode && (now - lastScannedTime) < 2000) return;
 
+      // 🔐 Automatically decrypt encrypted Data Matrix or fallback to raw string
+      const processedText = tryDecrypt(decodedText);
+
       lastScannedCode = decodedText;
       lastScannedTime = now;
 
-      if (!scannedCodes.includes(decodedText)) {
+      if (!scannedCodes.includes(processedText)) {
         // Maintain continuous tracking stack
-        scannedCodes.unshift(decodedText);
+        scannedCodes.unshift(processedText);
         countElement.innerText = scannedCodes.length;
         
         // Refresh structural categorized UI rendering context
