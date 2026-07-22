@@ -89,25 +89,34 @@
       transition: transform 0.2s ease, opacity 0.2s ease;
     }
 
-    /* Ambient Yellow Backlight */
+    /* Ambient Yellow Backlight (Mobile WebKit Anti-Clipping Fix) */
     .btn-primary::before {
       content: '';
       position: absolute;
-      top: 10px; /* Shifts glow downwards */
-      left: 5%;
-      width: 90%;
-      height: 100%;
+      top: 8px; 
+      left: 10%;
+      width: 80%; /* Inset sizing prevents edge clipping on narrow viewports */
+      height: 80%;
       background: #f4cb11;
       border-radius: inherit;
-      filter: blur(20px); /* Soft glass diffusion */
-      opacity: 0.45; /* Light intensity */
-      z-index: -1; /* Behind button */
+      
+      /* Soft Atmospheric Diffusion */
+      filter: blur(16px);
+      opacity: 0.5;
+      z-index: -1;
+
+      /* Safari / Mobile WebKit GPU Hardware Acceleration Fixes */
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      transform: translate3d(0, 0, 0); 
+      will-change: filter;
+
       transition: opacity 0.3s ease, filter 0.3s ease;
     }
 
     .btn-primary:hover::before {
-      opacity: 0.65;
-      filter: blur(24px);
+      opacity: 0.7;
+      filter: blur(20px);
     }
 
     .btn-primary:active {
