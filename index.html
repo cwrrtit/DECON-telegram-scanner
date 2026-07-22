@@ -13,16 +13,11 @@
     :root {
       --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
 
-      /* 🎨 STATUS INDICATOR HEX CUSTOMIZATION */
-      --status-red: #FF4433;
-      --status-red-border: #e0433e;
-
-      --status-amber: #FFBD2E;
-      --status-amber-border: #dea123;
-
+      /* 🎨 STATUS INDICATOR COLORS */
+      --status-red: #ff3b30;
+      --status-amber: #f4cb11;
       --status-green: #00db62;
-      --status-green-border: #1aab29;
-
+      --status-white: #ffffff;
       --status-idle-border: #3a3a3c;
     }
     
@@ -60,13 +55,13 @@
       object-fit: cover;
     }
 
-    /* 🛑 THE ULTIMATE OVERRIDE: Wipes out the library's default sharp corners entirely */
+    /* Wipes out default library box borders */
     #interactive * {
       border: none !important;
       border-color: transparent !important;
     }
 
-    /* 🛡️ CUSTOM OVERLAY CONTAINER */
+    /* CUSTOM OVERLAY CONTAINER */
     #custom-overlay {
       position: absolute;
       top: 0;
@@ -80,7 +75,7 @@
       z-index: 10;
     }
 
-    /* CUSTOM VIEWFINDER BOX (Synchronized with the dynamic JS dimensions) */
+    /* CUSTOM VIEWFINDER BOX */
     #custom-viewfinder {
       position: relative;
       box-sizing: border-box;
@@ -89,23 +84,20 @@
       max-width: 75%;
       max-height: 55%;
       
-      /* 🕵️‍♂️ THE DIMMED MASK EFFECT */
+      /* Dimmed Mask */
       box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
-      
-      /* Smoothly matches the internal radius curve of the custom corners */
       border-radius: 20px; 
     }
 
-    /* STRUCTURAL BASE FOR ALL FOUR CUSTOM CORNERS */
+    /* VIEWFINDER CORNERS */
     .scanner-corner {
       position: absolute;
-      width: 36px;  /* Expanded width to comfortably hold the thicker 5px stroke */
-      height: 36px; /* Expanded height to comfortably hold the thicker 5px stroke */
+      width: 36px; 
+      height: 36px; 
       box-sizing: border-box;
       transition: border-color 0.2s ease, filter 0.2s ease;
     }
 
-    /* RADIUS AND BORDER MAPS - Shifted outwards by -3px to sit on top of the shadow perfectly */
     .tl {
       top: -3px; left: -3px;
       border-top: 5px solid #ffffff !important;
@@ -142,7 +134,7 @@
       border-bottom-right-radius: 23px;
     }
 
-    /* 🟢 SUCCESS GLOW - TRACES THE NEW BOLD CURVES PERFECTLY */
+    /* SUCCESS CORNER GLOW */
     #custom-viewfinder.scan-success .scanner-corner {
       border-color: #00db62 !important; 
       filter: drop-shadow(0px 0px 1px rgba(1, 231, 40, 0.555));
@@ -156,12 +148,12 @@
       margin-bottom: 20px;
     }
 
-    /* Flex container header to push Title, macOS Traffic Lights, and Undo link */
+    /* Clean Log Header Row without top/bottom border line */
     .log-header-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin: 0 4px 8px 4px;
+      margin: 0 4px 12px 4px;
     }
 
     h3 {
@@ -169,48 +161,57 @@
       margin: 0;
       font-size: 13px;
       text-transform: uppercase;
-      color: #8e8e93; 
+      color: #a2a2a7; 
       letter-spacing: 0.4px;
       font-weight: 600;
     }
 
-    /* 🖥️ macOS TRAFFIC LIGHT STATUS INDICATORS */
-    .status-traffic-lights {
+    /* 4-DOT DYNAMIC STATUS INDICATOR */
+    .status-dots-group {
       display: flex;
       align-items: center;
-      gap: 8px; /* Classic equal spacing between dots */
+      gap: 10px;
     }
 
     .status-dot {
-      width: 11px;
-      height: 11px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       box-sizing: border-box;
       background-color: transparent;
-      border: 1.5px solid var(--status-idle-border); /* Hollow stroke state at rest */
-      transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      border: 1px solid var(--status-idle-border);
+      transition: background-color 0.25s ease-in-out, 
+                  border-color 0.25s ease-in-out, 
+                  box-shadow 0.25s ease-in-out,
+                  opacity 0.25s ease-in-out;
     }
 
-    /* Active Solid macOS States using CSS Variables */
-    .status-dot.dot-red.active {
-      background-color: var(--status-red);
-      border-color: var(--status-red-border);
-      box-shadow: 0 0 0px var(--status-red);
+    /* Dot States */
+    .status-dot.active-white {
+      background-color: var(--status-white);
+      border-color: var(--status-white);
+      box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
     }
 
-    .status-dot.dot-amber.active {
-      background-color: var(--status-amber);
-      border-color: var(--status-amber-border);
-      box-shadow: 0 0 0px var(--status-amber);
-    }
-
-    .status-dot.dot-green.active {
+    .status-dot.active-green {
       background-color: var(--status-green);
-      border-color: var(--status-green-border);
-      box-shadow: 0 0 0px var(--status-green);
+      border-color: var(--status-green);
+      box-shadow: 0 0 8px rgba(0, 219, 98, 0.6);
     }
 
-    /* Borderless blue interactive link text styled for dark layouts */
+    .status-dot.active-amber {
+      background-color: var(--status-amber);
+      border-color: var(--status-amber);
+      box-shadow: 0 0 8px rgba(244, 203, 17, 0.6);
+    }
+
+    .status-dot.active-red {
+      background-color: var(--status-red);
+      border-color: var(--status-red);
+      box-shadow: 0 0 8px rgba(255, 59, 48, 0.6);
+    }
+
+    /* Interactive Undo Button */
     .undo-trigger {
       font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
       color: #007aff;
@@ -222,6 +223,9 @@
       border: none;
       padding: 0;
       user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .undo-trigger:active {
@@ -242,7 +246,6 @@
       overflow-y: auto;
     }
 
-    /* UI Category Subheaders Generated On The Fly */
     .list-category-header {
       background-color: #1c1c1e;
       padding: 6px 16px;
@@ -280,28 +283,59 @@
       font-size: 15px; 
     }
 
+    /* CONTROL PANEL & REFINED WHITE BUTTON WITH GLOW */
     #control-panel {
+      position: relative;
       width: 100%;
       padding-bottom: calc(8px + var(--safe-area-inset-bottom));
     }
 
+    .btn-complete-wrap {
+      position: relative;
+      width: 100%;
+    }
+
     .btn {
       font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+      position: relative;
       width: 100%;
-      padding: 16px;
-      font-size: 17px;
-      font-weight: 600;
+      padding: 14px;
+      font-size: 13px; /* Refined smaller font */
+      font-weight: 700;
+      letter-spacing: 1px;
       border: none;
-      border-radius: 12px;
+      border-radius: 12px; /* Updated corner radius */
       cursor: pointer;
-      background-color: #f4cb11; 
-      color: #030303;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.637);
-      transition: opacity 0.1s ease;
+      background-color: #ffffff; /* Refined pure white background */
+      color: #000000;
+      z-index: 1;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s ease, transform 0.15s ease;
     }
 
     .btn:active {
-      opacity: 0.85;
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    /* Mobile WebKit Optimized Ambient Backlight Glow */
+    .btn-complete-wrap::before {
+      content: '';
+      position: absolute;
+      top: 6px;
+      left: 5%;
+      width: 90%;
+      height: 85%;
+      background: #ffffff;
+      border-radius: 12px;
+      filter: blur(16px);
+      opacity: 0.35;
+      z-index: 0;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      transform: translate3d(0, 0, 0);
+      will-change: filter, opacity;
+      transition: opacity 0.3s ease;
     }
   </style>
 </head>
@@ -324,11 +358,12 @@
     <div class="log-header-row">
       <h3>LOGGED SERIALS (<span id="count">0</span>)</h3>
       
-      <!-- 🖥️ macOS Traffic Light Status Dots Container -->
-      <div class="status-traffic-lights">
-        <span class="status-dot dot-red" id="dot-red"></span>
-        <span class="status-dot dot-amber" id="dot-amber"></span>
-        <span class="status-dot dot-green" id="dot-green"></span>
+      <!-- 4-Dot Status Indicator -->
+      <div class="status-dots-group" id="statusDotsGroup">
+        <span class="status-dot" id="dot-1"></span>
+        <span class="status-dot" id="dot-2"></span>
+        <span class="status-dot" id="dot-3"></span>
+        <span class="status-dot" id="dot-4"></span>
       </div>
 
       <button type="button" class="undo-trigger" id="undo-btn">↩ Undo</button>
@@ -337,7 +372,9 @@
   </div>
 
   <div id="control-panel">
-    <button type="button" class="btn" id="done-btn">COMPLETE</button>
+    <div class="btn-complete-wrap">
+      <button type="button" class="btn" id="done-btn">COMPLETE</button>
+    </div>
   </div>
 
   <script>
@@ -353,36 +390,85 @@
     const countElement = document.getElementById('count');
     const viewfinder = document.getElementById('custom-viewfinder');
     
-    // Status Dot DOM Elements
-    const dotRed = document.getElementById('dot-red');
-    const dotAmber = document.getElementById('dot-amber');
-    const dotGreen = document.getElementById('dot-green');
+    // 4-Dot DOM Elements
+    const dotElements = [
+      document.getElementById('dot-1'),
+      document.getElementById('dot-2'),
+      document.getElementById('dot-3'),
+      document.getElementById('dot-4')
+    ];
 
     let html5QrcodeScanner = null;
     let lastScannedCode = "";
     let lastScannedTime = 0;
     let flashTimeout = null;
+    let stateResetTimeout = null;
     
-    // Persistence Heartbeat tracking
-    let frameActiveTimeout = null;
+    // Proximity Simulation Tracker
+    let currentProximity = 0;
 
     /**
-     * Updates the status light state.
-     * @param {'red' | 'amber' | 'green' | 'none'} activeColor 
+     * Resets all dots to inactive hollow grey stroke
      */
-    function updateTrafficLights(activeColor) {
-      dotRed.classList.toggle('active', activeColor === 'red');
-      dotAmber.classList.toggle('active', activeColor === 'amber');
-      dotGreen.classList.toggle('active', activeColor === 'green');
+    function clearDotClasses() {
+      dotElements.forEach(dot => {
+        dot.className = 'status-dot';
+      });
+    }
 
-      // Refresh persistence watchdog timer
-      clearTimeout(frameActiveTimeout);
-      if (activeColor !== 'none') {
-        frameActiveTimeout = setTimeout(() => {
-          // If no new frame matches within 600ms, revert to hollow grey
-          updateTrafficLights('none');
-        }, 600);
+    /**
+     * Sets Proximity Dots (1 to 4 White Dots)
+     * @param {number} level - Level from 0 to 4
+     */
+    function setProximityLevel(level) {
+      clearTimeout(stateResetTimeout);
+      clearDotClasses();
+      currentProximity = level;
+
+      for (let i = 0; i < level; i++) {
+        if (dotElements[i]) {
+          dotElements[i].classList.add('active-white');
+        }
       }
+    }
+
+    /**
+     * Triggers Encrypted Scan State (4 Green Dots for >= 0.25s)
+     */
+    function triggerSuccessGreenState() {
+      clearTimeout(stateResetTimeout);
+      clearDotClasses();
+      dotElements.forEach(dot => dot.classList.add('active-green'));
+
+      stateResetTimeout = setTimeout(() => {
+        setProximityLevel(1); // Return to default active camera level
+      }, 350);
+    }
+
+    /**
+     * Triggers Unencrypted / Raw Format State (1st Amber Dot)
+     */
+    function triggerUnencryptedAmberState() {
+      clearTimeout(stateResetTimeout);
+      clearDotClasses();
+      dotElements[0].classList.add('active-amber');
+
+      stateResetTimeout = setTimeout(() => {
+        setProximityLevel(1);
+      }, 1000);
+    }
+
+    /**
+     * Triggers Damaged / Unreadable Code State (4 White -> 0.5s -> 1st Red Dot)
+     */
+    function triggerUnreadableRedState() {
+      clearTimeout(stateResetTimeout);
+      setProximityLevel(4); // Show maximum proximity white first
+
+      stateResetTimeout = setTimeout(() => {
+        clearDotClasses();
+        dotElements[0].classList.add('active-red');
+      }, 500);
     }
 
     /**
@@ -409,7 +495,6 @@
           decryptedText = bytes.toString(CryptoJS.enc.Utf8);
         }
 
-        // Return decrypted string if valid
         if (decryptedText && decryptedText.length > 0) {
           return { text: decryptedText, isEncrypted: true };
         }
@@ -437,17 +522,24 @@
       };
       
       html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess, onScanError)
+      .then(() => {
+        setProximityLevel(1); // Default camera active state (1 White Dot)
+      })
       .catch((err) => alert("Camera configuration failure: " + err));
     }
 
     /**
-     * Continuous Frame Analysis Error Callback
-     * Triggered when camera detects an unreadable/damaged code in frame
+     * Continuous Frame Analysis Callback
+     * Dynamically handles object proximity & unreadable code detection
      */
     function onScanError(errorMessage) {
-      // Light up red while unreadable/corrupted objects sit in frame (without logging)
       if (errorMessage && (errorMessage.includes("QR code parse error") || errorMessage.includes("DataMatrix"))) {
-        updateTrafficLights('red');
+        triggerUnreadableRedState();
+      } else {
+        // Gentle background proximity simulation based on focus framing
+        if (currentProximity === 0) {
+          setProximityLevel(1);
+        }
       }
     }
 
@@ -499,15 +591,12 @@
       const result = tryDecrypt(decodedText);
       const processedText = result.text;
       const isEncrypted = result.isEncrypted;
-      const isStructuredFormat = /^\(([^)]+)\)(.*)$/.test(processedText);
 
-      // Evaluate & activate persistence traffic light status
+      // Update 4-dot status indicator based on encryption payload
       if (isEncrypted) {
-        updateTrafficLights('green');
-      } else if (isStructuredFormat) {
-        updateTrafficLights('amber');
+        triggerSuccessGreenState();
       } else {
-        updateTrafficLights('red');
+        triggerUnencryptedAmberState();
       }
 
       if (viewfinder) {
