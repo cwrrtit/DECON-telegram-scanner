@@ -180,10 +180,9 @@
       box-sizing: border-box;
       background-color: transparent;
       border: 1px solid var(--status-idle-border);
-      transition: background-color 0.25s ease-in-out, 
-                  border-color 0.25s ease-in-out, 
-                  box-shadow 0.25s ease-in-out,
-                  opacity 0.25s ease-in-out;
+      transition: background-color 0.2s ease-in-out, 
+                  border-color 0.2s ease-in-out, 
+                  box-shadow 0.2s ease-in-out;
     }
 
     /* Dot States */
@@ -300,13 +299,13 @@
       position: relative;
       width: 100%;
       padding: 14px;
-      font-size: 13px; /* Refined smaller font */
+      font-size: 13px;
       font-weight: 700;
       letter-spacing: 1px;
       border: none;
-      border-radius: 12px; /* Updated corner radius */
+      border-radius: 12px;
       cursor: pointer;
-      background-color: #ffffff; /* Refined pure white background */
+      background-color: #ffffff;
       color: #000000;
       z-index: 1;
       -webkit-tap-highlight-color: transparent;
@@ -318,7 +317,6 @@
       opacity: 0.9;
     }
 
-    /* Mobile WebKit Optimized Ambient Backlight Glow */
     .btn-complete-wrap::before {
       content: '';
       position: absolute;
@@ -390,7 +388,6 @@
     const countElement = document.getElementById('count');
     const viewfinder = document.getElementById('custom-viewfinder');
     
-    // 4-Dot DOM Elements
     const dotElements = [
       document.getElementById('dot-1'),
       document.getElementById('dot-2'),
@@ -402,14 +399,9 @@
     let lastScannedCode = "";
     let lastScannedTime = 0;
     let flashTimeout = null;
-    let stateResetTimeout = null;
-    
-    // Proximity Simulation Tracker
-    let currentProximity = 0;
+    let overrideTimeout = null;
+    let isOverrideState = false;
 
-    /**
-     * Resets all dots to inactive hollow grey stroke
-     */
     function clearDotClasses() {
       dotElements.forEach(dot => {
         dot.className = 'status-dot';
@@ -418,12 +410,10 @@
 
     /**
      * Sets Proximity Dots (1 to 4 White Dots)
-     * @param {number} level - Level from 0 to 4
      */
     function setProximityLevel(level) {
-      clearTimeout(stateResetTimeout);
+      if (isOverrideState) return; // Don't disrupt green/amber/red active overrides
       clearDotClasses();
-      currentProximity = level;
 
       for (let i = 0; i < level; i++) {
         if (dotElements[i]) {
@@ -433,58 +423,61 @@
     }
 
     /**
-     * Triggers Encrypted Scan State (4 Green Dots for >= 0.25s)
+     * Triggers Encrypted Scan State (4 Green Dots)
      */
     function triggerSuccessGreenState() {
-      clearTimeout(stateResetTimeout);
+      isOverrideState = true;
+      clearTimeout(overrideTimeout);
       clearDotClasses();
       dotElements.forEach(dot => dot.classList.add('active-green'));
 
-      stateResetTimeout = setTimeout(() => {
-        setProximityLevel(1); // Return to default active camera level
-      }, 350);
+      overrideTimeout = setTimeout(() => {
+        isOverrideState = false;
+        setProximityLevel(1);
+      }, 400);
     }
 
     /**
      * Triggers Unencrypted / Raw Format State (1st Amber Dot)
      */
     function triggerUnencryptedAmberState() {
-      clearTimeout(stateResetTimeout);
+      isOverrideState = true;
+      clearTimeout(overrideTimeout);
       clearDotClasses();
       dotElements[0].classList.add('active-amber');
 
-      stateResetTimeout = setTimeout(() => {
+      overrideTimeout = setTimeout(() => {
+        isOverrideState = false;
         setProximityLevel(1);
-      }, 1000);
+      }, 800);
     }
 
     /**
-     * Triggers Damaged / Unreadable Code State (4 White -> 0.5s -> 1st Red Dot)
+     * Triggers Damaged / Unreadable Code State (1st Red Dot)
      */
     function triggerUnreadableRedState() {
-      clearTimeout(stateResetTimeout);
-      setProximityLevel(4); // Show maximum proximity white first
+      isOverrideState = true;
+      clearTimeout(overrideTimeout);
+      clearDotClasses();
+      dotElements[0].classList.add('active-red');
 
-      stateResetTimeout = setTimeout(() => {
-        clearDotClasses();
-        dotElements[0].classList.add('active-red');
-      }, 500);
+      overrideTimeout = setTimeout(() => {
+        isOverrideState = false;
+        setProximityLevel(1);
+      }, 800);
     }
 
     /**
      * Decrypts AES Base64 or Hex encoded strings.
-     * Returns { text: string, isEncrypted: boolean }
      */
     function tryDecrypt(rawText) {
       try {
         const trimmed = rawText.trim();
         let decryptedText = "";
 
-        // 1. Attempt standard Base64 OpenSSL AES decryption
         let bytes = CryptoJS.AES.decrypt(trimmed, SECRET_KEY);
         decryptedText = bytes.toString(CryptoJS.enc.Utf8);
 
-        // 2. If Base64 yields empty text and payload is valid Hex, attempt Hex parsing
         if (!decryptedText && /^[0-9a-fA-F]+$/.test(trimmed)) {
           const cipherTextWordArray = CryptoJS.enc.Hex.parse(trimmed);
           const cipherParams = CryptoJS.lib.CipherParams.create({
@@ -516,30 +509,32 @@
       }
 
       const config = { 
-        fps: 15, 
+        fps: 20, 
         qrbox: qrboxFunction, 
         aspectRatio: 1.333334 
       };
       
       html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess, onScanError)
       .then(() => {
-        setProximityLevel(1); // Default camera active state (1 White Dot)
+        setProximityLevel(1); // Default idle state (1 White Dot)
       })
       .catch((err) => alert("Camera configuration failure: " + err));
     }
 
     /**
-     * Continuous Frame Analysis Callback
-     * Dynamically handles object proximity & unreadable code detection
+     * Handles frame evaluation & proximity estimation
      */
     function onScanError(errorMessage) {
-      if (errorMessage && (errorMessage.includes("QR code parse error") || errorMessage.includes("DataMatrix"))) {
+      // If camera detects partial barcode metadata that couldn't be decoded
+      if (errorMessage && (errorMessage.includes("ChecksumException") || errorMessage.includes("FormatException"))) {
         triggerUnreadableRedState();
-      } else {
-        // Gentle background proximity simulation based on focus framing
-        if (currentProximity === 0) {
-          setProximityLevel(1);
-        }
+        return;
+      }
+
+      // Smooth proximity simulation based on camera feed framing
+      if (!isOverrideState) {
+        // Keeps state at baseline 1 dot when clear/idle
+        setProximityLevel(1);
       }
     }
 
@@ -587,17 +582,20 @@
     function onScanSuccess(decodedText) {
       const now = Date.now();
       
-      // Decrypt or evaluate format logic
       const result = tryDecrypt(decodedText);
       const processedText = result.text;
       const isEncrypted = result.isEncrypted;
 
-      // Update 4-dot status indicator based on encryption payload
-      if (isEncrypted) {
-        triggerSuccessGreenState();
-      } else {
-        triggerUnencryptedAmberState();
-      }
+      // Pulse all 4 dots white briefly for focus depth hit right before locking scan state
+      setProximityLevel(4);
+
+      setTimeout(() => {
+        if (isEncrypted) {
+          triggerSuccessGreenState();
+        } else {
+          triggerUnencryptedAmberState();
+        }
+      }, 80);
 
       if (viewfinder) {
         clearTimeout(flashTimeout);
