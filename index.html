@@ -144,7 +144,7 @@
       margin-bottom: 20px;
     }
 
-    /* Flex container header to push the Title and Undo link to opposite edges */
+    /* Flex container header to push Title, macOS Traffic Lights, and Undo link */
     .log-header-row {
       display: flex;
       justify-content: space-between;
@@ -160,6 +160,42 @@
       color: #8e8e93; 
       letter-spacing: 0.4px;
       font-weight: 600;
+    }
+
+    /* 🖥️ macOS TRAFFIC LIGHT STATUS INDICATORS */
+    .status-traffic-lights {
+      display: flex;
+      align-items: center;
+      gap: 8px; /* Classic equal spacing between dots */
+    }
+
+    .status-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      box-sizing: border-box;
+      background-color: transparent;
+      border: 1.5px solid #3a3a3c; /* Hollow stroke state at rest */
+      transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    /* Active Solid macOS States */
+    .status-dot.dot-red.active {
+      background-color: #FF5F56;
+      border-color: #E0443E;
+      box-shadow: 0 0 6px rgba(255, 95, 86, 0.4);
+    }
+
+    .status-dot.dot-amber.active {
+      background-color: #FFBD2E;
+      border-color: #DEA123;
+      box-shadow: 0 0 6px rgba(255, 189, 46, 0.4);
+    }
+
+    .status-dot.dot-green.active {
+      background-color: #27C93F;
+      border-color: #1AAB29;
+      box-shadow: 0 0 6px rgba(39, 201, 63, 0.4);
     }
 
     /* Borderless blue interactive link text styled for dark layouts */
@@ -275,6 +311,14 @@
   <div id="log-container">
     <div class="log-header-row">
       <h3>LOGGED SERIALS (<span id="count">0</span>)</h3>
+      
+      <!-- 🖥️ macOS Traffic Light Status Dots Container -->
+      <div class="status-traffic-lights">
+        <span class="status-dot dot-red" id="dot-red"></span>
+        <span class="status-dot dot-amber" id="dot-amber"></span>
+        <span class="status-dot dot-green" id="dot-green"></span>
+      </div>
+
       <button type="button" class="undo-trigger" id="undo-btn">↩ Undo</button>
     </div>
     <ul id="scanned-list"></ul>
@@ -296,14 +340,42 @@
     const listElement = document.getElementById('scanned-list');
     const countElement = document.getElementById('count');
     const viewfinder = document.getElementById('custom-viewfinder');
+    
+    // Status Dot DOM Elements
+    const dotRed = document.getElementById('dot-red');
+    const dotAmber = document.getElementById('dot-amber');
+    const dotGreen = document.getElementById('dot-green');
+
     let html5QrcodeScanner = null;
     let lastScannedCode = "";
     let lastScannedTime = 0;
     let flashTimeout = null;
+    
+    // Persistence Heartbeat tracking
+    let frameActiveTimeout = null;
+
+    /**
+     * Updates the status light state.
+     * @param {'red' | 'amber' | 'green' | 'none'} activeColor 
+     */
+    function updateTrafficLights(activeColor) {
+      dotRed.classList.toggle('active', activeColor === 'red');
+      dotAmber.classList.toggle('active', activeColor === 'amber');
+      dotGreen.classList.toggle('active', activeColor === 'green');
+
+      // Refresh persistence watchdog timer
+      clearTimeout(frameActiveTimeout);
+      if (activeColor !== 'none') {
+        frameActiveTimeout = setTimeout(() => {
+          // If no new frame matches within 600ms, revert to hollow grey
+          updateTrafficLights('none');
+        }, 600);
+      }
+    }
 
     /**
      * Decrypts AES Base64 or Hex encoded strings.
-     * Falls back to raw text for unencrypted/standard barcodes.
+     * Returns { text: string, isEncrypted: boolean }
      */
     function tryDecrypt(rawText) {
       try {
@@ -327,14 +399,13 @@
 
         // Return decrypted string if valid
         if (decryptedText && decryptedText.length > 0) {
-          return decryptedText;
+          return { text: decryptedText, isEncrypted: true };
         }
       } catch (err) {
-        // Harmless fallback for unencrypted barcodes
+        // Fallback for unencrypted barcodes
       }
 
-      // Return original text if not encrypted or key fails
-      return rawText;
+      return { text: rawText, isEncrypted: false };
     }
 
     function startScanner() {
@@ -353,17 +424,25 @@
         aspectRatio: 1.333334 
       };
       
-      html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
+      html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess, onScanError)
       .catch((err) => alert("Camera configuration failure: " + err));
     }
 
+    /**
+     * Continuous Frame Analysis Error Callback
+     * Triggered when camera detects an unreadable/damaged code in frame
+     */
+    function onScanError(errorMessage) {
+      // Light up red while unreadable/corrupted objects sit in frame (without logging)
+      if (errorMessage && (errorMessage.includes("QR code parse error") || errorMessage.includes("DataMatrix"))) {
+        updateTrafficLights('red');
+      }
+    }
+
     function renderGroupedUI() {
-      // Clear container list entirely before structural re-render
       listElement.innerHTML = "";
-      
       const groups = {};
       
-      // Process internal dynamic arrays into categorized segments
       scannedCodes.forEach(code => {
         const match = code.match(/^\(([^)]+)\)(.*)$/);
         if (match) {
@@ -377,24 +456,20 @@
         }
       });
       
-      // 1. Sort the named item headers using natural alphanumeric ordering
       const itemHeaders = Object.keys(groups)
         .filter(h => h !== "OTHERS")
         .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
       
-      // 2. Pin OTHERS explicitly to the absolute end of the list
       if (groups["OTHERS"]) {
         itemHeaders.push("OTHERS");
       }
       
-      // Build DOM structures item by item
       itemHeaders.forEach(headerName => {
         const headerLi = document.createElement('div');
         headerLi.className = 'list-category-header';
         headerLi.innerText = headerName;
         listElement.appendChild(headerLi);
         
-        // 3. Sort the serial numbers under this specific header alphanumerically
         groups[headerName].sort((a, b) => a.display.localeCompare(b.display, undefined, { numeric: true, sensitivity: 'base' }));
         
         groups[headerName].forEach(item => {
@@ -408,6 +483,21 @@
     function onScanSuccess(decodedText) {
       const now = Date.now();
       
+      // Decrypt or evaluate format logic
+      const result = tryDecrypt(decodedText);
+      const processedText = result.text;
+      const isEncrypted = result.isEncrypted;
+      const isStructuredFormat = /^\(([^)]+)\)(.*)$/.test(processedText);
+
+      // Evaluate & activate persistence traffic light status
+      if (isEncrypted) {
+        updateTrafficLights('green');
+      } else if (isStructuredFormat) {
+        updateTrafficLights('amber');
+      } else {
+        updateTrafficLights('red');
+      }
+
       if (viewfinder) {
         clearTimeout(flashTimeout);
         viewfinder.classList.add('scan-success');
@@ -418,20 +508,13 @@
 
       if (decodedText === lastScannedCode && (now - lastScannedTime) < 2000) return;
 
-      // 🔐 Automatically decrypt encrypted Data Matrix or fallback to raw string
-      const processedText = tryDecrypt(decodedText);
-
       lastScannedCode = decodedText;
       lastScannedTime = now;
 
       if (!scannedCodes.includes(processedText)) {
-        // Maintain continuous tracking stack
         scannedCodes.unshift(processedText);
         countElement.innerText = scannedCodes.length;
-        
-        // Refresh structural categorized UI rendering context
         renderGroupedUI();
-        
         tg?.HapticFeedback?.notificationOccurred('success');
       }
     }
@@ -460,23 +543,13 @@
       });
     }
 
-    // Chronologically extract elements out from the tracking array stack
     document.getElementById('undo-btn').addEventListener('click', () => {
       if (scannedCodes.length > 0) {
-        // Remove index 0 element (the absolute last item scanned via unshift)
         scannedCodes.shift();
-        
-        // Match standard stack limits to display properties
         countElement.innerText = scannedCodes.length;
-        
-        // Wipe local deduplication blockers so the item can be scanned again instantly
         lastScannedCode = "";
         lastScannedTime = 0;
-        
-        // Rebuild presentation layer structures completely clean
         renderGroupedUI();
-        
-        // Provide physical mechanical tap feedback confirmation
         tg?.HapticFeedback?.impactOccurred('medium');
       }
     });
