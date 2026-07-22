@@ -8,8 +8,8 @@
   
   <!-- CryptoJS Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <!-- QRCode JS Library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- BWIP-JS Library (for Data Matrix rendering) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bwip-js/4.10.0/bwip-js-min.js"></script>
 
   <style>
     /* Global Monospace Styling */
@@ -72,7 +72,7 @@
     button {
       width: 100%;
       padding: 14px;
-      margin-top: 20px;
+      margin-top: 16px;
       background-color: #f4cb11;
       color: #000000;
       border: none;
@@ -87,6 +87,13 @@
 
     button:active {
       opacity: 0.85;
+    }
+
+    .btn-secondary {
+      background-color: #2c2c2e;
+      color: #00db62;
+      margin-top: 10px;
+      display: none;
     }
 
     .output-box {
@@ -107,16 +114,17 @@
       font-size: 13px;
     }
 
-    #qrcode {
+    .matrix-wrapper {
       margin-top: 20px;
       display: flex;
       justify-content: center;
+      align-items: center;
       background: #ffffff;
-      padding: 20px;
+      padding: 24px;
       border-radius: 8px;
     }
 
-    #qrcode img, #qrcode canvas {
+    canvas {
       max-width: 100%;
       height: auto !important;
     }
@@ -140,7 +148,11 @@
       <p id="encryptedOutput"></p>
     </div>
 
-    <div id="qrcode"></div>
+    <div class="matrix-wrapper" id="matrixContainer" style="display:none;">
+      <canvas id="datamatrixCanvas"></canvas>
+    </div>
+
+    <button id="downloadBtn" class="btn-secondary" onclick="downloadLabel()">Save Image</button>
   </div>
 
   <script>
@@ -153,23 +165,42 @@
         return;
       }
 
-      // Encrypt using exact CryptoJS OpenSSL passphrase format
+      // 1. Encrypt using exact CryptoJS OpenSSL passphrase format
       const encryptedBytes = CryptoJS.AES.encrypt(rawText, key);
       const encryptedString = encryptedBytes.toString();
 
+      // 2. Display encrypted string output
       document.getElementById('resultBox').style.display = 'block';
       document.getElementById('encryptedOutput').innerText = encryptedString;
 
-      // Render visual QR Code on screen
-      const qrContainer = document.getElementById('qrcode');
-      qrContainer.innerHTML = "";
+      // 3. Render Data Matrix using BWIP-JS
+      try {
+        bwipjs.toCanvas('datamatrixCanvas', {
+          bcid:        'datamatrix', // Barcode type Data Matrix
+          text:        encryptedString, // Base64 encrypted payload
+          scale:       5,            // Scaling factor for crisp rendering
+          padding:     10,           // Quiet zone border
+          backgroundcolor: 'FFFFFF'  // Solid white background
+        });
+
+        document.getElementById('matrixContainer').style.display = 'flex';
+        document.getElementById('downloadBtn').style.display = 'block';
+      } catch (e) {
+        alert("Error rendering Data Matrix: " + e);
+      }
+    }
+
+    function downloadLabel() {
+      const canvas = document.getElementById('datamatrixCanvas');
+      const rawText = document.getElementById('serialInput').value.trim() || 'label';
       
-      new QRCode(qrContainer, {
-        text: encryptedString,
-        width: 200,
-        height: 200,
-        correctLevel : QRCode.CorrectLevel.H
-      });
+      // Sanitize filename
+      const filename = rawText.replace(/[^a-zA-Z0-9-_]/g, '_') + '_DataMatrix.png';
+
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
     }
   </script>
 </body>
