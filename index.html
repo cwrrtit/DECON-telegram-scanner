@@ -353,18 +353,8 @@
         aspectRatio: 1.333334 
       };
       
-      // 🎯 Continuous Autofocus & Media Track Constraints
-      const cameraConstraints = {
-        facingMode: "environment",
-        advanced: [{ focusMode: "continuous" }]
-      };
-
-      html5QrcodeScanner.start(cameraConstraints, config, onScanSuccess)
-      .catch((err) => {
-        // Fallback for devices/browsers that reject advanced hardware constraints
-        html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
-          .catch((fallbackErr) => alert("Camera configuration failure: " + fallbackErr));
-      });
+      html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
+      .catch((err) => alert("Camera configuration failure: " + err));
     }
 
     function renderGroupedUI() {
