@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AES Barcode Label Generator</title>
+  <!-- CryptoJS Library (Matches Scanner Library Exactly) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <!-- EasyQRCodeJS for Data Matrix / QR Code Rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.4.1/dist/easy.qrcode.min.js"></script>
+
+  <style>
+    body {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background-color: #121212;
+      color: #ffffff;
+      padding: 24px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    h2 { font-size: 18px; color: #f4cb11; text-transform: uppercase; }
+    label { font-size: 12px; color: #a2a2a7; display: block; margin-top: 12px; }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 4px;
+      background: #1c1c1e;
+      border: 1px solid #2c2c2e;
+      color: #fff;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 16px;
+      background-color: #f4cb11;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .output-box {
+      margin-top: 20px;
+      padding: 12px;
+      background: #1c1c1e;
+      border-radius: 6px;
+      word-break: break-all;
+      font-size: 13px;
+    }
+    #qrcode {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      background: #fff;
+      padding: 16px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Label Generator</h2>
+
+  <label>SECRET KEY</label>
+  <input type="text" id="secretKey" value="AkBR7!12K8Le#Bzz_ASH%PekMP45K416">
+
+  <label>PLAIN SERIAL NUMBER (e.g. (DMP-12)MID 21637)</label>
+  <input type="text" id="serialInput" placeholder="(ITEM)SERIAL">
+
+  <button onclick="generateEncryptedLabel()">Generate Label Data</button>
+
+  <div class="output-box" id="resultBox" style="display:none;">
+    <strong>Encrypted String (Copy into Label Maker):</strong>
+    <p id="encryptedOutput" style="color:#00db62;"></p>
+  </div>
+
+  <div id="qrcode"></div>
+
+  <script>
+    let qrcode = null;
+
+    function generateEncryptedLabel() {
+      const rawText = document.getElementById('serialInput').value.trim();
+      const key = document.getElementById('secretKey').value.trim();
+
+      if (!rawText) {
+        alert("Please enter a serial string.");
+        return;
+      }
+
+      // 🔐 Encrypt using exact CryptoJS OpenSSL passphrase format
+      const encryptedBytes = CryptoJS.AES.encrypt(rawText, key);
+      const encryptedString = encryptedBytes.toString(); // Base64 OpenSSL output
+
+      document.getElementById('resultBox').style.display = 'block';
+      document.getElementById('encryptedOutput').innerText = encryptedString;
+
+      // Render visual QR/Data Matrix on screen for instant scanning test
+      const qrContainer = document.getElementById('qrcode');
+      qrContainer.innerHTML = "";
+      
+      qrcode = new QRCode(qrContainer, {
+        text: encryptedString,
+        width: 180,
+        height: 180,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+      });
+    }
+  </script>
+</body>
+</html>
