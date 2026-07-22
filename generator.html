@@ -2,84 +2,148 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- Mobile Responsiveness -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AES Barcode Label Generator</title>
-  <!-- CryptoJS Library (Matches Scanner Library Exactly) -->
+  
+  <!-- CryptoJS Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <!-- EasyQRCodeJS for Data Matrix / QR Code Rendering -->
-  <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.4.1/dist/easy.qrcode.min.js"></script>
+  <!-- QRCode JS Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <style>
+    /* Global Monospace Styling */
+    * {
+      box-sizing: border-box;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+    }
+
     body {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       background-color: #121212;
       color: #ffffff;
-      padding: 24px;
-      max-width: 500px;
+      padding: 16px;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
       margin: 0 auto;
     }
-    h2 { font-size: 18px; color: #f4cb11; text-transform: uppercase; }
-    label { font-size: 12px; color: #a2a2a7; display: block; margin-top: 12px; }
+
+    h2 {
+      font-size: 18px;
+      color: #f4cb11;
+      text-transform: uppercase;
+      margin-top: 8px;
+      margin-bottom: 16px;
+      letter-spacing: 1px;
+    }
+
+    label {
+      font-size: 12px;
+      color: #a2a2a7;
+      display: block;
+      margin-top: 14px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
     input {
       width: 100%;
-      padding: 10px;
-      margin-top: 4px;
+      padding: 12px;
       background: #1c1c1e;
       border: 1px solid #2c2c2e;
-      color: #fff;
-      border-radius: 6px;
-      box-sizing: border-box;
-      font-family: inherit;
+      color: #ffffff;
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      -webkit-appearance: none;
     }
+
+    input:focus {
+      border-color: #f4cb11;
+    }
+
     button {
       width: 100%;
-      padding: 12px;
-      margin-top: 16px;
+      padding: 14px;
+      margin-top: 20px;
       background-color: #f4cb11;
+      color: #000000;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
+      font-size: 15px;
       font-weight: bold;
       cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      -webkit-tap-highlight-color: transparent;
     }
+
+    button:active {
+      opacity: 0.85;
+    }
+
     .output-box {
       margin-top: 20px;
-      padding: 12px;
+      padding: 14px;
       background: #1c1c1e;
-      border-radius: 6px;
+      border: 1px solid #2c2c2e;
+      border-radius: 8px;
       word-break: break-all;
       font-size: 13px;
+      line-height: 1.4;
     }
+
+    #encryptedOutput {
+      margin-top: 8px;
+      margin-bottom: 0;
+      color: #00db62;
+      font-size: 13px;
+    }
+
     #qrcode {
       margin-top: 20px;
       display: flex;
       justify-content: center;
-      background: #fff;
-      padding: 16px;
+      background: #ffffff;
+      padding: 20px;
       border-radius: 8px;
+    }
+
+    #qrcode img, #qrcode canvas {
+      max-width: 100%;
+      height: auto !important;
     }
   </style>
 </head>
 <body>
 
-  <h2>Label Generator</h2>
+  <div class="container">
+    <h2>Label Generator</h2>
 
-  <label>SECRET KEY</label>
-  <input type="text" id="secretKey" value="AkBR7!12K8Le#Bzz_ASH%PekMP45K416">
+    <label>Secret Key</label>
+    <input type="text" id="secretKey" value="AkBR7!12K8Le#Bzz_ASH%PekMP45K416">
 
-  <label>PLAIN SERIAL NUMBER (e.g. (DMP-12)MID 21637)</label>
-  <input type="text" id="serialInput" placeholder="(ITEM)SERIAL">
+    <label>Plain Serial Number</label>
+    <input type="text" id="serialInput" value="(DMP-12)MID 21637">
 
-  <button onclick="generateEncryptedLabel()">Generate Label Data</button>
+    <button onclick="generateEncryptedLabel()">Generate</button>
 
-  <div class="output-box" id="resultBox" style="display:none;">
-    <strong>Encrypted String (Copy into Label Maker):</strong>
-    <p id="encryptedOutput" style="color:#00db62;"></p>
+    <div class="output-box" id="resultBox" style="display:none;">
+      <strong style="color: #a2a2a7;">Encrypted String (Copy into Label Maker):</strong>
+      <p id="encryptedOutput"></p>
+    </div>
+
+    <div id="qrcode"></div>
   </div>
 
-  <div id="qrcode"></div>
-
   <script>
-    let qrcode = null;
-
     function generateEncryptedLabel() {
       const rawText = document.getElementById('serialInput').value.trim();
       const key = document.getElementById('secretKey').value.trim();
@@ -89,23 +153,21 @@
         return;
       }
 
-      // 🔐 Encrypt using exact CryptoJS OpenSSL passphrase format
+      // Encrypt using exact CryptoJS OpenSSL passphrase format
       const encryptedBytes = CryptoJS.AES.encrypt(rawText, key);
-      const encryptedString = encryptedBytes.toString(); // Base64 OpenSSL output
+      const encryptedString = encryptedBytes.toString();
 
       document.getElementById('resultBox').style.display = 'block';
       document.getElementById('encryptedOutput').innerText = encryptedString;
 
-      // Render visual QR/Data Matrix on screen for instant scanning test
+      // Render visual QR Code on screen
       const qrContainer = document.getElementById('qrcode');
       qrContainer.innerHTML = "";
       
-      qrcode = new QRCode(qrContainer, {
+      new QRCode(qrContainer, {
         text: encryptedString,
-        width: 180,
-        height: 180,
-        colorDark : "#000000",
-        colorLight : "#ffffff",
+        width: 200,
+        height: 200,
         correctLevel : QRCode.CorrectLevel.H
       });
     }
