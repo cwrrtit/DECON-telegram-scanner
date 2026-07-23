@@ -50,12 +50,12 @@
       padding-left: 16px;
       padding-right: 16px;
       box-sizing: border-box;
-      transition: padding-top 0.25s ease-in-out;
+      transition: padding-top 0.2s ease-out;
     }
 
-    /* Applied dynamically when the camera view stops to keep elements below Telegram controls */
+    /* Substantially increases top clearance once the camera collapses */
     .app-container.camera-stopped {
-      padding-top: calc(var(--tg-safe-top) + 28px) !important;
+      padding-top: calc(var(--tg-safe-top) + 70px) !important;
     }
 
     #scanner-container {
@@ -745,7 +745,7 @@
       const container = document.querySelector('.app-container');
       const scannerContainer = document.getElementById('scanner-container');
 
-      // Shift container down beneath Close control height
+      // Shift container down beneath Telegram's native Close/Action bar
       if (container) {
         container.classList.add('camera-stopped');
       }
