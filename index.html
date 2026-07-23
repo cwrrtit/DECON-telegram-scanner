@@ -195,6 +195,7 @@
       align-items: center;
       margin: 0 4px 10px 4px;
       flex-shrink: 0;
+      height: 28px;
     }
 
     h3 {
@@ -204,6 +205,7 @@
       color: #a2a2a7; 
       letter-spacing: 0.4px;
       font-weight: 600;
+      line-height: 28px;
     }
 
     /* 4-DOT DYNAMIC STATUS INDICATOR */
@@ -211,6 +213,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      height: 28px;
     }
 
     .status-dot {
@@ -249,7 +252,14 @@
       box-shadow: 0 0 8px rgba(255, 59, 48, 0.6);
     }
 
-    /* 🍏 UNDO BUTTON (SOLID BLUE CAPSULE WITH 12px RADIUS) */
+    /* DUPLICATE CODE DOT STATE (iOS BLUE) */
+    .status-dot.active-blue {
+      background-color: var(--ios-blue);
+      border-color: var(--ios-blue);
+      box-shadow: 0 0 8px rgba(0, 122, 255, 0.6);
+    }
+
+    /* 🍏 UNDO BUTTON (EXACT 28px HEIGHT MATCH TO EDIT BUTTON) */
     .undo-trigger {
       background-color: var(--ios-blue);
       color: #ffffff;
@@ -257,14 +267,18 @@
       font-weight: 700;
       cursor: pointer;
       border: none;
-      padding: 5px 12px;
+      padding: 0 12px;
+      height: 28px;
+      line-height: 28px;
       border-radius: var(--button-corner-radius);
       user-select: none;
-      display: flex;
+      display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 4px;
       -webkit-tap-highlight-color: transparent;
       transition: opacity 0.15s ease;
+      box-sizing: border-box;
     }
 
     .undo-trigger:active {
@@ -514,14 +528,14 @@
       display: flex;
     }
 
-    /* Extended tap width for "✕" */
+    /* LARGER AND BOLDER "✕" ICON */
     .action-btn-cancel {
       background: transparent;
       border: none;
       color: #ffffff;
       padding: 0 18px;
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 16px;
+      font-weight: 800;
       cursor: pointer;
       border-right: 1px solid rgba(255, 255, 255, 0.15);
       -webkit-tap-highlight-color: transparent;
@@ -827,16 +841,32 @@
       }, 500);
     }
 
+    /* 3 AMBER DOTS (FIRST 3 ACTIVE, 4TH GREYED OUT) */
     function triggerUnencryptedAmberState() {
       isOverrideState = true;
       clearTimeout(overrideTimeout);
       clearDotClasses();
       dotElements[0].classList.add('active-amber');
+      dotElements[1].classList.add('active-amber');
+      dotElements[2].classList.add('active-amber');
 
       overrideTimeout = setTimeout(() => {
         isOverrideState = false;
         setProximityLevel(1);
       }, 800);
+    }
+
+    /* 4 BLUE DOTS (DUPLICATE LOGGED SERIAL STATE) */
+    function triggerDuplicateBlueState() {
+      isOverrideState = true;
+      clearTimeout(overrideTimeout);
+      clearDotClasses();
+      dotElements.forEach(dot => dot.classList.add('active-blue'));
+
+      overrideTimeout = setTimeout(() => {
+        isOverrideState = false;
+        setProximityLevel(1);
+      }, 500); // 0.5s exceeds 0.25s requirement clearly
     }
 
     function triggerUnreadableRedState() {
@@ -1040,6 +1070,17 @@
       const processedText = result.text;
       const isEncrypted = result.isEncrypted;
 
+      /* CHECK IF CODE ALREADY LOGGED (DUPLICATE HANDLING) */
+      if (scannedCodes.includes(processedText)) {
+        if (now - lastScannedTime >= 1000) { // Throttle duplicate triggers slightly to prevent spamming
+          triggerDuplicateBlueState();
+          tg?.HapticFeedback?.impactOccurred('light');
+          lastScannedTime = now;
+        }
+        return;
+      }
+
+      /* NEW UNIQUE SERIAL HANDLER */
       if (isEncrypted) {
         triggerSuccessGreenState();
       } else {
@@ -1054,18 +1095,14 @@
         }, 500); 
       }
 
-      if (decodedText === lastScannedCode && (now - lastScannedTime) < 2000) return;
-
       lastScannedCode = decodedText;
       lastScannedTime = now;
 
-      if (!scannedCodes.includes(processedText)) {
-        scannedCodes.unshift(processedText);
-        countElement.innerText = scannedCodes.length;
-        modalCountElement.innerText = scannedCodes.length;
-        renderGroupedUI();
-        tg?.HapticFeedback?.notificationOccurred('success');
-      }
+      scannedCodes.unshift(processedText);
+      countElement.innerText = scannedCodes.length;
+      modalCountElement.innerText = scannedCodes.length;
+      renderGroupedUI();
+      tg?.HapticFeedback?.notificationOccurred('success');
     }
 
     document.getElementById('custom-overlay').addEventListener('click', () => {
