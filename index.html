@@ -268,6 +268,8 @@
       overflow: hidden;
       max-height: 280px;
       overflow-y: auto;
+      cursor: pointer; /* Signal clickable to open modal */
+      -webkit-tap-highlight-color: transparent;
     }
 
     .list-category-header {
@@ -281,7 +283,7 @@
       border-bottom: 1px solid #2c2c2e;
     }
 
-    #scanned-list li {
+    #scanned-list li, .modal-list li {
       padding: 14px 16px;
       font-size: 16px;
       font-weight: 400;
@@ -292,11 +294,11 @@
       border-bottom: 1px solid #2c2c2e; 
     }
 
-    #scanned-list li:last-child {
+    #scanned-list li:last-child, .modal-list li:last-child {
       border-bottom: none;
     }
 
-    #scanned-list li span:first-child {
+    #scanned-list li span:first-child, .modal-list li span:first-child {
       color: #ffffff;
     }
 
@@ -357,6 +359,98 @@
       transition: opacity 0.3s ease;
     }
 
+    /* ---------------------------------------------------- */
+    /* 🍏 iOS/TELEGRAM FROSTED OVERLAY MODAL                */
+    /* ---------------------------------------------------- */
+    #modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 999;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    #modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 420px;
+      max-height: 70vh;
+      background: rgba(28, 28, 30, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: scale(0.92);
+      transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    #modal-overlay.active .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 18px;
+      background: rgba(44, 44, 46, 0.6);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-header h4 {
+      margin: 0;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #a2a2a7;
+      font-weight: 700;
+    }
+
+    .modal-close-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: #ffffff;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .modal-body {
+      overflow-y: auto;
+      flex-grow: 1;
+      padding: 0;
+    }
+
+    .modal-list {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+    }
+
     canvas#analysis-canvas {
       display: none;
     }
@@ -404,6 +498,19 @@
     </div>
   </div>
 
+  <!-- 🍏 Frosted Pop-up Modal Container -->
+  <div id="modal-overlay">
+    <div class="modal-card" id="modal-card">
+      <div class="modal-header">
+        <h4>LOGGED SERIALS (<span id="modal-count">0</span>)</h4>
+        <button class="modal-close-btn" id="modal-close-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-list" id="modal-scanned-list"></div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const tg = window.Telegram?.WebApp;
 
@@ -445,11 +552,17 @@
 
     const scannedCodes = [];
     const listElement = document.getElementById('scanned-list');
+    const modalListElement = document.getElementById('modal-scanned-list');
     const countElement = document.getElementById('count');
+    const modalCountElement = document.getElementById('modal-count');
     const viewfinder = document.getElementById('custom-viewfinder');
     const analysisCanvas = document.getElementById('analysis-canvas');
     const canvasCtx = analysisCanvas.getContext('2d', { willReadFrequently: true });
     
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalCard = document.getElementById('modal-card');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+
     const dotElements = [
       document.getElementById('dot-1'),
       document.getElementById('dot-2'),
@@ -464,6 +577,7 @@
     let overrideTimeout = null;
     let isOverrideState = false;
     let proximityInterval = null;
+    let isModalOpen = false; // Flag to freeze scanning logging while pop-up is active
 
     function clearDotClasses() {
       dotElements.forEach(dot => {
@@ -472,7 +586,7 @@
     }
 
     function setProximityLevel(level) {
-      if (isOverrideState) return;
+      if (isOverrideState || isModalOpen) return;
       clearDotClasses();
 
       for (let i = 0; i < level; i++) {
@@ -555,7 +669,7 @@
      * Light-weight frame analyzer for gradual Dot fill (1 to 4 White Dots)
      */
     function analyzeFrameProximity() {
-      if (isOverrideState) return;
+      if (isOverrideState || isModalOpen) return;
 
       const videoElement = document.querySelector("#interactive video");
       if (!videoElement || videoElement.readyState < 2) return;
@@ -584,13 +698,13 @@
 
         // Scaled thresholding for 1 to 4 White Dots
         if (avgContrast < 12) {
-          setProximityLevel(1); // Idle / Distant
+          setProximityLevel(1);
         } else if (avgContrast >= 12 && avgContrast < 22) {
-          setProximityLevel(2); // Object entering frame
+          setProximityLevel(2);
         } else if (avgContrast >= 22 && avgContrast < 35) {
-          setProximityLevel(3); // Object centered & close
+          setProximityLevel(3);
         } else if (avgContrast >= 35) {
-          setProximityLevel(4); // Code aligned & sharp
+          setProximityLevel(4);
         }
       } catch (e) {
         // Fallback
@@ -623,13 +737,14 @@
     }
 
     function onScanError(errorMessage) {
+      if (isModalOpen) return; // Ignore errors while modal is open
       if (errorMessage && errorMessage.includes("ChecksumException")) {
         triggerUnreadableRedState();
       }
     }
 
-    function renderGroupedUI() {
-      listElement.innerHTML = "";
+    function buildGroupedDOM(targetContainer) {
+      targetContainer.innerHTML = "";
       const groups = {};
       
       scannedCodes.forEach(code => {
@@ -657,19 +772,27 @@
         const headerLi = document.createElement('div');
         headerLi.className = 'list-category-header';
         headerLi.innerText = headerName;
-        listElement.appendChild(headerLi);
+        targetContainer.appendChild(headerLi);
         
         groups[headerName].sort((a, b) => a.display.localeCompare(b.display, undefined, { numeric: true, sensitivity: 'base' }));
         
         groups[headerName].forEach(item => {
           const li = document.createElement('li');
           li.innerHTML = `<span>${item.display}</span><span class="status-flash">✓</span>`;
-          listElement.appendChild(li);
+          targetContainer.appendChild(li);
         });
       });
     }
 
+    function renderGroupedUI() {
+      buildGroupedDOM(listElement);
+      buildGroupedDOM(modalListElement);
+    }
+
     function onScanSuccess(decodedText) {
+      // 🛑 FROZEN LOGGING: Ignore any code scanned while pop-up is active
+      if (isModalOpen) return;
+
       const now = Date.now();
       
       const result = tryDecrypt(decodedText);
@@ -698,6 +821,7 @@
       if (!scannedCodes.includes(processedText)) {
         scannedCodes.unshift(processedText);
         countElement.innerText = scannedCodes.length;
+        modalCountElement.innerText = scannedCodes.length;
         renderGroupedUI();
         tg?.HapticFeedback?.notificationOccurred('success');
       }
@@ -705,8 +829,37 @@
 
     // Tap Viewfinder to trigger Red indicator test on covered/unreadable barcodes
     document.getElementById('custom-overlay').addEventListener('click', () => {
-      triggerUnreadableRedState();
+      if (!isModalOpen) {
+        triggerUnreadableRedState();
+      }
     });
+
+    /* ---------------------------------------------------- */
+    /* 🍏 MODAL POP-UP LOGIC                                */
+    /* ---------------------------------------------------- */
+    function openModal() {
+      isModalOpen = true;
+      modalOverlay.classList.add('active');
+      tg?.HapticFeedback?.impactOccurred('medium');
+    }
+
+    function closeModal() {
+      modalOverlay.classList.remove('active');
+      isModalOpen = false;
+      setProximityLevel(1);
+    }
+
+    // Open when tapping the serial bounding box
+    listElement.addEventListener('click', openModal);
+
+    // Close when tapping anywhere on blurred background outside the card
+    modalOverlay.addEventListener('click', (e) => {
+      if (!modalCard.contains(e.target)) {
+        closeModal();
+      }
+    });
+
+    modalCloseBtn.addEventListener('click', closeModal);
 
     function sendSerialsBack(serialList) {
       if (proximityInterval) clearInterval(proximityInterval);
@@ -734,6 +887,7 @@
       if (scannedCodes.length > 0) {
         scannedCodes.shift();
         countElement.innerText = scannedCodes.length;
+        modalCountElement.innerText = scannedCodes.length;
         lastScannedCode = "";
         lastScannedTime = 0;
         renderGroupedUI();
@@ -745,12 +899,10 @@
       const container = document.querySelector('.app-container');
       const scannerContainer = document.getElementById('scanner-container');
 
-      // Shift container down beneath Telegram's native Close/Action bar
       if (container) {
         container.classList.add('camera-stopped');
       }
 
-      // Hide scanner view box
       if (scannerContainer) {
         scannerContainer.style.display = 'none';
       }
