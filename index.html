@@ -28,6 +28,7 @@
       
       /* 🍏 iOS SYSTEM BLUE ACCENT */
       --ios-blue: #007aff;
+      --ios-blue-pressed: #0062cc;
     }
     
     * {
@@ -214,7 +215,6 @@
     }
 
     .status-dot {
-      width: 100px;
       width: 10px;
       height: 10px;
       border-radius: 50%;
@@ -257,7 +257,7 @@
       box-shadow: 0 0 8px rgba(0, 122, 255, 0.6);
     }
 
-    /* 🍏 UNDO BUTTON */
+    /* 🍏 UNDO BUTTON WITH PRESS FEEDBACK */
     .undo-trigger {
       background-color: var(--ios-blue);
       color: #ffffff;
@@ -275,12 +275,13 @@
       justify-content: center;
       gap: 4px;
       -webkit-tap-highlight-color: transparent;
-      transition: opacity 0.15s ease;
+      transition: background-color 0.05s ease, transform 0.05s ease;
       box-sizing: border-box;
     }
 
     .undo-trigger:active {
-      opacity: 0.7;
+      background-color: var(--ios-blue-pressed);
+      transform: scale(0.96);
     }
 
     /* 🍏 BOUNDING BOX WITH MATCHED 16px RADIUS */
@@ -857,7 +858,6 @@
       clearTimeout(duplicatePulseTimeout);
       clearDotClasses();
       
-      // Light up only the first 2 dots in blue; 3rd and 4th remain idle/grey
       dotElements[0].classList.add('active-blue');
       dotElements[1].classList.add('active-blue');
 
