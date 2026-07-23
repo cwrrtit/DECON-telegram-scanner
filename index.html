@@ -15,8 +15,9 @@
       --tg-safe-top: 56px;
       --tg-safe-bottom: 24px;
 
-      /* 🎨 TIGHTER CORNER RADIUS */
+      /* 🎨 CORNER RADII */
       --app-corner-radius: 16px;
+      --button-corner-radius: 12px; /* Increased radius for interactive pill-like buttons */
 
       /* 🎨 STATUS INDICATOR COLORS */
       --status-red: #ff3b30;
@@ -248,7 +249,7 @@
       box-shadow: 0 0 8px rgba(255, 59, 48, 0.6);
     }
 
-    /* 🍏 UNDO BUTTON (SOLID BLUE PILL WITH RADIUS MATCHING COMPLETE BUTTON) */
+    /* 🍏 UNDO BUTTON (SOLID BLUE CAPSULE WITH 12px RADIUS) */
     .undo-trigger {
       background-color: var(--ios-blue);
       color: #ffffff;
@@ -257,7 +258,7 @@
       cursor: pointer;
       border: none;
       padding: 5px 12px;
-      border-radius: 8px;
+      border-radius: var(--button-corner-radius);
       user-select: none;
       display: flex;
       align-items: center;
@@ -417,7 +418,7 @@
       padding: 20px;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: opacity 0.38s cubic-bezier(0.25, 1, 0.5, 1);
     }
 
     #modal-overlay.active {
@@ -437,20 +438,24 @@
       flex-direction: column;
       overflow: hidden;
       transform: scale(0.92);
-      transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: transform 0.38s cubic-bezier(0.25, 1, 0.5, 1);
     }
 
     #modal-overlay.active .modal-card {
       transform: scale(1);
     }
 
+    /* STRICT HEIGHT LOCK PREVENTS HEADER EXPANSION ON BUTTON SWITCH */
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 16px;
+      padding: 0 16px;
+      min-height: 48px;
+      max-height: 48px;
       background: rgba(44, 44, 46, 0.6);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
     }
 
     .modal-header h4 {
@@ -467,19 +472,23 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      height: 100%;
     }
 
     .edit-btn {
       background: rgba(255, 255, 255, 0.12);
       border: none;
       color: #ffffff;
-      padding: 6px 14px;
-      border-radius: 8px; /* Matched corner style */
+      padding: 5px 14px;
+      border-radius: var(--button-corner-radius);
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       transition: background-color 0.2s ease, opacity 0.2s ease;
       -webkit-tap-highlight-color: transparent;
+      height: 28px;
+      display: flex;
+      align-items: center;
     }
 
     .edit-btn:active {
@@ -490,9 +499,11 @@
     .edit-actions-group {
       display: none;
       background: rgba(255, 255, 255, 0.12);
-      border-radius: 8px; /* Matched corner style */
-      padding: 2px;
+      border-radius: var(--button-corner-radius);
+      padding: 0px;
       align-items: center;
+      height: 28px;
+      box-sizing: border-box;
     }
 
     .is-editing .edit-btn {
@@ -508,23 +519,29 @@
       background: transparent;
       border: none;
       color: #ffffff;
-      padding: 6px 18px; /* Extended touch zone to the left */
+      padding: 0 18px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       border-right: 1px solid rgba(255, 255, 255, 0.15);
       -webkit-tap-highlight-color: transparent;
+      height: 100%;
+      display: flex;
+      align-items: center;
     }
 
     .action-btn-delete {
       background: transparent;
       border: none;
       color: var(--status-red);
-      padding: 6px 14px;
+      padding: 0 14px;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
+      height: 100%;
+      display: flex;
+      align-items: center;
     }
 
     .modal-body {
@@ -540,7 +557,7 @@
       width: 100%;
     }
 
-    /* MODAL LIST SLIDE & SELECTION STYLING */
+    /* SLOWED NATIVE iOS SLIDE & SLIDE-BACK ANIMATIONS (0.38s EASING) */
     .modal-list li {
       position: relative;
       padding: 14px 18px;
@@ -551,11 +568,11 @@
       align-items: center;
       background: #000000;
       border-bottom: 1px solid #2c2c2e;
-      transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), 
+      transition: transform 0.38s cubic-bezier(0.25, 1, 0.5, 1), 
                   background-color 0.2s ease,
-                  max-height 0.25s ease,
-                  opacity 0.25s ease,
-                  padding 0.25s ease;
+                  max-height 0.38s cubic-bezier(0.25, 1, 0.5, 1),
+                  opacity 0.38s cubic-bezier(0.25, 1, 0.5, 1),
+                  padding 0.38s cubic-bezier(0.25, 1, 0.5, 1);
       overflow: hidden;
       max-height: 60px;
       opacity: 1;
@@ -578,7 +595,7 @@
       justify-content: space-between;
       align-items: center;
       width: 100%;
-      transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: transform 0.38s cubic-bezier(0.25, 1, 0.5, 1);
     }
 
     .modal-list li span:first-child {
@@ -597,7 +614,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.15s ease, border-color 0.15s ease;
+      transition: transform 0.38s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.15s ease, border-color 0.15s ease;
     }
 
     .selection-circle::after {
@@ -1099,7 +1116,7 @@
       exitEditMode();
     });
 
-    /* SLOWER, HEAVIER DELETE DOUBLE-HAPTIC */
+    /* SLOWER, HEAVIER DELETE DOUBLE-HAPTIC & MATCHED SMOOTH EXIT */
     editDeleteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (selectedSerialsInModal.size === 0) return;
@@ -1110,12 +1127,12 @@
         tg?.HapticFeedback?.impactOccurred('heavy');
       }, 160);
 
-      // 1. Immediately slide rows left & exit edit UI state
+      // 1. Smoothly slide unselected rows back & exit edit UI state
       modalListElement.classList.remove('is-editing');
       modalHeader.classList.remove('is-editing');
       isEditMode = false;
 
-      // 2. Mark selected elements for collapse animation
+      // 2. Mark selected elements for smooth collapse animation
       const allModalRows = modalListElement.querySelectorAll('li');
       allModalRows.forEach(row => {
         const raw = row.getAttribute('data-raw');
@@ -1128,7 +1145,7 @@
       scannedCodes = scannedCodes.filter(code => !selectedSerialsInModal.has(code));
       selectedSerialsInModal.clear();
 
-      // 4. After 0.25s animation, rebuild DOMs and refresh counts
+      // 4. Match 0.38s animation timing before DOM rebuild
       setTimeout(() => {
         countElement.innerText = scannedCodes.length;
         modalCountElement.innerText = scannedCodes.length;
@@ -1137,7 +1154,7 @@
         if (scannedCodes.length === 0) {
           closeModal();
         }
-      }, 250);
+      }, 380);
     });
 
     listElement.addEventListener('click', openModal);
