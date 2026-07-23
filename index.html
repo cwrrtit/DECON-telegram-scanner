@@ -214,6 +214,7 @@
     }
 
     .status-dot {
+      width: 100px;
       width: 10px;
       height: 10px;
       border-radius: 50%;
@@ -849,13 +850,16 @@
       }, 800);
     }
 
-    /* CONTINUOUS BLUE DOTS FOR DUPLICATE SUBSEQUENT SCANS */
+    /* 2 BLUE DOTS FOR DUPLICATE SUBSEQUENT SCANS */
     function triggerDuplicateBlueState() {
       isOverrideState = true;
       clearTimeout(overrideTimeout);
       clearTimeout(duplicatePulseTimeout);
       clearDotClasses();
-      dotElements.forEach(dot => dot.classList.add('active-blue'));
+      
+      // Light up only the first 2 dots in blue; 3rd and 4th remain idle/grey
+      dotElements[0].classList.add('active-blue');
+      dotElements[1].classList.add('active-blue');
 
       duplicatePulseTimeout = setTimeout(() => {
         isOverrideState = false;
@@ -1074,7 +1078,7 @@
             triggerUnencryptedAmberState();
           }
         } else {
-          /* DEPARTURE HAS OCCURRED -> SUBSEQUENT PASS SCANS NOW PROPERLY SHOW BLUE */
+          /* DEPARTURE HAS OCCURRED -> SUBSEQUENT PASS SCANS SHOW 2 BLUE DOTS */
           triggerDuplicateBlueState();
         }
         
