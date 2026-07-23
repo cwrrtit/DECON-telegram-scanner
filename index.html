@@ -15,7 +15,7 @@
       --tg-safe-top: 56px;
       --tg-safe-bottom: 24px;
 
-      /* 🎨 TIGHTER CORNER RADIUS (MATCHES REDDIT POST IMAGE FRAME) */
+      /* 🎨 TIGHTER CORNER RADIUS */
       --app-corner-radius: 16px;
 
       /* 🎨 STATUS INDICATOR COLORS */
@@ -248,24 +248,26 @@
       box-shadow: 0 0 8px rgba(255, 59, 48, 0.6);
     }
 
-    /* MATCHES iOS MAIL BLUE */
+    /* 🍏 UNDO BUTTON (SOLID BLUE PILL WITH RADIUS MATCHING COMPLETE BUTTON) */
     .undo-trigger {
-      color: var(--ios-blue);
-      font-size: 13px;
-      font-weight: 600;
+      background-color: var(--ios-blue);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
       cursor: pointer;
-      text-decoration: none;
-      background: none;
       border: none;
-      padding: 0;
+      padding: 5px 12px;
+      border-radius: 8px;
       user-select: none;
       display: flex;
       align-items: center;
       gap: 4px;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s ease;
     }
 
     .undo-trigger:active {
-      opacity: 0.6;
+      opacity: 0.7;
     }
 
     /* 🍏 BOUNDING BOX WITH MATCHED 16px RADIUS */
@@ -326,7 +328,7 @@
     }
 
     /* ---------------------------------------------------- */
-    /* 📌 PINNED BOTTOM PANEL WITH EXTENDED EXTENDED FADE  */
+    /* 📌 PINNED BOTTOM PANEL WITH EXTENDED FADE           */
     /* ---------------------------------------------------- */
     #control-panel {
       position: absolute;
@@ -353,7 +355,7 @@
       pointer-events: auto;
     }
 
-    /* STRICTLY OPAQUE SOLID BUTTON */
+    /* COMPLETE BUTTON WITH PRESS COLOR DIP */
     .btn {
       position: relative;
       width: 100%;
@@ -364,17 +366,16 @@
       border: none;
       border-radius: 14px;
       cursor: pointer;
-      background-color: #ffffff !important;
-      opacity: 1 !important;
+      background-color: #ffffff;
       color: #000000;
       z-index: 2;
       -webkit-tap-highlight-color: transparent;
-      transition: opacity 0.15s ease, transform 0.15s ease;
+      transition: background-color 0.05s ease, transform 0.05s ease;
     }
 
     .btn:active {
+      background-color: #e5e5ea !important; /* Lowers fill to bright grey when depressed */
       transform: scale(0.98);
-      opacity: 0.9 !important;
     }
 
     /* Outer Glow Effect */
@@ -398,7 +399,7 @@
     }
 
     /* ---------------------------------------------------- */
-    /* 🍏 iOS/TELEGRAM FROSTED POP-UP (EDIT MODE ENHANCED)  */
+    /* 🍏 iOS FROSTED POP-UP (EDIT MODE ENHANCED)           */
     /* ---------------------------------------------------- */
     #modal-overlay {
       position: fixed;
@@ -473,7 +474,7 @@
       border: none;
       color: #ffffff;
       padding: 6px 14px;
-      border-radius: 18px;
+      border-radius: 8px; /* Matched corner style */
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
@@ -489,7 +490,7 @@
     .edit-actions-group {
       display: none;
       background: rgba(255, 255, 255, 0.12);
-      border-radius: 18px;
+      border-radius: 8px; /* Matched corner style */
       padding: 2px;
       align-items: center;
     }
@@ -502,25 +503,28 @@
       display: flex;
     }
 
+    /* Extended tap width for "✕" */
     .action-btn-cancel {
       background: transparent;
       border: none;
       color: #ffffff;
-      padding: 5px 10px;
+      padding: 6px 18px; /* Extended touch zone to the left */
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       border-right: 1px solid rgba(255, 255, 255, 0.15);
+      -webkit-tap-highlight-color: transparent;
     }
 
     .action-btn-delete {
       background: transparent;
       border: none;
       color: var(--status-red);
-      padding: 5px 12px;
+      padding: 6px 14px;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .modal-body {
@@ -758,6 +762,7 @@
     const editBtn = document.getElementById('modal-edit-btn');
     const editCancelBtn = document.getElementById('edit-cancel-btn');
     const editDeleteBtn = document.getElementById('edit-delete-btn');
+    const doneBtn = document.getElementById('done-btn');
 
     const dotElements = [
       document.getElementById('dot-1'),
@@ -983,11 +988,10 @@
               if (selectedSerialsInModal.has(item.raw)) {
                 selectedSerialsInModal.delete(item.raw);
                 li.classList.remove('selected-row');
-                /* No haptic on deselect */
               } else {
                 selectedSerialsInModal.add(item.raw);
                 li.classList.add('selected-row');
-                tg?.HapticFeedback?.impactOccurred('light'); /* Single gentle haptic on select */
+                tg?.HapticFeedback?.impactOccurred('light');
               }
             });
           } else {
@@ -1081,7 +1085,6 @@
       modalHeader.classList.remove('is-editing');
       modalListElement.classList.remove('is-editing');
       
-      // Remove visual highlights
       const rowElements = modalListElement.querySelectorAll('li');
       rowElements.forEach(row => row.classList.remove('selected-row'));
     }
@@ -1096,15 +1099,16 @@
       exitEditMode();
     });
 
+    /* SLOWER, HEAVIER DELETE DOUBLE-HAPTIC */
     editDeleteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (selectedSerialsInModal.size === 0) return;
 
-      // 💥 INSTANT CONFIRMATION DOUBLE-HAPTIC
-      tg?.HapticFeedback?.impactOccurred('light');
+      // 💥 HEAVY, SLOWER DOUBLE HAPTIC (160ms DELAY)
+      tg?.HapticFeedback?.impactOccurred('heavy');
       setTimeout(() => {
-        tg?.HapticFeedback?.impactOccurred('light');
-      }, 80);
+        tg?.HapticFeedback?.impactOccurred('heavy');
+      }, 160);
 
       // 1. Immediately slide rows left & exit edit UI state
       modalListElement.classList.remove('is-editing');
@@ -1178,7 +1182,12 @@
       }
     });
 
-    document.getElementById('done-btn').addEventListener('click', () => {
+    /* 💥 INSTANT HEAVY HAPTIC ON BUTTON PRESS */
+    doneBtn.addEventListener('pointerdown', () => {
+      tg?.HapticFeedback?.impactOccurred('heavy');
+    });
+
+    doneBtn.addEventListener('click', () => {
       const container = document.querySelector('.app-container');
       const scannerContainer = document.getElementById('scanner-container');
 
