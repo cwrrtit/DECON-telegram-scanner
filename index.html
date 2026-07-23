@@ -2,27 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- Mobile Responsiveness -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>AES Encrypted Data Matrix Generator</title>
-  
-  <!-- Telegram Web App SDK -->
+  <title>Scanner</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- CryptoJS Library -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <!-- 🔐 Client-Side AES Decryption -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <!-- BWIP-JS Library (for Data Matrix rendering) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bwip-js/4.10.0/bwip-js-min.js"></script>
 
   <style>
     :root {
-      /* Fallback top padding before Telegram SDK initializes */
-      --top-offset: calc(env(safe-area-inset-top, 0px) + 50px);
-      --bottom-offset: calc(env(safe-area-inset-bottom, 0px) + 16px);
-    }
+      /* Dynamic Inset Placeholders with Safe Native Fallbacks */
+      --tg-safe-top: 56px;
+      --tg-safe-bottom: 20px;
 
+      /* 🎨 STATUS INDICATOR COLORS */
+      --status-red: #ff3b30;
+      --status-amber: #f4cb11;
+      --status-green: #00db62;
+      --status-white: #ffffff;
+      --status-idle-border: #3a3a3c;
+    }
+    
     * {
       box-sizing: border-box;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace !important;
     }
 
     html, body {
@@ -30,286 +33,719 @@
       height: 100%;
       margin: 0;
       padding: 0;
-      background-color: #121212;
+      background-color: #000000;
       color: #ffffff;
       overflow-x: hidden;
     }
 
-    .app-viewport {
+    /* Primary Container applying safe boundary padding */
+    .app-container {
       display: flex;
       flex-direction: column;
-      justify-content: flex-start;
       align-items: center;
       width: 100%;
       min-height: 100dvh;
-      
-      /* Insets driven dynamically via JavaScript & CSS variables */
-      padding-top: var(--top-offset);
-      padding-bottom: var(--bottom-offset);
+      padding-top: var(--tg-safe-top);
+      padding-bottom: var(--tg-safe-bottom);
       padding-left: 16px;
       padding-right: 16px;
+      box-sizing: border-box;
     }
 
-    .container {
+    #scanner-container {
+      position: relative; 
       width: 100%;
-      max-width: 480px;
-      margin: 0 auto;
-    }
-
-    h2 {
-      font-size: 18px;
-      color: #f4cb11;
-      text-transform: uppercase;
-      margin-top: 8px;
+      max-width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000000;
       margin-bottom: 16px;
-      letter-spacing: 1px;
     }
 
-    label {
-      font-size: 12px;
-      color: #a2a2a7;
-      display: block;
-      margin-top: 14px;
-      margin-bottom: 4px;
-      text-transform: uppercase;
+    #interactive {
+      width: 100% !important;
+      height: auto !important;
     }
 
-    input {
+    #interactive video {
+      width: 100% !important;
+      height: auto !important;
+      object-fit: cover;
+    }
+
+    #interactive * {
+      border: none !important;
+      border-color: transparent !important;
+    }
+
+    /* CUSTOM OVERLAY CONTAINER */
+    #custom-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
-      padding: 12px;
-      background: #1c1c1e;
-      border: 1px solid #2c2c2e;
-      color: #ffffff;
-      border-radius: 8px;
+      height: 100%;
+      pointer-events: auto; /* Active so user can tap to test bad codes */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    /* CUSTOM VIEWFINDER BOX */
+    #custom-viewfinder {
+      position: relative;
+      box-sizing: border-box;
+      width: 75vw; 
+      height: 55vw; 
+      max-width: 75%;
+      max-height: 55%;
+      
+      /* Dimmed Mask */
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+      border-radius: 20px; 
+      cursor: pointer;
+    }
+
+    /* VIEWFINDER CORNERS */
+    .scanner-corner {
+      position: absolute;
+      width: 36px; 
+      height: 36px; 
+      box-sizing: border-box;
+      transition: border-color 0.2s ease, filter 0.2s ease;
+    }
+
+    .tl {
+      top: -3px; left: -3px;
+      border-top: 5px solid #ffffff !important;
+      border-left: 5px solid #ffffff !important;
+      border-right: none !important; 
+      border-bottom: none !important;
+      border-top-left-radius: 23px;
+    }
+
+    .tr {
+      top: -3px; right: -3px;
+      border-top: 5px solid #ffffff !important;
+      border-right: 5px solid #ffffff !important;
+      border-left: none !important; 
+      border-bottom: none !important;
+      border-top-right-radius: 23px;
+    }
+
+    .bl {
+      bottom: -3px; left: -3px;
+      border-bottom: 5px solid #ffffff !important;
+      border-left: 5px solid #ffffff !important;
+      border-right: none !important; 
+      border-top: none !important;
+      border-bottom-left-radius: 23px;
+    }
+
+    .br {
+      bottom: -3px; right: -3px;
+      border-bottom: 5px solid #ffffff !important;
+      border-right: 5px solid #ffffff !important;
+      border-left: none !important; 
+      border-top: none !important;
+      border-bottom-right-radius: 23px;
+    }
+
+    /* SUCCESS CORNER GLOW */
+    #custom-viewfinder.scan-success .scanner-corner {
+      border-color: #00db62 !important; 
+      filter: drop-shadow(0px 0px 1px rgba(1, 231, 40, 0.555));
+    }
+
+    /* RED CORNER GLOW FOR UNREADABLE CODE */
+    #custom-viewfinder.scan-error .scanner-corner {
+      border-color: #ff3b30 !important; 
+      filter: drop-shadow(0px 0px 1px rgba(255, 59, 48, 0.555));
+    }
+
+    #log-container {
+      width: 100%;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 20px;
+    }
+
+    .log-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 0 4px 12px 4px;
+    }
+
+    h3 {
+      margin: 0;
       font-size: 13px;
-      outline: none;
-      -webkit-appearance: none;
+      text-transform: uppercase;
+      color: #a2a2a7; 
+      letter-spacing: 0.4px;
+      font-weight: 600;
     }
 
-    input:focus {
-      border-color: #f4cb11;
+    /* 4-DOT DYNAMIC STATUS INDICATOR */
+    .status-dots-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
-    /* Primary Button with Ambient Backlight Glow */
-    .btn-primary {
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      box-sizing: border-box;
+      background-color: transparent;
+      border: 1px solid var(--status-idle-border);
+      transition: background-color 0.15s ease-in-out, 
+                  border-color 0.15s ease-in-out, 
+                  box-shadow 0.15s ease-in-out;
+    }
+
+    .status-dot.active-white {
+      background-color: var(--status-white);
+      border-color: var(--status-white);
+      box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+    }
+
+    .status-dot.active-green {
+      background-color: var(--status-green);
+      border-color: var(--status-green);
+      box-shadow: 0 0 8px rgba(0, 219, 98, 0.6);
+    }
+
+    .status-dot.active-amber {
+      background-color: var(--status-amber);
+      border-color: var(--status-amber);
+      box-shadow: 0 0 8px rgba(244, 203, 17, 0.6);
+    }
+
+    .status-dot.active-red {
+      background-color: var(--status-red);
+      border-color: var(--status-red);
+      box-shadow: 0 0 8px rgba(255, 59, 48, 0.6);
+    }
+
+    .undo-trigger {
+      color: #007aff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      background: none;
+      border: none;
+      padding: 0;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .undo-trigger:active {
+      opacity: 0.6;
+    }
+
+    #scanned-list {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #2c2c2e; 
+      border-radius: 10px;
+      background-color: #000000;
+      overflow: hidden;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .list-category-header {
+      background-color: #1c1c1e;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #a2a2a7;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #2c2c2e;
+    }
+
+    #scanned-list li {
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 400;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #000000;
+      border-bottom: 1px solid #2c2c2e; 
+    }
+
+    #scanned-list li:last-child {
+      border-bottom: none;
+    }
+
+    #scanned-list li span:first-child {
+      color: #ffffff;
+    }
+
+    .status-flash { 
+      color: #00db62; 
+      font-weight: 500; 
+      font-size: 15px; 
+    }
+
+    #control-panel {
+      position: relative;
+      width: 100%;
+    }
+
+    .btn-complete-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .btn {
       position: relative;
       width: 100%;
       padding: 14px;
-      margin-top: 20px;
-      background-color: #f4cb11;
-      color: #000000;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
       border: none;
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: bold;
+      border-radius: 12px;
       cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      -webkit-tap-highlight-color: transparent;
+      background-color: #ffffff;
+      color: #000000;
       z-index: 1;
-      transition: transform 0.2s ease, opacity 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s ease, transform 0.15s ease;
     }
 
-    .btn-primary::before {
-      content: '';
-      position: absolute;
-      top: 8px; 
-      left: 10%;
-      width: 80%;
-      height: 80%;
-      background: #f4cb11;
-      border-radius: inherit;
-      filter: blur(16px);
-      opacity: 0.5;
-      z-index: -1;
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
-      transform: translate3d(0, 0, 0); 
-      will-change: filter;
-      transition: opacity 0.3s ease, filter 0.3s ease;
-    }
-
-    .btn-primary:hover::before {
-      opacity: 0.7;
-      filter: blur(20px);
-    }
-
-    .btn-primary:active {
+    .btn:active {
       transform: scale(0.98);
       opacity: 0.9;
     }
 
-    .btn-secondary {
-      position: relative;
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: bold;
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      background-color: #2c2c2e;
-      color: #00db62;
-      margin-top: 16px;
-      display: none;
-    }
-
-    .output-box {
-      margin-top: 24px;
-      padding: 14px;
-      background: #1c1c1e;
-      border: 1px solid #2c2c2e;
-      border-radius: 8px;
-      word-break: break-all;
-      font-size: 13px;
-      line-height: 1.4;
-    }
-
-    #encryptedOutput {
-      margin-top: 8px;
-      margin-bottom: 0;
-      color: #00db62;
-      font-size: 13px;
-    }
-
-    .matrix-wrapper {
-      margin-top: 20px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    .btn-complete-wrap::before {
+      content: '';
+      position: absolute;
+      top: 6px;
+      left: 5%;
+      width: 90%;
+      height: 85%;
       background: #ffffff;
-      padding: 24px;
-      border-radius: 8px;
+      border-radius: 12px;
+      filter: blur(16px);
+      opacity: 0.35;
+      z-index: 0;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      transform: translate3d(0, 0, 0);
+      will-change: filter, opacity;
+      transition: opacity 0.3s ease;
     }
 
-    #datamatrixCanvas {
+    canvas#analysis-canvas {
       display: none;
-    }
-
-    #matrixImage {
-      max-width: 100%;
-      height: auto;
-      display: block;
-      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-  <div class="app-viewport">
-    <div class="container">
-      <h2>Encryptor</h2>
-
-      <label>Secret Key</label>
-      <input type="text" id="secretKey" value="AkBR7!12K8Le#Bzz_ASH%PekMP45K416">
-
-      <label>Format: "(Item Name)Serial Number"</label>
-      <input type="text" id="serialInput" value="(DMP-12)MID 21637">
-
-      <button class="btn-primary" onclick="generateEncryptedLabel()">Generate</button>
-
-      <div class="output-box" id="resultBox" style="display:none;">
-        <strong style="color: #a2a2a7;">Encrypted String:</strong>
-        <p id="encryptedOutput"></p>
+  <div class="app-container">
+    <div id="scanner-container">
+      <div id="interactive"></div>
+      
+      <div id="custom-overlay">
+        <div id="custom-viewfinder">
+          <div class="scanner-corner tl"></div>
+          <div class="scanner-corner tr"></div>
+          <div class="scanner-corner bl"></div>
+          <div class="scanner-corner br"></div>
+        </div>
       </div>
+    </div>
 
-      <div class="matrix-wrapper" id="matrixContainer" style="display:none;">
-        <canvas id="datamatrixCanvas"></canvas>
-        <img id="matrixImage" alt="Data Matrix Label" />
+    <canvas id="analysis-canvas" width="120" height="90"></canvas>
+
+    <div id="log-container">
+      <div class="log-header-row">
+        <h3>LOGGED SERIALS (<span id="count">0</span>)</h3>
+        
+        <!-- 4-Dot Status Indicator -->
+        <div class="status-dots-group" id="statusDotsGroup">
+          <span class="status-dot" id="dot-1"></span>
+          <span class="status-dot" id="dot-2"></span>
+          <span class="status-dot" id="dot-3"></span>
+          <span class="status-dot" id="dot-4"></span>
+        </div>
+
+        <button type="button" class="undo-trigger" id="undo-btn">↩ Undo</button>
       </div>
+      <ul id="scanned-list"></ul>
+    </div>
 
-      <button id="downloadBtn" class="btn-secondary" onclick="downloadLabel()">Save Image</button>
+    <div id="control-panel">
+      <div class="btn-complete-wrap">
+        <button type="button" class="btn" id="done-btn">COMPLETE</button>
+      </div>
     </div>
   </div>
 
   <script>
     const tg = window.Telegram?.WebApp;
 
-    function applySafeAreaPadding() {
+    // Direct dynamic adjustment for full-screen safe insets
+    function updateLayoutInsets() {
       if (!tg) return;
 
-      // 1. Check for Telegram's content safe area inset (Bot API 8.0+)
       const contentInset = tg.contentSafeAreaInset || tg.safeAreaInset; //
-      
-      let topPadding = 56; // Standard full-screen top offset safety margin
-      let bottomPadding = 16;
+      let topMargin = 56;
+      let bottomMargin = 20;
 
       if (contentInset && contentInset.top > 0) { //
-        topPadding = contentInset.top + 10; // Extra breathing room below controls
+        topMargin = contentInset.top + 8;
       }
       if (contentInset && contentInset.bottom > 0) { //
-        bottomPadding = contentInset.bottom + 10;
+        bottomMargin = contentInset.bottom + 8;
       }
 
-      document.documentElement.style.setProperty('--top-offset', `${topPadding}px`);
-      document.documentElement.style.setProperty('--bottom-offset', `${bottomPadding}px`);
+      document.documentElement.style.setProperty('--tg-safe-top', `${topMargin}px`);
+      document.documentElement.style.setProperty('--tg-safe-bottom', `${bottomMargin}px`);
     }
 
     if (tg) {
       tg.ready();
       tg.expand();
-      
+
       if (typeof tg.requestFullscreen === 'function') { //
         tg.requestFullscreen(); //
       }
 
-      // Calculate safe area immediately
-      applySafeAreaPadding();
+      updateLayoutInsets();
 
-      // Recalculate whenever Telegram UI updates layout or toggles full screen
-      tg.onEvent('safeAreaChanged', applySafeAreaPadding); //
-      tg.onEvent('contentSafeAreaChanged', applySafeAreaPadding); //
-      tg.onEvent('fullscreenChanged', applySafeAreaPadding); //
+      tg.onEvent('contentSafeAreaChanged', updateLayoutInsets); //
+      tg.onEvent('safeAreaChanged', updateLayoutInsets); //
+      tg.onEvent('fullscreenChanged', updateLayoutInsets); //
     }
 
-    function generateEncryptedLabel() {
-      const rawText = document.getElementById('serialInput').value.trim();
-      const key = document.getElementById('secretKey').value.trim();
+    const SECRET_KEY = "AkBR7!12K8Le#Bzz_ASH%PekMP45K416";
 
-      if (!rawText) {
-        alert("Please enter a serial string.");
+    const scannedCodes = [];
+    const listElement = document.getElementById('scanned-list');
+    const countElement = document.getElementById('count');
+    const viewfinder = document.getElementById('custom-viewfinder');
+    const analysisCanvas = document.getElementById('analysis-canvas');
+    const canvasCtx = analysisCanvas.getContext('2d', { willReadFrequently: true });
+    
+    const dotElements = [
+      document.getElementById('dot-1'),
+      document.getElementById('dot-2'),
+      document.getElementById('dot-3'),
+      document.getElementById('dot-4')
+    ];
+
+    let html5QrcodeScanner = null;
+    let lastScannedCode = "";
+    let lastScannedTime = 0;
+    let flashTimeout = null;
+    let overrideTimeout = null;
+    let isOverrideState = false;
+    let proximityInterval = null;
+
+    function clearDotClasses() {
+      dotElements.forEach(dot => {
+        dot.className = 'status-dot';
+      });
+    }
+
+    function setProximityLevel(level) {
+      if (isOverrideState) return;
+      clearDotClasses();
+
+      for (let i = 0; i < level; i++) {
+        if (dotElements[i]) {
+          dotElements[i].classList.add('active-white');
+        }
+      }
+    }
+
+    function triggerSuccessGreenState() {
+      isOverrideState = true;
+      clearTimeout(overrideTimeout);
+      clearDotClasses();
+      dotElements.forEach(dot => dot.classList.add('active-green'));
+
+      overrideTimeout = setTimeout(() => {
+        isOverrideState = false;
+        setProximityLevel(1);
+      }, 500);
+    }
+
+    function triggerUnencryptedAmberState() {
+      isOverrideState = true;
+      clearTimeout(overrideTimeout);
+      clearDotClasses();
+      dotElements[0].classList.add('active-amber');
+
+      overrideTimeout = setTimeout(() => {
+        isOverrideState = false;
+        setProximityLevel(1);
+      }, 800);
+    }
+
+    function triggerUnreadableRedState() {
+      isOverrideState = true;
+      clearTimeout(overrideTimeout);
+      clearDotClasses();
+      dotElements[0].classList.add('active-red');
+
+      if (viewfinder) {
+        viewfinder.classList.add('scan-error');
+        setTimeout(() => viewfinder.classList.remove('scan-error'), 800);
+      }
+
+      tg?.HapticFeedback?.notificationOccurred('error');
+
+      overrideTimeout = setTimeout(() => {
+        isOverrideState = false;
+        setProximityLevel(1);
+      }, 800);
+    }
+
+    function tryDecrypt(rawText) {
+      try {
+        const trimmed = rawText.trim();
+        let decryptedText = "";
+
+        let bytes = CryptoJS.AES.decrypt(trimmed, SECRET_KEY);
+        decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+
+        if (!decryptedText && /^[0-9a-fA-F]+$/.test(trimmed)) {
+          const cipherTextWordArray = CryptoJS.enc.Hex.parse(trimmed);
+          const cipherParams = CryptoJS.lib.CipherParams.create({
+            ciphertext: cipherTextWordArray
+          });
+          
+          bytes = CryptoJS.AES.decrypt(cipherParams, SECRET_KEY);
+          decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+        }
+
+        if (decryptedText && decryptedText.length > 0) {
+          return { text: decryptedText, isEncrypted: true };
+        }
+      } catch (err) {}
+
+      return { text: rawText, isEncrypted: false };
+    }
+
+    /**
+     * Light-weight frame analyzer for gradual Dot fill (1 to 4 White Dots)
+     */
+    function analyzeFrameProximity() {
+      if (isOverrideState) return;
+
+      const videoElement = document.querySelector("#interactive video");
+      if (!videoElement || videoElement.readyState < 2) return;
+
+      try {
+        canvasCtx.drawImage(videoElement, 0, 0, 120, 90);
+        const imgData = canvasCtx.getImageData(30, 22, 60, 45).data; // Center bounding box crop
+        
+        let totalContrast = 0;
+        let luminanceSum = 0;
+
+        for (let i = 0; i < imgData.length; i += 8) {
+          const r = imgData[i];
+          const g = imgData[i + 1];
+          const b = imgData[i + 2];
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+          luminanceSum += lum;
+
+          if (i > 8) {
+            const prevR = imgData[i - 8];
+            totalContrast += Math.abs(r - prevR);
+          }
+        }
+
+        const avgContrast = totalContrast / (imgData.length / 8);
+
+        // Scaled thresholding for 1 to 4 White Dots
+        if (avgContrast < 12) {
+          setProximityLevel(1); // Idle / Distant
+        } else if (avgContrast >= 12 && avgContrast < 22) {
+          setProximityLevel(2); // Object entering frame
+        } else if (avgContrast >= 22 && avgContrast < 35) {
+          setProximityLevel(3); // Object centered & close
+        } else if (avgContrast >= 35) {
+          setProximityLevel(4); // Code aligned & sharp
+        }
+      } catch (e) {
+        // Fallback
+      }
+    }
+
+    function startScanner() {
+      html5QrcodeScanner = new Html5Qrcode("interactive");
+      
+      const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
+        let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+        let boxWidth = Math.floor(minEdgeSize * 0.75);
+        let boxHeight = Math.floor(minEdgeSize * 0.55);
+        return { width: boxWidth, height: boxHeight };
+      }
+
+      const config = { 
+        fps: 15, 
+        qrbox: qrboxFunction, 
+        aspectRatio: 1.333334 
+      };
+      
+      html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess, onScanError)
+      .then(() => {
+        setProximityLevel(1);
+        // Start non-blocking proximity analyzer loop at 100ms intervals
+        proximityInterval = setInterval(analyzeFrameProximity, 100);
+      })
+      .catch((err) => alert("Camera setup error: " + err));
+    }
+
+    function onScanError(errorMessage) {
+      if (errorMessage && errorMessage.includes("ChecksumException")) {
+        triggerUnreadableRedState();
+      }
+    }
+
+    function renderGroupedUI() {
+      listElement.innerHTML = "";
+      const groups = {};
+      
+      scannedCodes.forEach(code => {
+        const match = code.match(/^\(([^)]+)\)(.*)$/);
+        if (match) {
+          const type = match[1].trim().toUpperCase();
+          const sn = match[2].trim();
+          if (!groups[type]) groups[type] = [];
+          groups[type].push({ display: sn, raw: code });
+        } else {
+          if (!groups["OTHERS"]) groups["OTHERS"] = [];
+          groups["OTHERS"].push({ display: code, raw: code });
+        }
+      });
+      
+      const itemHeaders = Object.keys(groups)
+        .filter(h => h !== "OTHERS")
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+      
+      if (groups["OTHERS"]) {
+        itemHeaders.push("OTHERS");
+      }
+      
+      itemHeaders.forEach(headerName => {
+        const headerLi = document.createElement('div');
+        headerLi.className = 'list-category-header';
+        headerLi.innerText = headerName;
+        listElement.appendChild(headerLi);
+        
+        groups[headerName].sort((a, b) => a.display.localeCompare(b.display, undefined, { numeric: true, sensitivity: 'base' }));
+        
+        groups[headerName].forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = `<span>${item.display}</span><span class="status-flash">✓</span>`;
+          listElement.appendChild(li);
+        });
+      });
+    }
+
+    function onScanSuccess(decodedText) {
+      const now = Date.now();
+      
+      const result = tryDecrypt(decodedText);
+      const processedText = result.text;
+      const isEncrypted = result.isEncrypted;
+
+      if (isEncrypted) {
+        triggerSuccessGreenState();
+      } else {
+        triggerUnencryptedAmberState();
+      }
+
+      if (viewfinder) {
+        clearTimeout(flashTimeout);
+        viewfinder.classList.add('scan-success');
+        flashTimeout = setTimeout(() => {
+          viewfinder.classList.remove('scan-success');
+        }, 500); 
+      }
+
+      if (decodedText === lastScannedCode && (now - lastScannedTime) < 2000) return;
+
+      lastScannedCode = decodedText;
+      lastScannedTime = now;
+
+      if (!scannedCodes.includes(processedText)) {
+        scannedCodes.unshift(processedText);
+        countElement.innerText = scannedCodes.length;
+        renderGroupedUI();
+        tg?.HapticFeedback?.notificationOccurred('success');
+      }
+    }
+
+    // Tap Viewfinder to trigger Red indicator test on covered/unreadable barcodes
+    document.getElementById('custom-overlay').addEventListener('click', () => {
+      triggerUnreadableRedState();
+    });
+
+    function sendSerialsBack(serialList) {
+      if (proximityInterval) clearInterval(proximityInterval);
+      
+      const initDataUnsafe = tg?.initDataUnsafe;
+      const chatId = initDataUnsafe?.user?.id;
+      
+      if (!chatId) {
+        alert("System Error: Telegram chat context unavailable.");
         return;
       }
 
-      const encryptedBytes = CryptoJS.AES.encrypt(rawText, key);
-      const encryptedString = encryptedBytes.toString();
+      const scriptBaseUrl = "https://script.google.com/macros/s/AKfycbwb1tV24CFzbcPD70iA09hprOUg7oMSq7hGCxavDbvr7WmRbsFfHuEtvPtQy2Y9flbtMQ/exec";
+      const serialsParam = encodeURIComponent(serialList.join(","));
+      const finalUrl = `${scriptBaseUrl}?chatId=${chatId}&serials=${serialsParam}`;
 
-      document.getElementById('resultBox').style.display = 'block';
-      document.getElementById('encryptedOutput').innerText = encryptedString;
+      fetch(finalUrl, { method: "GET" })
+      .then(() => {
+        setTimeout(() => tg?.close(), 150);
+      })
+      .catch(() => tg?.close());
+    }
 
-      try {
-        const canvas = document.getElementById('datamatrixCanvas');
-        bwipjs.toCanvas(canvas, {
-          bcid:        'datamatrix',
-          text:        encryptedString,
-          scale:       5,
-          padding:     10,
-          backgroundcolor: 'FFFFFF'
-        });
-
-        const imgElement = document.getElementById('matrixImage');
-        imgElement.src = canvas.toDataURL('image/png');
-
-        document.getElementById('matrixContainer').style.display = 'flex';
-        document.getElementById('downloadBtn').style.display = 'block';
-      } catch (e) {
-        alert("Error rendering Data Matrix: " + e);
+    document.getElementById('undo-btn').addEventListener('click', () => {
+      if (scannedCodes.length > 0) {
+        scannedCodes.shift();
+        countElement.innerText = scannedCodes.length;
+        lastScannedCode = "";
+        lastScannedTime = 0;
+        renderGroupedUI();
+        tg?.HapticFeedback?.impactOccurred('medium');
       }
-    }
+    });
 
-    function downloadLabel() {
-      const canvas = document.getElementById('datamatrixCanvas');
-      const rawText = document.getElementById('serialInput').value.trim() || 'label';
-      
-      const filename = rawText.replace(/[^a-zA-Z0-9-_]/g, '_') + '_DataMatrix.png';
+    document.getElementById('done-btn').addEventListener('click', () => {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop()
+          .then(() => sendSerialsBack(scannedCodes))
+          .catch(() => sendSerialsBack(scannedCodes));
+      } else {
+        sendSerialsBack(scannedCodes);
+      }
+    });
 
-      const link = document.createElement('a');
-      link.download = filename;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    }
+    window.addEventListener('DOMContentLoaded', startScanner);
   </script>
 </body>
 </html>
