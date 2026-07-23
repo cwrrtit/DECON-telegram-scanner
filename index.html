@@ -175,10 +175,8 @@
     /* LOGGED SERIALS SECTION */
     #log-container {
       width: 100%;
-      flex-grow: 1;
       display: flex;
       flex-direction: column;
-      min-height: 0; /* Critical for flex scrollable children */
       margin-bottom: 0px;
       position: relative;
     }
@@ -262,7 +260,7 @@
       opacity: 0.6;
     }
 
-    /* 🍏 MODERN ROUNDED CORNERS (24px) FOR BOX */
+    /* 🍏 DYNAMICALLY HIDDEN / COMPACT BOUNDING BOX */
     #scanned-list {
       list-style-type: none;
       padding: 0;
@@ -270,13 +268,17 @@
       width: 100%;
       box-sizing: border-box;
       border: 1px solid #2c2c2e; 
-      border-radius: 24px; /* iOS modern squircle radius */
+      border-radius: 24px;
       background-color: #000000;
       overflow-y: auto;
-      flex-grow: 1;
+      max-height: 28vh; /* Fits cleanly above pinned Complete button */
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      padding-bottom: 70px; /* Space inside list so last item isn't cut off by complete button */
+      display: none; /* Hidden by default when 0 items logged */
+    }
+
+    #scanned-list.has-items {
+      display: block; /* Shown only when items exist */
     }
 
     .list-category-header {
@@ -325,12 +327,11 @@
       right: 0;
       padding-left: 16px;
       padding-right: 16px;
-      padding-bottom: calc(var(--tg-safe-bottom) + 6px); /* Shifted up slightly */
-      padding-top: 32px;
+      padding-bottom: calc(var(--tg-safe-bottom) + 6px);
+      padding-top: 28px;
       z-index: 20;
-      pointer-events: none; /* Let clicks pass through empty gradient space */
+      pointer-events: none;
 
-      /* Dynamic Frosted Gradient: Tapers and fades content underneath */
       background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 40%, rgba(0,0,0,1) 100%);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
@@ -341,7 +342,7 @@
     .btn-complete-wrap {
       position: relative;
       width: 100%;
-      pointer-events: auto; /* Re-enable click for button */
+      pointer-events: auto;
     }
 
     .btn {
@@ -366,7 +367,6 @@
       opacity: 0.9;
     }
 
-    /* Ambient Glow behind Complete Button */
     .btn-complete-wrap::before {
       content: '';
       position: absolute;
@@ -387,7 +387,7 @@
     }
 
     /* ---------------------------------------------------- */
-    /* 🍏 iOS/TELEGRAM FROSTED POP-UP (ROUNDED 26px)       */
+    /* 🍏 iOS/TELEGRAM FROSTED POP-UP                       */
     /* ---------------------------------------------------- */
     #modal-overlay {
       position: fixed;
@@ -419,7 +419,7 @@
       max-height: 72vh;
       background: rgba(28, 28, 30, 0.88);
       border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 26px; /* Native rounded radius matching Telegram popups */
+      border-radius: 26px;
       box-shadow: 0 24px 48px rgba(0, 0, 0, 0.65);
       display: flex;
       flex-direction: column;
@@ -528,7 +528,7 @@
     </div>
   </div>
 
-  <!-- 🍏 Frosted Pop-up Modal (Rounded Modern Radius) -->
+  <!-- 🍏 Frosted Pop-up Modal -->
   <div id="modal-overlay">
     <div class="modal-card" id="modal-card">
       <div class="modal-header">
@@ -801,6 +801,13 @@
     }
 
     function renderGroupedUI() {
+      // Toggle bounding box presence depending on code count
+      if (scannedCodes.length > 0) {
+        listElement.classList.add('has-items');
+      } else {
+        listElement.classList.remove('has-items');
+      }
+
       buildGroupedDOM(listElement);
       buildGroupedDOM(modalListElement);
     }
@@ -850,6 +857,9 @@
 
     /* 🍏 POP-UP CONTROLS */
     function openModal() {
+      // Only open if there are scanned serials to view
+      if (scannedCodes.length === 0) return;
+
       isModalOpen = true;
       modalOverlay.classList.add('active');
       tg?.HapticFeedback?.impactOccurred('medium');
