@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <!-- Mobile Responsiveness -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>AES Encrypted Data Matrix Generator</title>
   
+  <!-- Telegram Web App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <!-- CryptoJS Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <!-- BWIP-JS Library (for Data Matrix rendering) -->
@@ -210,6 +212,16 @@
   </div>
 
   <script>
+    // Initialize Telegram Web App SDK & trigger full screen
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      if (tg.requestFullscreen) {
+        tg.requestFullscreen();
+      }
+    }
+
     function generateEncryptedLabel() {
       const rawText = document.getElementById('serialInput').value.trim();
       const key = document.getElementById('secretKey').value.trim();
