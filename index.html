@@ -257,7 +257,7 @@
       box-shadow: 0 0 8px rgba(0, 122, 255, 0.6);
     }
 
-    /* 🍏 UNDO BUTTON WITH PRESS FEEDBACK */
+    /* 🍏 UNDO BUTTON WITH AMPLIFIED PRESS FEEDBACK */
     .undo-trigger {
       background-color: var(--ios-blue);
       color: #ffffff;
@@ -275,13 +275,15 @@
       justify-content: center;
       gap: 4px;
       -webkit-tap-highlight-color: transparent;
-      transition: background-color 0.05s ease, transform 0.05s ease;
+      /* Adjusted durations for distinct hold vs quick snap */
+      transition: background-color 0.08s ease, transform 0.08s ease, color 0.08s ease;
       box-sizing: border-box;
     }
 
+    /* Stronger depress, scale down further (92%) */
     .undo-trigger:active {
       background-color: var(--ios-blue-pressed);
-      transform: scale(0.96);
+      transform: scale(0.92) translateY(1px); /* Further scaled down */
     }
 
     /* 🍏 BOUNDING BOX WITH MATCHED 16px RADIUS */
@@ -480,24 +482,27 @@
       height: 100%;
     }
 
+    /* 🍏 EDIT BUTTON WITH AMPLIFIED DEPRESS FEEDBACK */
     .edit-btn {
       background: rgba(255, 255, 255, 0.12);
       border: none;
-      color: #ffffff;
+      color: #ffffff; /* Default text white */
       padding: 5px 14px;
       border-radius: var(--button-corner-radius);
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      transition: background-color 0.2s ease, opacity 0.2s ease;
       -webkit-tap-highlight-color: transparent;
       height: 28px;
       display: flex;
       align-items: center;
+      transition: color 0.08s ease, transform 0.08s ease; /* Faster snap back */
     }
 
+    /* Depress effect: text gray + scale down further (92%) */
     .edit-btn:active {
-      opacity: 0.7;
+      color: #a2a2a7; /* White text becomes light grey on depress */
+      transform: scale(0.92) translateY(1px); /* Stronger scale down match unique code scan */
     }
 
     .edit-actions-group {
@@ -1036,6 +1041,7 @@
               } else {
                 selectedSerialsInModal.add(item.raw);
                 li.classList.add('selected-row');
+                /* Row selection haptic:lightimpact triggered here */
                 tg?.HapticFeedback?.impactOccurred('light');
               }
             });
@@ -1159,9 +1165,14 @@
       rowElements.forEach(row => row.classList.remove('selected-row'));
     }
 
+    /* 🍏 Depress FEEDBACK + Haptic for EDIT Button */
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      enterEditMode();
+      /* 🎯 Trigger standard row-selection lightimpact haptic */
+      tg?.HapticFeedback?.impactOccurred('light');
+      
+      // Delay enterEditMode slightly to allow visual press to register clearly
+      setTimeout(enterEditMode, 100);
     });
 
     editCancelBtn.addEventListener('click', (e) => {
