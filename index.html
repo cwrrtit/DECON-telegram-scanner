@@ -50,6 +50,12 @@
       padding-left: 16px;
       padding-right: 16px;
       box-sizing: border-box;
+      transition: padding-top 0.25s ease-in-out;
+    }
+
+    /* Applied dynamically when the camera view stops to keep elements below Telegram controls */
+    .app-container.camera-stopped {
+      padding-top: calc(var(--tg-safe-top) + 28px) !important;
     }
 
     #scanner-container {
@@ -405,14 +411,14 @@
     function updateLayoutInsets() {
       if (!tg) return;
 
-      const contentInset = tg.contentSafeAreaInset || tg.safeAreaInset; //
+      const contentInset = tg.contentSafeAreaInset || tg.safeAreaInset;
       let topMargin = 56;
       let bottomMargin = 20;
 
-      if (contentInset && contentInset.top > 0) { //
+      if (contentInset && contentInset.top > 0) {
         topMargin = contentInset.top + 8;
       }
-      if (contentInset && contentInset.bottom > 0) { //
+      if (contentInset && contentInset.bottom > 0) {
         bottomMargin = contentInset.bottom + 8;
       }
 
@@ -424,15 +430,15 @@
       tg.ready();
       tg.expand();
 
-      if (typeof tg.requestFullscreen === 'function') { //
-        tg.requestFullscreen(); //
+      if (typeof tg.requestFullscreen === 'function') {
+        tg.requestFullscreen();
       }
 
       updateLayoutInsets();
 
-      tg.onEvent('contentSafeAreaChanged', updateLayoutInsets); //
-      tg.onEvent('safeAreaChanged', updateLayoutInsets); //
-      tg.onEvent('fullscreenChanged', updateLayoutInsets); //
+      tg.onEvent('contentSafeAreaChanged', updateLayoutInsets);
+      tg.onEvent('safeAreaChanged', updateLayoutInsets);
+      tg.onEvent('fullscreenChanged', updateLayoutInsets);
     }
 
     const SECRET_KEY = "AkBR7!12K8Le#Bzz_ASH%PekMP45K416";
@@ -736,6 +742,19 @@
     });
 
     document.getElementById('done-btn').addEventListener('click', () => {
+      const container = document.querySelector('.app-container');
+      const scannerContainer = document.getElementById('scanner-container');
+
+      // Shift container down beneath Close control height
+      if (container) {
+        container.classList.add('camera-stopped');
+      }
+
+      // Hide scanner view box
+      if (scannerContainer) {
+        scannerContainer.style.display = 'none';
+      }
+
       if (html5QrcodeScanner) {
         html5QrcodeScanner.stop()
           .then(() => sendSerialsBack(scannedCodes))
