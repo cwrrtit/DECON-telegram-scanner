@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- Mobile Responsiveness with Safe Area Cover -->
+  <!-- Mobile Responsiveness -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>AES Encrypted Data Matrix Generator</title>
   
@@ -14,13 +14,17 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bwip-js/4.10.0/bwip-js-min.js"></script>
 
   <style>
-    /* Global Monospace Styling */
+    :root {
+      /* Fallback top padding before Telegram SDK initializes */
+      --top-offset: calc(env(safe-area-inset-top, 0px) + 50px);
+      --bottom-offset: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    }
+
     * {
       box-sizing: border-box;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
     }
 
-    /* Prevent scrolling rubber-band and stabilize viewport height */
     html, body {
       width: 100%;
       height: 100%;
@@ -31,18 +35,17 @@
       overflow-x: hidden;
     }
 
-    /* Flexible Layout with Dynamic Safe Area Insets */
     .app-viewport {
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
       align-items: center;
       width: 100%;
-      min-height: 100dvh; /* Dynamic Viewport Height prevents vertical jumping */
+      min-height: 100dvh;
       
-      /* Dynamic Safe Area Padding for iOS Notch & Top Bar */
-      padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+      /* Insets driven dynamically via JavaScript & CSS variables */
+      padding-top: var(--top-offset);
+      padding-bottom: var(--bottom-offset);
       padding-left: 16px;
       padding-right: 16px;
     }
@@ -103,32 +106,26 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       -webkit-tap-highlight-color: transparent;
-      z-index: 1; /* Keeps text above glow layer */
+      z-index: 1;
       transition: transform 0.2s ease, opacity 0.2s ease;
     }
 
-    /* Ambient Yellow Backlight (Mobile WebKit Anti-Clipping Fix) */
     .btn-primary::before {
       content: '';
       position: absolute;
       top: 8px; 
       left: 10%;
-      width: 80%; /* Inset sizing prevents edge clipping on narrow viewports */
+      width: 80%;
       height: 80%;
       background: #f4cb11;
       border-radius: inherit;
-      
-      /* Soft Atmospheric Diffusion */
       filter: blur(16px);
       opacity: 0.5;
       z-index: -1;
-
-      /* Safari / Mobile WebKit GPU Hardware Acceleration Fixes */
       -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
       transform: translate3d(0, 0, 0); 
       will-change: filter;
-
       transition: opacity 0.3s ease, filter 0.3s ease;
     }
 
@@ -187,12 +184,10 @@
       border-radius: 8px;
     }
 
-    /* Hidden working canvas */
     #datamatrixCanvas {
       display: none;
     }
 
-    /* Long-pressable image display */
     #matrixImage {
       max-width: 100%;
       height: auto;
@@ -230,21 +225,43 @@
   </div>
 
   <script>
-    // Initialize Telegram Web App SDK & enforce stabilized Fullscreen
     const tg = window.Telegram?.WebApp;
+
+    function applySafeAreaPadding() {
+      if (!tg) return;
+
+      // 1. Check for Telegram's content safe area inset (Bot API 8.0+)
+      const contentInset = tg.contentSafeAreaInset || tg.safeAreaInset; //
+      
+      let topPadding = 56; // Standard full-screen top offset safety margin
+      let bottomPadding = 16;
+
+      if (contentInset && contentInset.top > 0) { //
+        topPadding = contentInset.top + 10; // Extra breathing room below controls
+      }
+      if (contentInset && contentInset.bottom > 0) { //
+        bottomPadding = contentInset.bottom + 10;
+      }
+
+      document.documentElement.style.setProperty('--top-offset', `${topPadding}px`);
+      document.documentElement.style.setProperty('--bottom-offset', `${bottomPadding}px`);
+    }
+
     if (tg) {
       tg.ready();
       tg.expand();
       
-      // Request native direct fullscreen
-      if (typeof tg.requestFullscreen === 'function') {
-        tg.requestFullscreen();
+      if (typeof tg.requestFullscreen === 'function') { //
+        tg.requestFullscreen(); //
       }
 
-      // Sync layout during dynamic view changes to stop visual jumping
-      tg.onEvent('viewportChanged', () => {
-        document.documentElement.style.setProperty('--tg-viewport-height', `${tg.viewportHeight}px`);
-      });
+      // Calculate safe area immediately
+      applySafeAreaPadding();
+
+      // Recalculate whenever Telegram UI updates layout or toggles full screen
+      tg.onEvent('safeAreaChanged', applySafeAreaPadding); //
+      tg.onEvent('contentSafeAreaChanged', applySafeAreaPadding); //
+      tg.onEvent('fullscreenChanged', applySafeAreaPadding); //
     }
 
     function generateEncryptedLabel() {
@@ -256,15 +273,12 @@
         return;
       }
 
-      // 1. Encrypt using exact CryptoJS OpenSSL passphrase format
       const encryptedBytes = CryptoJS.AES.encrypt(rawText, key);
       const encryptedString = encryptedBytes.toString();
 
-      // 2. Display encrypted string output
       document.getElementById('resultBox').style.display = 'block';
       document.getElementById('encryptedOutput').innerText = encryptedString;
 
-      // 3. Render Data Matrix on hidden canvas
       try {
         const canvas = document.getElementById('datamatrixCanvas');
         bwipjs.toCanvas(canvas, {
@@ -275,7 +289,6 @@
           backgroundcolor: 'FFFFFF'
         });
 
-        // 4. Export canvas payload directly to long-pressable <img> tag
         const imgElement = document.getElementById('matrixImage');
         imgElement.src = canvas.toDataURL('image/png');
 
