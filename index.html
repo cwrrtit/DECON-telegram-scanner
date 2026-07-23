@@ -790,10 +790,14 @@
     let flashTimeout = null;
     let overrideTimeout = null;
     let duplicatePulseTimeout = null;
+    let activeUniqueTimeout = null;
     let isOverrideState = false;
     let proximityInterval = null;
     let isModalOpen = false;
     let isEditMode = false;
+    
+    /* 🎯 TRACKS ACTIVE FIRST-TIME SCANNED UNIQUE CODE */
+    let activeUniqueCode = null;
 
     function clearDotClasses() {
       dotElements.forEach(dot => {
@@ -802,6 +806,11 @@
     }
 
     function setProximityLevel(level) {
+      /* CLEAR UNIQUE FIRST-TIME SCAN STATE ONCE DEPARTURE SIGNAL (LEVEL 1) IS CONFIRMED */
+      if (level === 1) {
+        activeUniqueCode = null;
+      }
+
       if (isOverrideState || isModalOpen) return;
       clearDotClasses();
 
@@ -840,7 +849,7 @@
       }, 800);
     }
 
-    /* CONTINUOUS BLUE DOTS FOR DUPLICATES (NO HAPTIC, HOLDS BLUE WHILE IN FRAME) */
+    /* CONTINUOUS BLUE DOTS FOR DUPLICATE SUBSEQUENT SCANS */
     function triggerDuplicateBlueState() {
       isOverrideState = true;
       clearTimeout(overrideTimeout);
@@ -848,7 +857,6 @@
       clearDotClasses();
       dotElements.forEach(dot => dot.classList.add('active-blue'));
 
-      // Continuous re-scan pulse timer: stays blue as long as camera detects the code frame by frame
       duplicatePulseTimeout = setTimeout(() => {
         isOverrideState = false;
         setProximityLevel(1);
@@ -1056,11 +1064,21 @@
       const processedText = result.text;
       const isEncrypted = result.isEncrypted;
 
-      /* CHECK IF CODE ALREADY LOGGED (DUPLICATE HANDLING) */
+      /* CHECK IF CODE ALREADY LOGGED */
       if (scannedCodes.includes(processedText)) {
-        triggerDuplicateBlueState();
+        /* IF CURRENTLY STILL IN FRAME AFTER FIRST SCAN, HOLD GREEN / AMBER STATE */
+        if (activeUniqueCode === processedText) {
+          if (isEncrypted) {
+            triggerSuccessGreenState();
+          } else {
+            triggerUnencryptedAmberState();
+          }
+        } else {
+          /* DEPARTURE HAS OCCURRED -> SUBSEQUENT PASS SCANS NOW PROPERLY SHOW BLUE */
+          triggerDuplicateBlueState();
+        }
         
-        // Keeps green corner glow active on duplicates as requested
+        // Keeps green corner glow active on frame hits
         if (viewfinder) {
           clearTimeout(flashTimeout);
           viewfinder.classList.add('scan-success');
@@ -1070,10 +1088,12 @@
         }
 
         lastScannedTime = now;
-        return; // No haptics triggered
+        return;
       }
 
-      /* NEW UNIQUE SERIAL HANDLER */
+      /* NEW UNIQUE SERIAL HANDLER (FIRST TIME SCAN) */
+      activeUniqueCode = processedText; // Lock into active unique state
+
       if (isEncrypted) {
         triggerSuccessGreenState();
       } else {
@@ -1217,6 +1237,7 @@
         modalCountElement.innerText = scannedCodes.length;
         lastScannedCode = "";
         lastScannedTime = 0;
+        activeUniqueCode = null;
         renderGroupedUI();
         tg?.HapticFeedback?.impactOccurred('medium');
       }
