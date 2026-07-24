@@ -285,10 +285,11 @@
       transform: scale(0.92) translateY(1px);
     }
 
-    /* BOUNDING BOX - Increased bottom padding to guarantee bottom items can scroll to top */
+    /* BOUNDING BOX - Restored standard padding so items fit tightly without empty voids */
     #scanned-list {
       list-style-type: none;
       padding: 0;
+      padding-bottom: 70px !important;
       margin: 0;
       width: 100%;
       box-sizing: border-box;
@@ -301,8 +302,6 @@
       -webkit-tap-highlight-color: transparent;
       display: none;
       position: relative;
-      padding-bottom: 300px !important;
-      scroll-padding-bottom: 300px !important;
       z-index: 1;
     }
 
@@ -315,7 +314,7 @@
       position: -webkit-sticky;
       position: sticky;
       top: 0;
-      z-index: 5;
+      z-index: 10;
       background-color: #1c1c1e;
       padding: 8px 18px;
       font-size: 12px;
@@ -1101,14 +1100,12 @@
       });
     }
 
-    /* Robust, Layout-Flushed Positioning Algorithm for WebKit */
+    /* Robust, Smooth Auto-Scroll to Target Row or Category Header */
     function pinRowToTop(container, rowElement) {
       if (!container || !rowElement) return;
 
-      // Defer execution until WebKit completes DOM mutation & layout paint
       requestAnimationFrame(() => {
         setTimeout(() => {
-          // 1. Find the target header or default to the row itself
           let prevSibling = rowElement.previousElementSibling;
           let targetHeader = null;
 
@@ -1121,11 +1118,8 @@
           }
 
           const targetNode = targetHeader || rowElement;
-
-          // 2. Force WebKit layout flush
           void container.offsetHeight;
 
-          // 3. Compute exact target position relative to container
           let calculatedTop = 0;
           let curr = targetNode;
 
@@ -1134,8 +1128,10 @@
             curr = curr.offsetParent;
           }
 
-          // 4. Force container scroll jump
-          container.scrollTop = calculatedTop;
+          container.scrollTo({
+            top: calculatedTop,
+            behavior: 'smooth'
+          });
         }, 0);
       });
     }
