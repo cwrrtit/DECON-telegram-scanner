@@ -1100,34 +1100,22 @@
       });
     }
 
+    // DIRECT ROW-TARGETING AUTO-SCROLLER
     function pinRowToTop(container, rowElement) {
       if (!container || !rowElement) return;
 
       requestAnimationFrame(() => {
-        setTimeout(() => {
-          let prevSibling = rowElement.previousElementSibling;
-          let targetHeader = null;
+        requestAnimationFrame(() => {
+          const stickyHeader = container.querySelector('.list-category-header');
+          const headerHeight = stickyHeader ? stickyHeader.offsetHeight : 0;
 
-          while (prevSibling) {
-            if (prevSibling.classList.contains('list-category-header')) {
-              targetHeader = prevSibling;
-              break;
-            }
-            prevSibling = prevSibling.previousElementSibling;
-          }
-
-          const targetNode = targetHeader || rowElement;
-          
-          const containerRect = container.getBoundingClientRect();
-          const targetRect = targetNode.getBoundingClientRect();
-          
-          const targetScrollTop = container.scrollTop + (targetRect.top - containerRect.top);
+          const targetScrollTop = rowElement.offsetTop - headerHeight - 8;
 
           container.scrollTo({
             top: Math.max(0, targetScrollTop),
             behavior: 'smooth'
           });
-        }, 30);
+        });
       });
     }
 
