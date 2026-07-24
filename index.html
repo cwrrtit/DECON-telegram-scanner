@@ -299,13 +299,19 @@
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       display: none;
+      position: relative;
     }
 
     #scanned-list.has-items {
       display: block;
     }
 
+    /* 📌 STICKY CATEGORY HEADERS */
     .list-category-header {
+      position: -webkit-sticky;
+      position: sticky;
+      top: 0;
+      z-index: 5;
       background-color: #1c1c1e;
       padding: 8px 18px;
       font-size: 12px;
@@ -314,6 +320,7 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       border-bottom: 1px solid #2c2c2e;
+      margin: 0;
     }
 
     #scanned-list li {
@@ -325,6 +332,10 @@
       align-items: center;
       background: #000000;
       border-bottom: 1px solid #2c2c2e; 
+      transition: background-color 0.3s ease, transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.25s ease, max-height 0.25s ease, padding 0.25s ease;
+      will-change: background-color, transform, opacity, max-height;
+      overflow: hidden;
+      max-height: 60px;
     }
 
     #scanned-list li:last-child {
@@ -333,6 +344,38 @@
 
     #scanned-list li span:first-child {
       color: #ffffff;
+    }
+
+    /* 🟢 PULSING SCAN HIGHLIGHT (#009945) */
+    @keyframes rowPulseGreen {
+      0% {
+        background-color: #009945;
+      }
+      100% {
+        background-color: #000000;
+      }
+    }
+
+    #scanned-list li.pulse-new-item {
+      animation: rowPulseGreen 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+
+    /* 🔴 ANIMATED UNDO DELETION STATES */
+    #scanned-list li.undo-target-glow {
+      background-color: var(--status-red) !important;
+      transition: background-color 0.15s ease !important;
+    }
+
+    #scanned-list li.undo-slide-out {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+
+    #scanned-list li.undo-collapse {
+      max-height: 0 !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      border-bottom: none !important;
     }
 
     .status-flash { 
@@ -547,6 +590,7 @@
       overflow-y: auto;
       flex-grow: 1;
       padding: 0;
+      position: relative;
     }
 
     .modal-list {
@@ -793,6 +837,7 @@
     let proximityInterval = null;
     let isModalOpen = false;
     let isEditMode = false;
+    let isUndoAnimating = false;
     
     /* 🎯 TRACKS ACTIVE FIRST-TIME SCANNED UNIQUE CODE */
     let activeUniqueCode = null;
@@ -1044,7 +1089,7 @@
       });
     }
 
-    function renderGroupedUI() {
+    function renderGroupedUI(newlyAddedRaw = null) {
       if (scannedCodes.length > 0) {
         listElement.classList.add('has-items');
       } else {
@@ -1053,10 +1098,22 @@
 
       buildGroupedDOM(listElement, false);
       buildGroupedDOM(modalListElement, true);
+
+      /* 📌 AUTO-SCROLL & GREEN PULSE GLOW FOR NEWLY SCANNED ITEM */
+      if (newlyAddedRaw) {
+        const targetElement = listElement.querySelector(`li[data-raw="${CSS.escape(newlyAddedRaw)}"]`);
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          targetElement.classList.add('pulse-new-item');
+          setTimeout(() => {
+            targetElement.classList.remove('pulse-new-item');
+          }, 1000);
+        }
+      }
     }
 
     function onScanSuccess(decodedText) {
-      if (isModalOpen) return;
+      if (isModalOpen || isUndoAnimating) return;
 
       const now = Date.now();
       
@@ -1114,7 +1171,7 @@
       scannedCodes.unshift(processedText);
       countElement.innerText = scannedCodes.length;
       modalCountElement.innerText = scannedCodes.length;
-      renderGroupedUI();
+      renderGroupedUI(processedText);
       tg?.HapticFeedback?.notificationOccurred('success');
     }
 
@@ -1232,14 +1289,50 @@
       .catch(() => tg?.close());
     }
 
+    /* ↩ ANIMATED UNDO SEQUENCE */
     document.getElementById('undo-btn').addEventListener('click', () => {
-      if (scannedCodes.length > 0) {
+      if (scannedCodes.length === 0 || isUndoAnimating) return;
+
+      isUndoAnimating = true;
+      const codeToDelete = scannedCodes[0];
+      const targetElement = listElement.querySelector(`li[data-raw="${CSS.escape(codeToDelete)}"]`);
+
+      if (targetElement) {
+        // 1. Instant smooth scroll to target row + Red glow
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        targetElement.classList.add('undo-target-glow');
+        tg?.HapticFeedback?.impactOccurred('medium');
+
+        // 2. Slide out left after brief pulse
+        setTimeout(() => {
+          targetElement.classList.add('undo-slide-out');
+        }, 180);
+
+        // 3. Height collapse and layout reflow
+        setTimeout(() => {
+          targetElement.classList.add('undo-collapse');
+        }, 380);
+
+        // 4. Update data array and re-render clean UI
+        setTimeout(() => {
+          scannedCodes.shift();
+          countElement.innerText = scannedCodes.length;
+          modalCountElement.innerText = scannedCodes.length;
+          lastScannedCode = "";
+          lastScannedTime = 0;
+          activeUniqueCode = null;
+          isUndoAnimating = false;
+          renderGroupedUI();
+        }, 620);
+      } else {
+        // Fallback safety if row isn't found in DOM
         scannedCodes.shift();
         countElement.innerText = scannedCodes.length;
         modalCountElement.innerText = scannedCodes.length;
         lastScannedCode = "";
         lastScannedTime = 0;
         activeUniqueCode = null;
+        isUndoAnimating = false;
         renderGroupedUI();
         tg?.HapticFeedback?.impactOccurred('medium');
       }
