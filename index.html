@@ -250,14 +250,13 @@
       box-shadow: 0 0 8px rgba(255, 59, 48, 0.6);
     }
 
-    /* DUPLICATE CODE DOT STATE (iOS BLUE) */
     .status-dot.active-blue {
       background-color: var(--ios-blue);
       border-color: var(--ios-blue);
       box-shadow: 0 0 8px rgba(0, 122, 255, 0.6);
     }
 
-    /* 🍏 UNDO BUTTON WITH AMPLIFIED PRESS FEEDBACK */
+    /* 🍏 UNDO BUTTON */
     .undo-trigger {
       background-color: var(--ios-blue);
       color: #ffffff;
@@ -284,7 +283,7 @@
       transform: scale(0.92) translateY(1px);
     }
 
-    /* 🍏 BOUNDING BOX WITH MATCHED 16px RADIUS */
+    /* BOUNDING BOX */
     #scanned-list {
       list-style-type: none;
       padding: 0;
@@ -307,7 +306,7 @@
       display: block;
     }
 
-    /* 📌 STICKY CATEGORY HEADERS */
+    /* STICKY CATEGORY HEADERS */
     .list-category-header {
       position: -webkit-sticky;
       position: sticky;
@@ -351,7 +350,7 @@
       color: #ffffff;
     }
 
-    /* 🟢 PULSING SCAN HIGHLIGHT (#009945) */
+    /* PULSING SCAN HIGHLIGHT */
     @keyframes rowPulseGreen {
       0% {
         background-color: #009945;
@@ -365,7 +364,7 @@
       animation: rowPulseGreen 1.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     }
 
-    /* 🔴 DELIBERATE RED UNDO SLIDE & COLLAPSE STATES */
+    /* RED UNDO SLIDE & COLLAPSE STATES */
     #scanned-list li.undo-target-glow {
       background-color: var(--status-red) !important;
     }
@@ -457,7 +456,7 @@
       transition: opacity 0.3s ease;
     }
 
-    /* 🍏 iOS FROSTED POP-UP */
+    /* modal pop-up */
     #modal-overlay {
       position: fixed;
       top: 0;
@@ -529,7 +528,6 @@
       height: 100%;
     }
 
-    /* 🍏 EDIT BUTTON - INSTANT MORPH STATE */
     .edit-btn {
       background: rgba(255, 255, 255, 0.12);
       border: none;
@@ -749,7 +747,7 @@
     </div>
   </div>
 
-  <!-- 🍏 Frosted Pop-up Modal -->
+  <!-- Frosted Pop-up Modal -->
   <div id="modal-overlay">
     <div class="modal-card" id="modal-card">
       <div class="modal-header" id="modal-header">
@@ -845,7 +843,6 @@
     let isEditMode = false;
     let isUndoAnimating = false;
     
-    /* 🎯 TRACKS ACTIVE FIRST-TIME SCANNED UNIQUE CODE */
     let activeUniqueCode = null;
 
     function clearDotClasses() {
@@ -921,8 +918,13 @@
 
       if (viewfinder) {
         clearTimeout(flashTimeout);
+        viewfinder.classList.remove('scan-success');
         viewfinder.classList.add('scan-error');
-        flashTimeout = setTimeout(() => viewfinder.classList.remove('scan-error'), 900);
+        
+        /* 🔧 FIX #1: Clean reset for red highlight */
+        flashTimeout = setTimeout(() => {
+          viewfinder.classList.remove('scan-error');
+        }, 900);
       }
 
       tg?.HapticFeedback?.notificationOccurred('error');
@@ -1055,8 +1057,6 @@
 
         const headerLi = document.createElement('div');
         headerLi.className = 'list-category-header';
-        
-        /* 🏷️ FORMATTED CATEGORY HEADER WITH DYNAMIC QUANTITY */
         headerLi.innerText = `${headerName} (${categoryCount})`;
         targetContainer.appendChild(headerLi);
         
@@ -1151,6 +1151,12 @@
       const processedText = result.text;
       const isEncrypted = result.isEncrypted;
 
+      /* 🔧 FIX #1: Instantly clear any existing error state on successful scan */
+      if (viewfinder) {
+        clearTimeout(flashTimeout);
+        viewfinder.classList.remove('scan-error');
+      }
+
       if (scannedCodes.includes(processedText)) {
         if (activeUniqueCode === processedText) {
           if (isEncrypted) {
@@ -1163,7 +1169,6 @@
         }
         
         if (viewfinder) {
-          clearTimeout(flashTimeout);
           viewfinder.classList.add('scan-success');
           flashTimeout = setTimeout(() => {
             viewfinder.classList.remove('scan-success');
@@ -1183,7 +1188,6 @@
       }
 
       if (viewfinder) {
-        clearTimeout(flashTimeout);
         viewfinder.classList.add('scan-success');
         flashTimeout = setTimeout(() => {
           viewfinder.classList.remove('scan-success');
@@ -1291,6 +1295,7 @@
       }
     });
 
+    /* 🔧 FIX #2: Reliable backend request dispatcher with fallback guarantee */
     function sendSerialsBack(serialList) {
       if (proximityInterval) clearInterval(proximityInterval);
       
@@ -1299,18 +1304,24 @@
       
       if (!chatId) {
         alert("System Error: Telegram chat context unavailable.");
+        tg?.close();
         return;
       }
 
       const scriptBaseUrl = "https://script.google.com/macros/s/AKfycbwb1tV24CFzbcPD70iA09hprOUg7oMSq7hGCxavDbvr7WmRbsFfHuEtvPtQy2Y9flbtMQ/exec";
-      const serialsParam = encodeURIComponent(serialList.join(","));
+      
+      // Send explicit indicator if array is empty
+      const serialsString = serialList.length > 0 ? serialList.join(",") : "NO_CODES_SCANNED";
+      const serialsParam = encodeURIComponent(serialsString);
       const finalUrl = `${scriptBaseUrl}?chatId=${chatId}&serials=${serialsParam}`;
 
-      fetch(finalUrl, { method: "GET" })
-      .then(() => {
-        setTimeout(() => tg?.close(), 150);
-      })
-      .catch(() => tg?.close());
+      // Use fetch with no-cors and an explicit 500ms safety timeout race before closing
+      const fetchPromise = fetch(finalUrl, { mode: 'no-cors' });
+      const timeoutPromise = new Promise(resolve => setTimeout(resolve, 500));
+
+      Promise.race([fetchPromise, timeoutPromise]).finally(() => {
+        tg?.close();
+      });
     }
 
     document.getElementById('undo-btn').addEventListener('click', () => {
