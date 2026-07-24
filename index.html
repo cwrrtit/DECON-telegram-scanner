@@ -855,7 +855,6 @@
     }
 
     function setProximityLevel(level) {
-      /* CLEAR UNIQUE FIRST-TIME SCAN STATE ONCE DEPARTURE SIGNAL (LEVEL 1) IS CONFIRMED */
       if (level === 1) {
         activeUniqueCode = null;
       }
@@ -898,7 +897,6 @@
       }, 900);
     }
 
-    /* 2 BLUE DOTS FOR DUPLICATE SUBSEQUENT SCANS */
     function triggerDuplicateBlueState() {
       isOverrideState = true;
       clearTimeout(overrideTimeout);
@@ -1052,14 +1050,19 @@
       }
       
       itemHeaders.forEach(headerName => {
+        const categoryItems = groups[headerName];
+        const categoryCount = categoryItems.length;
+
         const headerLi = document.createElement('div');
         headerLi.className = 'list-category-header';
-        headerLi.innerText = headerName;
+        
+        /* 🏷️ FORMATTED CATEGORY HEADER WITH DYNAMIC QUANTITY */
+        headerLi.innerText = `${headerName} (${categoryCount})`;
         targetContainer.appendChild(headerLi);
         
-        groups[headerName].sort((a, b) => a.display.localeCompare(b.display, undefined, { numeric: true, sensitivity: 'base' }));
+        categoryItems.sort((a, b) => a.display.localeCompare(b.display, undefined, { numeric: true, sensitivity: 'base' }));
         
-        groups[headerName].forEach(item => {
+        categoryItems.forEach(item => {
           const li = document.createElement('li');
           li.setAttribute('data-raw', item.raw);
 
@@ -1096,15 +1099,12 @@
       });
     }
 
-    /* Helper: Pin row and header perfectly to top of list container */
     function pinRowToTop(container, rowElement) {
       if (!container || !rowElement) return;
       
-      // Calculate offset of row relative to container top
       const rowTop = rowElement.offsetTop;
       let headerOffset = 0;
       
-      // Find associated sticky header above row
       let prevSibling = rowElement.previousElementSibling;
       while (prevSibling) {
         if (prevSibling.classList.contains('list-category-header')) {
@@ -1130,7 +1130,6 @@
       buildGroupedDOM(listElement, false);
       buildGroupedDOM(modalListElement, true);
 
-      /* 📌 PIN & GREEN PULSE GLOW FOR NEWLY SCANNED ITEM */
       if (newlyAddedRaw) {
         const targetElement = listElement.querySelector(`li[data-raw="${CSS.escape(newlyAddedRaw)}"]`);
         if (targetElement) {
@@ -1152,7 +1151,6 @@
       const processedText = result.text;
       const isEncrypted = result.isEncrypted;
 
-      /* CHECK IF CODE ALREADY LOGGED */
       if (scannedCodes.includes(processedText)) {
         if (activeUniqueCode === processedText) {
           if (isEncrypted) {
@@ -1176,7 +1174,6 @@
         return;
       }
 
-      /* NEW UNIQUE SERIAL HANDLER */
       activeUniqueCode = processedText;
 
       if (isEncrypted) {
@@ -1316,7 +1313,6 @@
       .catch(() => tg?.close());
     }
 
-    /* ↩ DELIBERATE, HIGH-VISIBILITY ANIMATED UNDO SEQUENCE */
     document.getElementById('undo-btn').addEventListener('click', () => {
       if (scannedCodes.length === 0 || isUndoAnimating) return;
 
@@ -1325,24 +1321,19 @@
       const targetElement = listElement.querySelector(`li[data-raw="${CSS.escape(codeToDelete)}"]`);
 
       if (targetElement) {
-        // 1. Scroll and lock target row to clear upper section of bounding box
         pinRowToTop(listElement, targetElement);
         
-        // 2. Flash Solid Red & trigger haptic
         targetElement.classList.add('undo-target-glow');
         tg?.HapticFeedback?.impactOccurred('medium');
 
-        // 3. Smoothly slide off-screen to the left (maintaining red background)
         setTimeout(() => {
           targetElement.classList.add('undo-slide-out');
         }, 300);
 
-        // 4. Collapse height and collapse space smoothly
         setTimeout(() => {
           targetElement.classList.add('undo-collapse');
         }, 600);
 
-        // 5. Remove element from data array & re-render clean UI
         setTimeout(() => {
           scannedCodes.shift();
           countElement.innerText = scannedCodes.length;
@@ -1354,7 +1345,6 @@
           renderGroupedUI();
         }, 900);
       } else {
-        // Fallback safety
         scannedCodes.shift();
         countElement.innerText = scannedCodes.length;
         modalCountElement.innerText = scannedCodes.length;
