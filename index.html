@@ -779,6 +779,7 @@
 
     const SECRET_KEY = "AkBR7!12K8Le#Bzz_ASH%PekMP45K416";
 
+    // Store items as objects: { text: "...", rawInput: "...", isEncrypted: boolean }
     let scannedCodes = [];
     const selectedSerialsInModal = new Set();
     
@@ -822,7 +823,6 @@
     /* SANITIZE SCANNED RAW DATA: Remove non-printable ASCII/control bytes */
     function sanitizeScannedData(dataStr) {
       if (!dataStr) return "";
-      // Strip control codes (ASCII 0-31 and 127-159)
       return dataStr.replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim();
     }
 
@@ -927,6 +927,7 @@
     }
 
     function tryDecrypt(rawText) {
+      const sanitized = sanitizeScannedData(rawText);
       try {
         const trimmed = rawText.trim();
         let decryptedText = "";
@@ -945,11 +946,20 @@
         }
 
         if (decryptedText && decryptedText.length > 0) {
-          return { text: sanitizeScannedData(decryptedText), isEncrypted: true };
+          return { 
+            text: sanitizeScannedData(decryptedText), 
+            rawInput: sanitized,
+            isEncrypted: true 
+          };
         }
       } catch (err) {}
 
-      return { text: sanitizeScannedData(rawText), isEncrypted: false };
+      // Raw / unencrypted code
+      return { 
+        text: sanitized, 
+        rawInput: sanitized,
+        isEncrypted: false 
+      };
     }
 
     function analyzeFrameProximity() {
@@ -1017,23 +1027,27 @@
       }
     }
 
-    /* REFINED GROUPING PARSER */
+    /* REFINED GROUPING PARSER: Strictly forces raw codes into OTHERS */
     function buildGroupedDOM(targetContainer, isModal = false) {
       targetContainer.innerHTML = "";
       const groups = {};
       
-      scannedCodes.forEach(code => {
-        // Strict match: require leading parentheses with non-empty item category name
-        const match = code.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
-        if (match) {
-          const type = match[1].trim().toUpperCase();
-          const sn = match[2].trim();
-          if (!groups[type]) groups[type] = [];
-          groups[type].push({ display: sn, raw: code });
-        } else {
-          if (!groups["OTHERS"]) groups["OTHERS"] = [];
-          groups["OTHERS"].push({ display: code, raw: code });
+      scannedCodes.forEach(item => {
+        // ONLY create custom header categories IF code was successfully AES-decrypted
+        if (item.isEncrypted) {
+          const match = item.text.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
+          if (match) {
+            const type = match[1].trim().toUpperCase();
+            const sn = match[2].trim();
+            if (!groups[type]) groups[type] = [];
+            groups[type].push({ display: sn, raw: item.rawInput });
+            return;
+          }
         }
+        
+        // All unencrypted / raw codes remain under OTHERS
+        if (!groups["OTHERS"]) groups["OTHERS"] = [];
+        groups["OTHERS"].push({ display: item.text, raw: item.rawInput });
       });
       
       const itemHeaders = Object.keys(groups)
@@ -1156,6 +1170,7 @@
       
       const result = tryDecrypt(decodedText);
       const processedText = result.text;
+      const rawInput = result.rawInput;
       const isEncrypted = result.isEncrypted;
 
       // DISCARD CORRUPTED / EMPTY READS
@@ -1169,8 +1184,11 @@
         viewfinder.classList.remove('scan-error');
       }
 
-      if (scannedCodes.includes(processedText)) {
-        if (activeUniqueCode === processedText) {
+      // Check for duplicates by comparing raw inputs
+      const isDuplicate = scannedCodes.some(item => item.rawInput === rawInput);
+
+      if (isDuplicate) {
+        if (activeUniqueCode === rawInput) {
           if (isEncrypted) {
             triggerSuccessGreenState();
           } else {
@@ -1191,7 +1209,7 @@
         return;
       }
 
-      activeUniqueCode = processedText;
+      activeUniqueCode = rawInput;
 
       if (isEncrypted) {
         triggerSuccessGreenState();
@@ -1209,10 +1227,10 @@
       lastScannedCode = decodedText;
       lastScannedTime = now;
 
-      scannedCodes.unshift(processedText);
+      scannedCodes.unshift({ text: processedText, rawInput: rawInput, isEncrypted: isEncrypted });
       countElement.innerText = scannedCodes.length;
       modalCountElement.innerText = scannedCodes.length;
-      renderGroupedUI(processedText);
+      renderGroupedUI(rawInput);
       tg?.HapticFeedback?.notificationOccurred('success');
     }
 
@@ -1285,7 +1303,7 @@
         }
       });
 
-      scannedCodes = scannedCodes.filter(code => !selectedSerialsInModal.has(code));
+      scannedCodes = scannedCodes.filter(item => !selectedSerialsInModal.has(item.rawInput));
       selectedSerialsInModal.clear();
 
       setTimeout(() => {
@@ -1307,7 +1325,7 @@
       }
     });
 
-    function sendSerialsBack(serialList) {
+    function sendSerialsBack(codeObjects) {
       if (proximityInterval) clearInterval(proximityInterval);
       
       const initDataUnsafe = tg?.initDataUnsafe;
@@ -1321,6 +1339,8 @@
 
       const scriptBaseUrl = "https://script.google.com/macros/s/AKfycbwb1tV24CFzbcPD70iA09hprOUg7oMSq7hGCxavDbvr7WmRbsFfHuEtvPtQy2Y9flbtMQ/exec";
       
+      // Extract string representations to send back to backend
+      const serialList = codeObjects.map(item => item.text);
       const serialsString = serialList.length > 0 ? serialList.join(",") : "NO_CODES_SCANNED";
       const serialsParam = encodeURIComponent(serialsString);
       const finalUrl = `${scriptBaseUrl}?chatId=${chatId}&serials=${serialsParam}`;
@@ -1337,8 +1357,8 @@
       if (scannedCodes.length === 0 || isUndoAnimating) return;
 
       isUndoAnimating = true;
-      const codeToDelete = scannedCodes[0];
-      const targetElement = getRowByRawData(listElement, codeToDelete);
+      const itemToDelete = scannedCodes[0];
+      const targetElement = getRowByRawData(listElement, itemToDelete.rawInput);
 
       if (targetElement) {
         pinRowToTop(listElement, targetElement);
