@@ -241,31 +241,38 @@
       box-shadow: 0 0 8px rgba(0, 122, 255, 0.6);
     }
 
-    /* Slightly lengthened horizontally, arrow scaled up */
+    /* Slightly wider undo button with scaled-up SVG arrow */
     .undo-trigger {
       background-color: var(--ios-blue);
       color: #78fefb;
-      font-size: 22px;
-      font-weight: 700;
       cursor: pointer;
       border: none;
-      padding: 0 14px;
-      min-width: 38px;
+      padding: 0 16px;
+      min-width: 44px;
       height: 30px;
-      line-height: 1;
       border-radius: var(--button-corner-radius);
       user-select: none;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       -webkit-tap-highlight-color: transparent;
-      transition: background-color 0.08s ease, transform 0.08s ease, color 0.08s ease;
+      transition: background-color 0.08s ease, transform 0.08s ease;
       box-sizing: border-box;
+    }
+
+    .undo-trigger svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: #78fefb;
+      stroke-width: 2.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     .undo-trigger:active {
       background-color: var(--ios-blue-pressed);
-      transform: scale(0.94) translateY(1px);
+      transform: scale(0.94);
     }
 
     #scanned-list {
@@ -522,7 +529,7 @@
       align-items: center;
     }
 
-    /* Edit action container & symmetrical aligned '✕' */
+    /* Edit action container & precise SVG alignment for "X" */
     .edit-actions-group {
       display: none;
       background: rgba(255, 255, 255, 0.12);
@@ -546,9 +553,7 @@
       background: transparent;
       border: none;
       color: #ffffff;
-      padding: 0 14px;
-      font-size: 15px;
-      font-weight: 800;
+      padding: 0 12px;
       cursor: pointer;
       border-right: 1px solid rgba(255, 255, 255, 0.15);
       -webkit-tap-highlight-color: transparent;
@@ -556,7 +561,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      line-height: 1;
+    }
+
+    .action-btn-cancel svg {
+      width: 14px;
+      height: 14px;
+      stroke: #ffffff;
+      stroke-width: 3.2;
+      stroke-linecap: round;
+      display: block;
     }
 
     .action-btn-delete {
@@ -717,7 +730,9 @@
           <span class="status-dot" id="dot-4"></span>
         </div>
 
-        <button type="button" class="undo-trigger" id="undo-btn">↩</button>
+        <button type="button" class="undo-trigger" id="undo-btn">
+          <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
+        </button>
       </div>
       
       <ul id="scanned-list"></ul>
@@ -737,7 +752,9 @@
         <div class="header-actions">
           <button class="edit-btn" id="modal-edit-btn">Edit</button>
           <div class="edit-actions-group">
-            <button class="action-btn-cancel" id="edit-cancel-btn">&#10005;</button>
+            <button class="action-btn-cancel" id="edit-cancel-btn">
+              <svg viewBox="0 0 16 16"><path d="M3 3l10 10M13 3L3 13"/></svg>
+            </button>
             <button class="action-btn-delete" id="edit-delete-btn">Delete</button>
           </div>
         </div>
