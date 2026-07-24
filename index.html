@@ -375,7 +375,6 @@
       color: #00db62; 
       font-weight: 500; 
       font-size: 15px; 
-      transition: opacity 0.25s ease;
     }
 
     #control-panel {
@@ -534,8 +533,8 @@
       opacity: 1;
       transform: scale(1) translateX(0);
       transform-origin: right center;
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
-                  opacity 0.28s cubic-bezier(0.25, 1, 0.5, 1),
+      transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), 
+                  opacity 0.32s cubic-bezier(0.25, 1, 0.5, 1),
                   background-color 0.15s ease;
       pointer-events: auto;
       white-space: nowrap;
@@ -554,8 +553,8 @@
       transform: scale(0.9) translateX(10px);
       transform-origin: right center;
       pointer-events: none;
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
-                  opacity 0.28s cubic-bezier(0.25, 1, 0.5, 1);
+      transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), 
+                  opacity 0.32s cubic-bezier(0.25, 1, 0.5, 1);
     }
 
     .is-editing .edit-btn {
@@ -617,8 +616,8 @@
       box-sizing: border-box;
       background-color: #2c2c2e;
       color: #7a3232;
-      transition: background-color 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
-                  color 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
+      transition: background-color 0.38s cubic-bezier(0.25, 1, 0.5, 1), 
+                  color 0.38s cubic-bezier(0.25, 1, 0.5, 1), 
                   transform 0.1s ease;
     }
 
@@ -656,14 +655,14 @@
       align-items: center;
       background: #0a0a0a;
       border-bottom: 1px solid #2c2c2e;
-      transition: background-color 0.25s ease,
-                  max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-                  opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-                  padding 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 0.38s cubic-bezier(0.25, 1, 0.5, 1), 
+                  background-color 0.2s ease,
+                  max-height 0.38s cubic-bezier(0.25, 1, 0.5, 1),
+                  opacity 0.38s cubic-bezier(0.25, 1, 0.5, 1),
+                  padding 0.38s cubic-bezier(0.25, 1, 0.5, 1);
       overflow: hidden;
       max-height: 60px;
       opacity: 1;
-      will-change: transform, background-color;
     }
 
     .modal-list li.deleting {
@@ -683,9 +682,7 @@
       justify-content: space-between;
       align-items: center;
       width: 100%;
-      transform: translate3d(0, 0, 0);
-      transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
-      will-change: transform;
+      transition: transform 0.38s cubic-bezier(0.25, 1, 0.5, 1);
     }
 
     .modal-list li span:first-child {
@@ -694,7 +691,7 @@
 
     .selection-circle {
       position: absolute;
-      left: 18px;
+      left: -32px;
       width: 22px;
       height: 22px;
       border-radius: 50%;
@@ -703,13 +700,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      opacity: 0;
-      transform: translate3d(-24px, 0, 0) scale(0.8);
-      transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), 
-                  opacity 0.28s cubic-bezier(0.25, 1, 0.5, 1),
-                  background-color 0.15s ease, 
-                  border-color 0.15s ease;
-      will-change: transform, opacity;
+      transition: transform 0.38s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.15s ease, border-color 0.15s ease;
     }
 
     .selection-circle::after {
@@ -724,16 +715,15 @@
     }
 
     .is-editing .modal-row-content {
-      transform: translate3d(34px, 0, 0);
+      transform: translateX(36px);
     }
 
     .is-editing .selection-circle {
-      opacity: 1;
-      transform: translate3d(0, 0, 0) scale(1);
+      transform: translateX(50px);
     }
 
     .is-editing .status-flash {
-      opacity: 0;
+      display: none !important;
     }
 
     .modal-list li.selected-row {
@@ -1402,7 +1392,7 @@
       const scriptBaseUrl = "https://script.google.com/macros/s/AKfycbwb1tV24CFzbcPD70iA09hprOUg7oMSq7hGCxavDbvr7WmRbsFfHuEtvPtQy2Y9flbtMQ/exec";
       
       const serialList = codeObjects.map(item => item.text);
-      const serialsString = serialList.length > 0 ? serialList.join(",") : "NO_CODES_SCANNED";
+      const serialsString = serialList.length > 0 ? serialList.join(",") : "No codes scanned";
       const serialsParam = encodeURIComponent(serialsString);
       const finalUrl = `${scriptBaseUrl}?chatId=${chatId}&serials=${serialsParam}`;
 
