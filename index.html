@@ -241,7 +241,6 @@
       box-shadow: 0 0 8px rgba(0, 122, 255, 0.6);
     }
 
-    /* Undo button tuned: less horizontally long, scaled down icon */
     .undo-trigger {
       background-color: var(--ios-blue);
       color: #78fefb;
@@ -507,7 +506,6 @@
       font-weight: 700;
     }
 
-    /* Morphing action container for Edit -> X & Delete */
     .header-actions {
       position: relative;
       display: flex;
@@ -559,7 +557,6 @@
                   opacity 0.28s ease;
     }
 
-    /* Fluid Morphing States */
     .is-editing .edit-btn {
       opacity: 0;
       transform: scale(0.8);
@@ -572,7 +569,6 @@
       pointer-events: auto;
     }
 
-    /* Separate pill buttons: X button */
     .action-btn-cancel {
       background: #2c2c2e;
       border: none;
@@ -604,7 +600,6 @@
       display: block;
     }
 
-    /* Separate pill buttons: Delete button with greyed/active muted-red states */
     .action-btn-delete {
       border: none;
       padding: 0 14px;
@@ -619,14 +614,11 @@
       justify-content: center;
       line-height: 1;
       box-sizing: border-box;
-      
-      /* Inactive/Greyed Default State */
       background-color: #2c2c2e;
       color: #7a3232;
       transition: background-color 0.25s ease, color 0.25s ease, transform 0.1s ease;
     }
 
-    /* Active Muted Red State when item(s) selected */
     .action-btn-delete.has-selection {
       background-color: rgba(255, 59, 48, 0.22);
       color: var(--status-red);
@@ -1350,8 +1342,7 @@
         tg?.HapticFeedback?.impactOccurred('heavy');
       }, 160);
 
-      exitEditMode();
-
+      // Animate rows collapse
       const allModalRows = modalListElement.querySelectorAll('li');
       allModalRows.forEach(row => {
         const raw = row.getAttribute('data-raw');
@@ -1360,10 +1351,12 @@
         }
       });
 
-      scannedCodes = scannedCodes.filter(item => !selectedSerialsInModal.has(item.rawInput));
-      selectedSerialsInModal.clear();
-
+      // Filter out deleted items, then clear the set after
       setTimeout(() => {
+        scannedCodes = scannedCodes.filter(item => !selectedSerialsInModal.has(item.rawInput));
+        selectedSerialsInModal.clear();
+        
+        exitEditMode();
         countElement.innerText = scannedCodes.length;
         modalCountElement.innerText = scannedCodes.length;
         renderGroupedUI();
