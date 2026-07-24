@@ -6,7 +6,7 @@
   <title>Scanner</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
-  <!-- 🔐 Client-Side AES Decryption -->
+  <!-- Client-Side AES Decryption -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
   <style>
@@ -15,18 +15,18 @@
       --tg-safe-top: 56px;
       --tg-safe-bottom: 24px;
 
-      /* 🎨 CORNER RADII */
+      /* CORNER RADII */
       --app-corner-radius: 16px;
       --button-corner-radius: 12px;
 
-      /* 🎨 STATUS INDICATOR COLORS */
+      /* STATUS INDICATOR COLORS */
       --status-red: #ff3b30;
       --status-amber: #f4cb11;
       --status-green: #00db62;
       --status-white: #ffffff;
       --status-idle-border: #3a3a3c;
       
-      /* 🍏 iOS SYSTEM BLUE ACCENT */
+      /* iOS SYSTEM BLUE ACCENT */
       --ios-blue: #007aff;
       --ios-blue-pressed: #0062cc;
     }
@@ -66,7 +66,7 @@
       padding-top: calc(var(--tg-safe-top) + 70px) !important;
     }
 
-    /* 🍏 CAMERA FEED CONTAINER WITH 16px RADIUS */
+    /* CAMERA FEED CONTAINER WITH 16px RADIUS */
     #scanner-container {
       position: relative; 
       width: 100%;
@@ -183,8 +183,10 @@
       width: 100%;
       display: flex;
       flex-direction: column;
+      flex-grow: 1;
       margin-bottom: 0px;
       position: relative;
+      overflow: hidden;
     }
 
     .log-header-row {
@@ -256,7 +258,7 @@
       box-shadow: 0 0 8px rgba(0, 122, 255, 0.6);
     }
 
-    /* 🍏 UNDO BUTTON */
+    /* UNDO BUTTON */
     .undo-trigger {
       background-color: var(--ios-blue);
       color: #ffffff;
@@ -283,7 +285,7 @@
       transform: scale(0.92) translateY(1px);
     }
 
-    /* BOUNDING BOX */
+    /* BOUNDING BOX (Extends visually down behind the COMPLETE button) */
     #scanned-list {
       list-style-type: none;
       padding: 0;
@@ -294,12 +296,16 @@
       border-radius: var(--app-corner-radius);
       background-color: #000000;
       overflow-y: auto;
-      max-height: 28vh;
+      flex-grow: 1;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       display: none;
       position: relative;
       scroll-behavior: smooth;
+      /* Ensures items do not get blocked behind complete button on scroll */
+      padding-bottom: 90px !important;
+      scroll-padding-bottom: 90px !important;
+      z-index: 1;
     }
 
     #scanned-list.has-items {
@@ -389,7 +395,7 @@
       font-size: 15px; 
     }
 
-    /* PINNED BOTTOM PANEL */
+    /* PINNED BOTTOM PANEL WITH GRADIENT FADE OVERLAY */
     #control-panel {
       position: absolute;
       bottom: 0;
@@ -398,15 +404,15 @@
       padding-left: 16px;
       padding-right: 16px;
       padding-bottom: calc(var(--tg-safe-bottom) + 6px);
-      padding-top: 52px;
+      padding-top: 40px;
       z-index: 20;
       pointer-events: none;
 
       background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.85) 45%, rgba(0,0,0,1) 100%);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      mask-image: linear-gradient(to bottom, transparent 0%, black 25%);
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 25%);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
     }
 
     .btn-complete-wrap {
@@ -456,7 +462,7 @@
       transition: opacity 0.3s ease;
     }
 
-    /* modal pop-up */
+    /* MODAL POP-UP */
     #modal-overlay {
       position: fixed;
       top: 0;
@@ -736,7 +742,7 @@
         <button type="button" class="undo-trigger" id="undo-btn">↩ Undo</button>
       </div>
       
-      <!-- Native Scrollable Bounding Box -->
+      <!-- Native Scrollable Bounding Box extending down -->
       <ul id="scanned-list"></ul>
     </div>
 
@@ -836,7 +842,6 @@
     let flashTimeout = null;
     let overrideTimeout = null;
     let duplicatePulseTimeout = null;
-    let activeUniqueTimeout = null;
     let isOverrideState = false;
     let proximityInterval = null;
     let isModalOpen = false;
@@ -921,7 +926,6 @@
         viewfinder.classList.remove('scan-success');
         viewfinder.classList.add('scan-error');
         
-        /* 🔧 FIX #1: Clean reset for red highlight */
         flashTimeout = setTimeout(() => {
           viewfinder.classList.remove('scan-error');
         }, 900);
@@ -1099,23 +1103,25 @@
       });
     }
 
+    /* Reinforced Smooth Scroll to Top with Sticky Header offset */
     function pinRowToTop(container, rowElement) {
       if (!container || !rowElement) return;
       
-      const rowTop = rowElement.offsetTop;
-      let headerOffset = 0;
-      
       let prevSibling = rowElement.previousElementSibling;
+      let targetHeader = null;
+
       while (prevSibling) {
         if (prevSibling.classList.contains('list-category-header')) {
-          headerOffset = prevSibling.offsetHeight || 30;
+          targetHeader = prevSibling;
           break;
         }
         prevSibling = prevSibling.previousElementSibling;
       }
 
+      const targetTop = targetHeader ? targetHeader.offsetTop : rowElement.offsetTop;
+
       container.scrollTo({
-        top: Math.max(0, rowTop - headerOffset),
+        top: Math.max(0, targetTop),
         behavior: 'smooth'
       });
     }
@@ -1151,7 +1157,6 @@
       const processedText = result.text;
       const isEncrypted = result.isEncrypted;
 
-      /* 🔧 FIX #1: Instantly clear any existing error state on successful scan */
       if (viewfinder) {
         clearTimeout(flashTimeout);
         viewfinder.classList.remove('scan-error');
@@ -1295,7 +1300,6 @@
       }
     });
 
-    /* 🔧 FIX #2: Reliable backend request dispatcher with fallback guarantee */
     function sendSerialsBack(serialList) {
       if (proximityInterval) clearInterval(proximityInterval);
       
@@ -1310,12 +1314,10 @@
 
       const scriptBaseUrl = "https://script.google.com/macros/s/AKfycbwb1tV24CFzbcPD70iA09hprOUg7oMSq7hGCxavDbvr7WmRbsFfHuEtvPtQy2Y9flbtMQ/exec";
       
-      // Send explicit indicator if array is empty
       const serialsString = serialList.length > 0 ? serialList.join(",") : "NO_CODES_SCANNED";
       const serialsParam = encodeURIComponent(serialsString);
       const finalUrl = `${scriptBaseUrl}?chatId=${chatId}&serials=${serialsParam}`;
 
-      // Use fetch with no-cors and an explicit 500ms safety timeout race before closing
       const fetchPromise = fetch(finalUrl, { mode: 'no-cors' });
       const timeoutPromise = new Promise(resolve => setTimeout(resolve, 500));
 
