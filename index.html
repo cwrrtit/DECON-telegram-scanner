@@ -217,9 +217,8 @@
     }
 
     .status-dot {
-      width: 100px;
-      height: 10px;
       width: 10px;
+      height: 10px;
       border-radius: 50%;
       box-sizing: border-box;
       background-color: transparent;
@@ -286,7 +285,7 @@
       transform: scale(0.92) translateY(1px);
     }
 
-    /* BOUNDING BOX */
+    /* BOUNDING BOX - Removed smooth scroll to prevent WebKit scroll locks */
     #scanned-list {
       list-style-type: none;
       padding: 0;
@@ -302,7 +301,6 @@
       -webkit-tap-highlight-color: transparent;
       display: none;
       position: relative;
-      scroll-behavior: smooth;
       padding-bottom: 90px !important;
       scroll-padding-bottom: 90px !important;
       z-index: 1;
@@ -1103,31 +1101,31 @@
       });
     }
 
-    /* Reinforced Smooth Scroll with Layout Reflow Guarantee */
+    /* Reliable, immediate positioning algorithm that computes target offsets directly */
     function pinRowToTop(container, rowElement) {
       if (!container || !rowElement) return;
 
       requestAnimationFrame(() => {
-        setTimeout(() => {
-          let prevSibling = rowElement.previousElementSibling;
-          let targetHeader = null;
+        let prevSibling = rowElement.previousElementSibling;
+        let targetHeader = null;
 
-          while (prevSibling) {
-            if (prevSibling.classList.contains('list-category-header')) {
-              targetHeader = prevSibling;
-              break;
-            }
-            prevSibling = prevSibling.previousElementSibling;
+        while (prevSibling) {
+          if (prevSibling.classList.contains('list-category-header')) {
+            targetHeader = prevSibling;
+            break;
           }
+          prevSibling = prevSibling.previousElementSibling;
+        }
 
-          const targetNode = targetHeader || rowElement;
-          const targetOffsetTop = targetNode.offsetTop;
+        const targetNode = targetHeader || rowElement;
+        
+        // Compute relative distance inside container ignoring current container scroll
+        const containerRect = container.getBoundingClientRect();
+        const targetRect = targetNode.getBoundingClientRect();
+        const targetScrollTop = container.scrollTop + (targetRect.top - containerRect.top);
 
-          container.scrollTo({
-            top: targetOffsetTop,
-            behavior: 'smooth'
-          });
-        }, 30);
+        // Instant scroll jump guarantees layout execution in iOS WebViews without getting canceled
+        container.scrollTop = targetScrollTop;
       });
     }
 
