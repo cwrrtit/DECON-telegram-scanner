@@ -179,7 +179,7 @@
       align-items: center;
       margin: 0 4px 10px 4px;
       flex-shrink: 0;
-      height: 28px;
+      height: 30px;
     }
 
     h3 {
@@ -189,14 +189,14 @@
       color: #a2a2a7; 
       letter-spacing: 0.4px;
       font-weight: 600;
-      line-height: 28px;
+      line-height: 30px;
     }
 
     .status-dots-group {
       display: flex;
       align-items: center;
       gap: 10px;
-      height: 28px;
+      height: 30px;
     }
 
     .status-dot {
@@ -244,19 +244,19 @@
     .undo-trigger {
       background-color: var(--ios-blue);
       color: #ffffff;
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 700;
       cursor: pointer;
       border: none;
-      padding: 0 12px;
-      height: 28px;
-      line-height: 28px;
+      padding: 0 14px;
+      height: 30px;
+      line-height: 30px;
       border-radius: var(--button-corner-radius);
       user-select: none;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 6px;
       -webkit-tap-highlight-color: transparent;
       transition: background-color 0.08s ease, transform 0.08s ease, color 0.08s ease;
       box-sizing: border-box;
@@ -264,7 +264,7 @@
 
     .undo-trigger:active {
       background-color: var(--ios-blue-pressed);
-      transform: scale(0.92) translateY(1px);
+      transform: scale(0.94) translateY(1px);
     }
 
     #scanned-list {
@@ -313,7 +313,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #000000;
+      background: #0a0a0a;
       border-bottom: 1px solid #2c2c2e; 
       transition: background-color 0.4s cubic-bezier(0.25, 1, 0.5, 1), 
                   transform 0.55s cubic-bezier(0.25, 1, 0.5, 1), 
@@ -338,7 +338,7 @@
         background-color: #009945;
       }
       100% {
-        background-color: #000000;
+        background-color: #0a0a0a;
       }
     }
 
@@ -590,7 +590,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #000000;
+      background: #0a0a0a;
       border-bottom: 1px solid #2c2c2e;
       transition: transform 0.38s cubic-bezier(0.25, 1, 0.5, 1), 
                   background-color 0.2s ease,
@@ -1100,7 +1100,6 @@
       });
     }
 
-    // DIRECT ROW-TARGETING AUTO-SCROLLER
     function pinRowToTop(container, rowElement) {
       if (!container || !rowElement) return;
 
