@@ -127,7 +127,7 @@
       width: 36px; 
       height: 36px; 
       box-sizing: border-box;
-      transition: border-color 0.2s ease, filter 0.2s ease;
+      transition: border-color 0.3s ease, filter 0.3s ease;
     }
 
     .tl {
@@ -169,13 +169,13 @@
     /* SUCCESS CORNER GLOW */
     #custom-viewfinder.scan-success .scanner-corner {
       border-color: #00db62 !important; 
-      filter: drop-shadow(0px 0px 1px rgba(1, 231, 40, 0.555));
+      filter: drop-shadow(0px 0px 4px rgba(1, 231, 40, 0.75));
     }
 
     /* RED CORNER GLOW FOR UNREADABLE CODE */
     #custom-viewfinder.scan-error .scanner-corner {
       border-color: #ff3b30 !important; 
-      filter: drop-shadow(0px 0px 1px rgba(255, 59, 48, 0.555));
+      filter: drop-shadow(0px 0px 4px rgba(255, 59, 48, 0.75));
     }
 
     /* LOGGED SERIALS SECTION */
@@ -300,6 +300,7 @@
       -webkit-tap-highlight-color: transparent;
       display: none;
       position: relative;
+      scroll-behavior: smooth;
     }
 
     #scanned-list.has-items {
@@ -332,7 +333,11 @@
       align-items: center;
       background: #000000;
       border-bottom: 1px solid #2c2c2e; 
-      transition: background-color 0.3s ease, transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.25s ease, max-height 0.25s ease, padding 0.25s ease;
+      transition: background-color 0.4s cubic-bezier(0.25, 1, 0.5, 1), 
+                  transform 0.55s cubic-bezier(0.25, 1, 0.5, 1), 
+                  opacity 0.45s ease, 
+                  max-height 0.45s cubic-bezier(0.25, 1, 0.5, 1), 
+                  padding 0.45s cubic-bezier(0.25, 1, 0.5, 1);
       will-change: background-color, transform, opacity, max-height;
       overflow: hidden;
       max-height: 60px;
@@ -357,18 +362,18 @@
     }
 
     #scanned-list li.pulse-new-item {
-      animation: rowPulseGreen 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      animation: rowPulseGreen 1.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     }
 
-    /* 🔴 ANIMATED UNDO DELETION STATES */
+    /* 🔴 DELIBERATE RED UNDO SLIDE & COLLAPSE STATES */
     #scanned-list li.undo-target-glow {
       background-color: var(--status-red) !important;
-      transition: background-color 0.15s ease !important;
     }
 
     #scanned-list li.undo-slide-out {
-      transform: translateX(-100%);
-      opacity: 0;
+      background-color: var(--status-red) !important;
+      transform: translateX(-105%);
+      opacity: 0.2;
     }
 
     #scanned-list li.undo-collapse {
@@ -376,6 +381,7 @@
       padding-top: 0 !important;
       padding-bottom: 0 !important;
       border-bottom: none !important;
+      opacity: 0 !important;
     }
 
     .status-flash { 
@@ -874,7 +880,7 @@
       overrideTimeout = setTimeout(() => {
         isOverrideState = false;
         setProximityLevel(1);
-      }, 500);
+      }, 700);
     }
 
     function triggerUnencryptedAmberState() {
@@ -889,7 +895,7 @@
       overrideTimeout = setTimeout(() => {
         isOverrideState = false;
         setProximityLevel(1);
-      }, 800);
+      }, 900);
     }
 
     /* 2 BLUE DOTS FOR DUPLICATE SUBSEQUENT SCANS */
@@ -905,7 +911,7 @@
       duplicatePulseTimeout = setTimeout(() => {
         isOverrideState = false;
         setProximityLevel(1);
-      }, 400); 
+      }, 500); 
     }
 
     function triggerUnreadableRedState() {
@@ -916,8 +922,9 @@
       dotElements[0].classList.add('active-red');
 
       if (viewfinder) {
+        clearTimeout(flashTimeout);
         viewfinder.classList.add('scan-error');
-        setTimeout(() => viewfinder.classList.remove('scan-error'), 800);
+        flashTimeout = setTimeout(() => viewfinder.classList.remove('scan-error'), 900);
       }
 
       tg?.HapticFeedback?.notificationOccurred('error');
@@ -925,7 +932,7 @@
       overrideTimeout = setTimeout(() => {
         isOverrideState = false;
         setProximityLevel(1);
-      }, 800);
+      }, 900);
     }
 
     function tryDecrypt(rawText) {
@@ -1089,6 +1096,30 @@
       });
     }
 
+    /* Helper: Pin row and header perfectly to top of list container */
+    function pinRowToTop(container, rowElement) {
+      if (!container || !rowElement) return;
+      
+      // Calculate offset of row relative to container top
+      const rowTop = rowElement.offsetTop;
+      let headerOffset = 0;
+      
+      // Find associated sticky header above row
+      let prevSibling = rowElement.previousElementSibling;
+      while (prevSibling) {
+        if (prevSibling.classList.contains('list-category-header')) {
+          headerOffset = prevSibling.offsetHeight || 30;
+          break;
+        }
+        prevSibling = prevSibling.previousElementSibling;
+      }
+
+      container.scrollTo({
+        top: Math.max(0, rowTop - headerOffset),
+        behavior: 'smooth'
+      });
+    }
+
     function renderGroupedUI(newlyAddedRaw = null) {
       if (scannedCodes.length > 0) {
         listElement.classList.add('has-items');
@@ -1099,15 +1130,15 @@
       buildGroupedDOM(listElement, false);
       buildGroupedDOM(modalListElement, true);
 
-      /* 📌 AUTO-SCROLL & GREEN PULSE GLOW FOR NEWLY SCANNED ITEM */
+      /* 📌 PIN & GREEN PULSE GLOW FOR NEWLY SCANNED ITEM */
       if (newlyAddedRaw) {
         const targetElement = listElement.querySelector(`li[data-raw="${CSS.escape(newlyAddedRaw)}"]`);
         if (targetElement) {
-          targetElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          pinRowToTop(listElement, targetElement);
           targetElement.classList.add('pulse-new-item');
           setTimeout(() => {
             targetElement.classList.remove('pulse-new-item');
-          }, 1000);
+          }, 1400);
         }
       }
     }
@@ -1123,7 +1154,6 @@
 
       /* CHECK IF CODE ALREADY LOGGED */
       if (scannedCodes.includes(processedText)) {
-        /* IF CURRENTLY STILL IN FRAME AFTER FIRST SCAN, HOLD GREEN / AMBER STATE */
         if (activeUniqueCode === processedText) {
           if (isEncrypted) {
             triggerSuccessGreenState();
@@ -1131,25 +1161,23 @@
             triggerUnencryptedAmberState();
           }
         } else {
-          /* DEPARTURE HAS OCCURRED -> SUBSEQUENT PASS SCANS SHOW 2 BLUE DOTS */
           triggerDuplicateBlueState();
         }
         
-        // Keeps green corner glow active on frame hits
         if (viewfinder) {
           clearTimeout(flashTimeout);
           viewfinder.classList.add('scan-success');
           flashTimeout = setTimeout(() => {
             viewfinder.classList.remove('scan-success');
-          }, 300); 
+          }, 900); 
         }
 
         lastScannedTime = now;
         return;
       }
 
-      /* NEW UNIQUE SERIAL HANDLER (FIRST TIME SCAN) */
-      activeUniqueCode = processedText; // Lock into active unique state
+      /* NEW UNIQUE SERIAL HANDLER */
+      activeUniqueCode = processedText;
 
       if (isEncrypted) {
         triggerSuccessGreenState();
@@ -1162,7 +1190,7 @@
         viewfinder.classList.add('scan-success');
         flashTimeout = setTimeout(() => {
           viewfinder.classList.remove('scan-success');
-        }, 500); 
+        }, 900); 
       }
 
       lastScannedCode = decodedText;
@@ -1212,11 +1240,10 @@
       rowElements.forEach(row => row.classList.remove('selected-row'));
     }
 
-    /* 🍏 INSTANT EDIT BUTTON ACTION */
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       tg?.HapticFeedback?.impactOccurred('light');
-      enterEditMode(); // Instant transition with zero delay
+      enterEditMode();
     });
 
     editCancelBtn.addEventListener('click', (e) => {
@@ -1289,7 +1316,7 @@
       .catch(() => tg?.close());
     }
 
-    /* ↩ ANIMATED UNDO SEQUENCE */
+    /* ↩ DELIBERATE, HIGH-VISIBILITY ANIMATED UNDO SEQUENCE */
     document.getElementById('undo-btn').addEventListener('click', () => {
       if (scannedCodes.length === 0 || isUndoAnimating) return;
 
@@ -1298,22 +1325,24 @@
       const targetElement = listElement.querySelector(`li[data-raw="${CSS.escape(codeToDelete)}"]`);
 
       if (targetElement) {
-        // 1. Instant smooth scroll to target row + Red glow
-        targetElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // 1. Scroll and lock target row to clear upper section of bounding box
+        pinRowToTop(listElement, targetElement);
+        
+        // 2. Flash Solid Red & trigger haptic
         targetElement.classList.add('undo-target-glow');
         tg?.HapticFeedback?.impactOccurred('medium');
 
-        // 2. Slide out left after brief pulse
+        // 3. Smoothly slide off-screen to the left (maintaining red background)
         setTimeout(() => {
           targetElement.classList.add('undo-slide-out');
-        }, 180);
+        }, 300);
 
-        // 3. Height collapse and layout reflow
+        // 4. Collapse height and collapse space smoothly
         setTimeout(() => {
           targetElement.classList.add('undo-collapse');
-        }, 380);
+        }, 600);
 
-        // 4. Update data array and re-render clean UI
+        // 5. Remove element from data array & re-render clean UI
         setTimeout(() => {
           scannedCodes.shift();
           countElement.innerText = scannedCodes.length;
@@ -1323,9 +1352,9 @@
           activeUniqueCode = null;
           isUndoAnimating = false;
           renderGroupedUI();
-        }, 620);
+        }, 900);
       } else {
-        // Fallback safety if row isn't found in DOM
+        // Fallback safety
         scannedCodes.shift();
         countElement.innerText = scannedCodes.length;
         modalCountElement.innerText = scannedCodes.length;
