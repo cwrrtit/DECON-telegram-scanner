@@ -285,7 +285,7 @@
       transform: scale(0.92) translateY(1px);
     }
 
-    /* BOUNDING BOX - Removed smooth scroll to prevent WebKit scroll locks */
+    /* BOUNDING BOX - Increased bottom padding to guarantee bottom items can scroll to top */
     #scanned-list {
       list-style-type: none;
       padding: 0;
@@ -301,8 +301,8 @@
       -webkit-tap-highlight-color: transparent;
       display: none;
       position: relative;
-      padding-bottom: 90px !important;
-      scroll-padding-bottom: 90px !important;
+      padding-bottom: 300px !important;
+      scroll-padding-bottom: 300px !important;
       z-index: 1;
     }
 
@@ -1101,31 +1101,42 @@
       });
     }
 
-    /* Reliable, immediate positioning algorithm that computes target offsets directly */
+    /* Robust, Layout-Flushed Positioning Algorithm for WebKit */
     function pinRowToTop(container, rowElement) {
       if (!container || !rowElement) return;
 
+      // Defer execution until WebKit completes DOM mutation & layout paint
       requestAnimationFrame(() => {
-        let prevSibling = rowElement.previousElementSibling;
-        let targetHeader = null;
+        setTimeout(() => {
+          // 1. Find the target header or default to the row itself
+          let prevSibling = rowElement.previousElementSibling;
+          let targetHeader = null;
 
-        while (prevSibling) {
-          if (prevSibling.classList.contains('list-category-header')) {
-            targetHeader = prevSibling;
-            break;
+          while (prevSibling) {
+            if (prevSibling.classList.contains('list-category-header')) {
+              targetHeader = prevSibling;
+              break;
+            }
+            prevSibling = prevSibling.previousElementSibling;
           }
-          prevSibling = prevSibling.previousElementSibling;
-        }
 
-        const targetNode = targetHeader || rowElement;
-        
-        // Compute relative distance inside container ignoring current container scroll
-        const containerRect = container.getBoundingClientRect();
-        const targetRect = targetNode.getBoundingClientRect();
-        const targetScrollTop = container.scrollTop + (targetRect.top - containerRect.top);
+          const targetNode = targetHeader || rowElement;
 
-        // Instant scroll jump guarantees layout execution in iOS WebViews without getting canceled
-        container.scrollTop = targetScrollTop;
+          // 2. Force WebKit layout flush
+          void container.offsetHeight;
+
+          // 3. Compute exact target position relative to container
+          let calculatedTop = 0;
+          let curr = targetNode;
+
+          while (curr && curr !== container) {
+            calculatedTop += curr.offsetTop;
+            curr = curr.offsetParent;
+          }
+
+          // 4. Force container scroll jump
+          container.scrollTop = calculatedTop;
+        }, 0);
       });
     }
 
