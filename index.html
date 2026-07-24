@@ -779,7 +779,6 @@
 
     const SECRET_KEY = "AkBR7!12K8Le#Bzz_ASH%PekMP45K416";
 
-    // Store items as objects: { text: "...", rawInput: "...", isEncrypted: boolean }
     let scannedCodes = [];
     const selectedSerialsInModal = new Set();
     
@@ -820,7 +819,6 @@
     
     let activeUniqueCode = null;
 
-    /* SANITIZE SCANNED RAW DATA: Remove non-printable ASCII/control bytes */
     function sanitizeScannedData(dataStr) {
       if (!dataStr) return "";
       return dataStr.replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim();
@@ -954,7 +952,6 @@
         }
       } catch (err) {}
 
-      // Raw / unencrypted code
       return { 
         text: sanitized, 
         rawInput: sanitized,
@@ -1027,13 +1024,11 @@
       }
     }
 
-    /* REFINED GROUPING PARSER: Strictly forces raw codes into OTHERS */
     function buildGroupedDOM(targetContainer, isModal = false) {
       targetContainer.innerHTML = "";
       const groups = {};
       
       scannedCodes.forEach(item => {
-        // ONLY create custom header categories IF code was successfully AES-decrypted
         if (item.isEncrypted) {
           const match = item.text.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
           if (match) {
@@ -1045,7 +1040,6 @@
           }
         }
         
-        // All unencrypted / raw codes remain under OTHERS
         if (!groups["OTHERS"]) groups["OTHERS"] = [];
         groups["OTHERS"].push({ display: item.text, raw: item.rawInput });
       });
@@ -1106,6 +1100,7 @@
       });
     }
 
+    /* FIXED AUTOSCROLL FUNCTION FOR ALL CATEGORIES INCLUDING OTHERS */
     function pinRowToTop(container, rowElement) {
       if (!container || !rowElement) return;
 
@@ -1123,21 +1118,17 @@
           }
 
           const targetNode = targetHeader || rowElement;
-          void container.offsetHeight;
-
-          let calculatedTop = 0;
-          let curr = targetNode;
-
-          while (curr && curr !== container) {
-            calculatedTop += curr.offsetTop;
-            curr = curr.offsetParent;
-          }
+          
+          const containerRect = container.getBoundingClientRect();
+          const targetRect = targetNode.getBoundingClientRect();
+          
+          const targetScrollTop = container.scrollTop + (targetRect.top - containerRect.top);
 
           container.scrollTo({
-            top: calculatedTop,
+            top: Math.max(0, targetScrollTop),
             behavior: 'smooth'
           });
-        }, 0);
+        }, 30);
       });
     }
 
@@ -1173,7 +1164,6 @@
       const rawInput = result.rawInput;
       const isEncrypted = result.isEncrypted;
 
-      // DISCARD CORRUPTED / EMPTY READS
       if (!processedText || processedText.length === 0) {
         triggerUnreadableRedState();
         return;
@@ -1184,7 +1174,6 @@
         viewfinder.classList.remove('scan-error');
       }
 
-      // Check for duplicates by comparing raw inputs
       const isDuplicate = scannedCodes.some(item => item.rawInput === rawInput);
 
       if (isDuplicate) {
@@ -1339,7 +1328,6 @@
 
       const scriptBaseUrl = "https://script.google.com/macros/s/AKfycbwb1tV24CFzbcPD70iA09hprOUg7oMSq7hGCxavDbvr7WmRbsFfHuEtvPtQy2Y9flbtMQ/exec";
       
-      // Extract string representations to send back to backend
       const serialList = codeObjects.map(item => item.text);
       const serialsString = serialList.length > 0 ? serialList.join(",") : "NO_CODES_SCANNED";
       const serialsParam = encodeURIComponent(serialsString);
