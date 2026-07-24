@@ -6,27 +6,19 @@
   <title>Scanner</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
-  <!-- Client-Side AES Decryption -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
   <style>
     :root {
-      /* Dynamic Inset Placeholders with Safe Native Fallbacks */
       --tg-safe-top: 56px;
       --tg-safe-bottom: 24px;
-
-      /* CORNER RADII */
       --app-corner-radius: 16px;
       --button-corner-radius: 12px;
-
-      /* STATUS INDICATOR COLORS */
       --status-red: #ff3b30;
       --status-amber: #f4cb11;
       --status-green: #00db62;
       --status-white: #ffffff;
       --status-idle-border: #3a3a3c;
-      
-      /* iOS SYSTEM BLUE ACCENT */
       --ios-blue: #007aff;
       --ios-blue-pressed: #0062cc;
     }
@@ -46,7 +38,6 @@
       overflow: hidden;
     }
 
-    /* Main Viewport Container */
     .app-container {
       display: flex;
       flex-direction: column;
@@ -66,7 +57,6 @@
       padding-top: calc(var(--tg-safe-top) + 70px) !important;
     }
 
-    /* CAMERA FEED CONTAINER WITH 16px RADIUS */
     #scanner-container {
       position: relative; 
       width: 100%;
@@ -94,7 +84,6 @@
       border-color: transparent !important;
     }
 
-    /* CUSTOM OVERLAY CONTAINER */
     #custom-overlay {
       position: absolute;
       top: 0;
@@ -108,7 +97,6 @@
       z-index: 10;
     }
 
-    /* CUSTOM VIEWFINDER BOX */
     #custom-viewfinder {
       position: relative;
       box-sizing: border-box;
@@ -121,7 +109,6 @@
       cursor: pointer;
     }
 
-    /* VIEWFINDER CORNERS */
     .scanner-corner {
       position: absolute;
       width: 36px; 
@@ -166,19 +153,16 @@
       border-bottom-right-radius: 21px;
     }
 
-    /* SUCCESS CORNER GLOW */
     #custom-viewfinder.scan-success .scanner-corner {
       border-color: #00db62 !important; 
       filter: drop-shadow(0px 0px 4px rgba(1, 231, 40, 0.75));
     }
 
-    /* RED CORNER GLOW FOR UNREADABLE CODE */
     #custom-viewfinder.scan-error .scanner-corner {
       border-color: #ff3b30 !important; 
       filter: drop-shadow(0px 0px 4px rgba(255, 59, 48, 0.75));
     }
 
-    /* LOGGED SERIALS SECTION */
     #log-container {
       width: 100%;
       display: flex;
@@ -208,7 +192,6 @@
       line-height: 28px;
     }
 
-    /* 4-DOT DYNAMIC STATUS INDICATOR */
     .status-dots-group {
       display: flex;
       align-items: center;
@@ -258,7 +241,6 @@
       box-shadow: 0 0 8px rgba(0, 122, 255, 0.6);
     }
 
-    /* UNDO BUTTON */
     .undo-trigger {
       background-color: var(--ios-blue);
       color: #ffffff;
@@ -285,7 +267,6 @@
       transform: scale(0.92) translateY(1px);
     }
 
-    /* BOUNDING BOX */
     #scanned-list {
       list-style-type: none;
       padding: 0;
@@ -309,7 +290,6 @@
       display: block;
     }
 
-    /* STICKY CATEGORY HEADERS */
     .list-category-header {
       position: -webkit-sticky;
       position: sticky;
@@ -353,7 +333,6 @@
       color: #ffffff;
     }
 
-    /* PULSING SCAN HIGHLIGHT */
     @keyframes rowPulseGreen {
       0% {
         background-color: #009945;
@@ -367,7 +346,6 @@
       animation: rowPulseGreen 1.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     }
 
-    /* RED UNDO SLIDE & COLLAPSE STATES */
     #scanned-list li.undo-target-glow {
       background-color: var(--status-red) !important;
     }
@@ -392,7 +370,6 @@
       font-size: 15px; 
     }
 
-    /* PINNED BOTTOM PANEL WITH GRADIENT FADE OVERLAY */
     #control-panel {
       position: absolute;
       bottom: 0;
@@ -404,7 +381,6 @@
       padding-top: 40px;
       z-index: 20;
       pointer-events: none;
-
       background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.85) 45%, rgba(0,0,0,1) 100%);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
@@ -459,7 +435,6 @@
       transition: opacity 0.3s ease;
     }
 
-    /* MODAL POP-UP */
     #modal-overlay {
       position: fixed;
       top: 0;
@@ -728,7 +703,6 @@
       <div class="log-header-row">
         <h3>LOGGED SERIALS (<span id="count">0</span>)</h3>
         
-        <!-- 4-Dot Status Indicator -->
         <div class="status-dots-group" id="statusDotsGroup">
           <span class="status-dot" id="dot-1"></span>
           <span class="status-dot" id="dot-2"></span>
@@ -739,7 +713,6 @@
         <button type="button" class="undo-trigger" id="undo-btn">↩ Undo</button>
       </div>
       
-      <!-- Native Scrollable Bounding Box -->
       <ul id="scanned-list"></ul>
     </div>
 
@@ -750,7 +723,6 @@
     </div>
   </div>
 
-  <!-- Frosted Pop-up Modal -->
   <div id="modal-overlay">
     <div class="modal-card" id="modal-card">
       <div class="modal-header" id="modal-header">
@@ -847,7 +819,13 @@
     
     let activeUniqueCode = null;
 
-    /* SAFE DOM LOCATOR: Handles raw strings with spaces, hyphens & special characters */
+    /* SANITIZE SCANNED RAW DATA: Remove non-printable ASCII/control bytes */
+    function sanitizeScannedData(dataStr) {
+      if (!dataStr) return "";
+      // Strip control codes (ASCII 0-31 and 127-159)
+      return dataStr.replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim();
+    }
+
     function getRowByRawData(container, rawString) {
       if (!container || !rawString) return null;
       const allRows = container.querySelectorAll('li[data-raw]');
@@ -967,11 +945,11 @@
         }
 
         if (decryptedText && decryptedText.length > 0) {
-          return { text: decryptedText, isEncrypted: true };
+          return { text: sanitizeScannedData(decryptedText), isEncrypted: true };
         }
       } catch (err) {}
 
-      return { text: rawText, isEncrypted: false };
+      return { text: sanitizeScannedData(rawText), isEncrypted: false };
     }
 
     function analyzeFrameProximity() {
@@ -1039,12 +1017,14 @@
       }
     }
 
+    /* REFINED GROUPING PARSER */
     function buildGroupedDOM(targetContainer, isModal = false) {
       targetContainer.innerHTML = "";
       const groups = {};
       
       scannedCodes.forEach(code => {
-        const match = code.match(/^\(([^)]+)\)(.*)$/);
+        // Strict match: require leading parentheses with non-empty item category name
+        const match = code.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
         if (match) {
           const type = match[1].trim().toUpperCase();
           const sn = match[2].trim();
@@ -1112,7 +1092,6 @@
       });
     }
 
-    /* Robust Auto-Scroll to Target Row or Category Header */
     function pinRowToTop(container, rowElement) {
       if (!container || !rowElement) return;
 
@@ -1178,6 +1157,12 @@
       const result = tryDecrypt(decodedText);
       const processedText = result.text;
       const isEncrypted = result.isEncrypted;
+
+      // DISCARD CORRUPTED / EMPTY READS
+      if (!processedText || processedText.length === 0) {
+        triggerUnreadableRedState();
+        return;
+      }
 
       if (viewfinder) {
         clearTimeout(flashTimeout);
