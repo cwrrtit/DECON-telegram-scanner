@@ -217,8 +217,9 @@
     }
 
     .status-dot {
-      width: 10px;
+      width: 100px;
       height: 10px;
+      width: 10px;
       border-radius: 50%;
       box-sizing: border-box;
       background-color: transparent;
@@ -285,7 +286,7 @@
       transform: scale(0.92) translateY(1px);
     }
 
-    /* BOUNDING BOX (Extends visually down behind the COMPLETE button) */
+    /* BOUNDING BOX */
     #scanned-list {
       list-style-type: none;
       padding: 0;
@@ -302,7 +303,6 @@
       display: none;
       position: relative;
       scroll-behavior: smooth;
-      /* Ensures items do not get blocked behind complete button on scroll */
       padding-bottom: 90px !important;
       scroll-padding-bottom: 90px !important;
       z-index: 1;
@@ -742,7 +742,7 @@
         <button type="button" class="undo-trigger" id="undo-btn">↩ Undo</button>
       </div>
       
-      <!-- Native Scrollable Bounding Box extending down -->
+      <!-- Native Scrollable Bounding Box -->
       <ul id="scanned-list"></ul>
     </div>
 
@@ -1103,26 +1103,31 @@
       });
     }
 
-    /* Reinforced Smooth Scroll to Top with Sticky Header offset */
+    /* Reinforced Smooth Scroll with Layout Reflow Guarantee */
     function pinRowToTop(container, rowElement) {
       if (!container || !rowElement) return;
-      
-      let prevSibling = rowElement.previousElementSibling;
-      let targetHeader = null;
 
-      while (prevSibling) {
-        if (prevSibling.classList.contains('list-category-header')) {
-          targetHeader = prevSibling;
-          break;
-        }
-        prevSibling = prevSibling.previousElementSibling;
-      }
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          let prevSibling = rowElement.previousElementSibling;
+          let targetHeader = null;
 
-      const targetTop = targetHeader ? targetHeader.offsetTop : rowElement.offsetTop;
+          while (prevSibling) {
+            if (prevSibling.classList.contains('list-category-header')) {
+              targetHeader = prevSibling;
+              break;
+            }
+            prevSibling = prevSibling.previousElementSibling;
+          }
 
-      container.scrollTo({
-        top: Math.max(0, targetTop),
-        behavior: 'smooth'
+          const targetNode = targetHeader || rowElement;
+          const targetOffsetTop = targetNode.offsetTop;
+
+          container.scrollTo({
+            top: targetOffsetTop,
+            behavior: 'smooth'
+          });
+        }, 30);
       });
     }
 
