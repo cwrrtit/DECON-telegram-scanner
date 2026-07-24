@@ -241,22 +241,23 @@
       box-shadow: 0 0 8px rgba(0, 122, 255, 0.6);
     }
 
+    /* Slightly lengthened horizontally, arrow scaled up */
     .undo-trigger {
       background-color: var(--ios-blue);
       color: #78fefb;
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 700;
       cursor: pointer;
       border: none;
-      padding: 0 10px;
+      padding: 0 14px;
+      min-width: 38px;
       height: 30px;
-      line-height: 30px;
+      line-height: 1;
       border-radius: var(--button-corner-radius);
       user-select: none;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
       -webkit-tap-highlight-color: transparent;
       transition: background-color 0.08s ease, transform 0.08s ease, color 0.08s ease;
       box-sizing: border-box;
@@ -521,6 +522,7 @@
       align-items: center;
     }
 
+    /* Edit action container & symmetrical aligned '✕' */
     .edit-actions-group {
       display: none;
       background: rgba(255, 255, 255, 0.12);
@@ -529,6 +531,7 @@
       align-items: center;
       height: 28px;
       box-sizing: border-box;
+      overflow: hidden;
     }
 
     .is-editing .edit-btn {
@@ -536,15 +539,15 @@
     }
 
     .is-editing .edit-actions-group {
-      display: flex;
+      display: inline-flex;
     }
 
     .action-btn-cancel {
       background: transparent;
       border: none;
       color: #ffffff;
-      padding: 0 18px;
-      font-size: 16px;
+      padding: 0 14px;
+      font-size: 15px;
       font-weight: 800;
       cursor: pointer;
       border-right: 1px solid rgba(255, 255, 255, 0.15);
@@ -552,6 +555,8 @@
       height: 100%;
       display: flex;
       align-items: center;
+      justify-content: center;
+      line-height: 1;
     }
 
     .action-btn-delete {
@@ -566,6 +571,8 @@
       height: 100%;
       display: flex;
       align-items: center;
+      justify-content: center;
+      line-height: 1;
     }
 
     .modal-body {
@@ -730,7 +737,7 @@
         <div class="header-actions">
           <button class="edit-btn" id="modal-edit-btn">Edit</button>
           <div class="edit-actions-group">
-            <button class="action-btn-cancel" id="edit-cancel-btn">✕</button>
+            <button class="action-btn-cancel" id="edit-cancel-btn">&#10005;</button>
             <button class="action-btn-delete" id="edit-delete-btn">Delete</button>
           </div>
         </div>
