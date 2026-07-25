@@ -194,6 +194,12 @@
       height: 30px;
     }
 
+    .header-left-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     h3 {
       margin: 0;
       font-size: 13px;
@@ -253,7 +259,7 @@
       box-shadow: 0 0 8px rgba(0, 122, 255, 0.6);
     }
 
-    .undo-trigger {
+    .icon-action-btn {
       background-color: var(--ios-blue);
       color: #78fefb;
       cursor: pointer;
@@ -271,7 +277,7 @@
       box-sizing: border-box;
     }
 
-    .undo-trigger svg {
+    .icon-action-btn svg {
       width: 18px;
       height: 18px;
       fill: none;
@@ -281,7 +287,7 @@
       stroke-linejoin: round;
     }
 
-    .undo-trigger:active {
+    .icon-action-btn:active {
       background-color: var(--ios-blue-pressed);
       transform: scale(0.94);
     }
@@ -335,11 +341,13 @@
       gap: 6px;
     }
 
-    .category-lock-icon {
-      width: 13px;
-      height: 13px;
-      fill: #8e8e93;
+    .ios-lock-icon {
+      width: 18px;
+      height: 18px;
+      fill: #a2a2a7;
       display: inline-block;
+      vertical-align: middle;
+      flex-shrink: 0;
     }
 
     #scanned-list li {
@@ -367,24 +375,12 @@
 
     #scanned-list li span:first-child {
       color: #ffffff;
+      display: flex;
+      align-items: center;
     }
 
-    /* Locked state styling for rows */
     .row-locked {
-      opacity: 0.45 !important;
-    }
-
-    .row-locked .status-flash {
-      color: #8e8e93 !important;
-    }
-
-    .row-lock-indicator {
-      width: 14px;
-      height: 14px;
-      fill: #8e8e93;
-      margin-left: 6px;
-      display: inline-block;
-      vertical-align: middle;
+      opacity: 0.55 !important;
     }
 
     @keyframes rowPulseGreen {
@@ -422,6 +418,9 @@
       color: #00db62; 
       font-weight: 500; 
       font-size: 15px; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     #control-panel {
@@ -551,39 +550,9 @@
       letter-spacing: 0.6px;
       color: #a2a2a7;
       font-weight: 700;
-    }
-
-    /* iOS Pill Copy Button in Modal Header */
-    .modal-copy-pill {
-      background: rgba(255, 255, 255, 0.12);
-      color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      padding: 3px 10px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
+      display: flex;
       align-items: center;
-      gap: 5px;
-      margin-left: 8px;
-      -webkit-tap-highlight-color: transparent;
-      transition: background-color 0.2s ease, transform 0.1s ease;
-    }
-
-    .modal-copy-pill:active {
-      background: rgba(255, 255, 255, 0.25);
-      transform: scale(0.95);
-    }
-
-    .modal-copy-pill svg {
-      width: 12px;
-      height: 12px;
-      fill: none;
-      stroke: currentColor;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
+      gap: 8px;
     }
 
     .header-actions {
@@ -771,6 +740,8 @@
 
     .modal-list li span:first-child {
       color: #ffffff;
+      display: flex;
+      align-items: center;
     }
 
     .selection-circle {
@@ -856,7 +827,12 @@
 
     <div id="log-container">
       <div class="log-header-row">
-        <h3>LOGGED SERIALS (<span id="count">0</span>)</h3>
+        <div class="header-left-group">
+          <h3>TOTAL (<span id="count">0</span>)</h3>
+          <button type="button" class="icon-action-btn" id="base-copy-btn">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
         
         <div class="status-dots-group" id="statusDotsGroup">
           <span class="status-dot" id="dot-1"></span>
@@ -865,7 +841,7 @@
           <span class="status-dot" id="dot-4"></span>
         </div>
 
-        <button type="button" class="undo-trigger" id="undo-btn">
+        <button type="button" class="icon-action-btn" id="undo-btn">
           <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
         </button>
       </div>
@@ -885,9 +861,8 @@
       <div class="modal-header" id="modal-header">
         <h4>
           TOTAL (<span id="modal-count">0</span>)
-          <button type="button" class="modal-copy-pill" id="modal-copy-pill">
+          <button type="button" class="icon-action-btn" id="modal-copy-btn">
             <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            <span id="copy-pill-text">Copy</span>
           </button>
         </h4>
         <div class="header-actions">
@@ -946,8 +921,8 @@
 
     let scannedCodes = [];
     const selectedSerialsInModal = new Set();
-    const lockedItemsSet = new Set(); // Stores rawInput strings of locked items
-    const lockedCategoriesSet = new Set(); // Stores header category titles (e.g. "EQUIPMENT")
+    const lockedItemsSet = new Set();
+    const lockedCategoriesSet = new Set();
     
     const listElement = document.getElementById('scanned-list');
     const modalListElement = document.getElementById('modal-scanned-list');
@@ -964,8 +939,8 @@
     const editCancelBtn = document.getElementById('edit-cancel-btn');
     const editDeleteBtn = document.getElementById('edit-delete-btn');
     const doneBtn = document.getElementById('done-btn');
-    const copyPillBtn = document.getElementById('modal-copy-pill');
-    const copyPillText = document.getElementById('copy-pill-text');
+    const baseCopyBtn = document.getElementById('base-copy-btn');
+    const modalCopyBtn = document.getElementById('modal-copy-btn');
 
     const dotElements = [
       document.getElementById('dot-1'),
@@ -988,9 +963,13 @@
     
     let activeUniqueCode = null;
 
-    // Helper SVG Lock Icon generator
-    function getLockSvgHTML() {
-      return `<svg class="row-lock-indicator" viewBox="0 0 24 24"><path d="M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2zm-7 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm4.5-6V8a4.5 4.5 0 0 0-9 0v3"/></svg>`;
+    // Standardized iOS 26 style SVG Lock & Unlock icons
+    function getIosLockSvgHTML() {
+      return `<svg class="ios-lock-icon" viewBox="0 0 24 24"><path d="M18 10h-1V7A5 5 0 0 0 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zm-6 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm3-7H9V7a3 3 0 0 1 6 0v3z"/></svg>`;
+    }
+
+    function getIosUnlockSvgHTML() {
+      return `<svg class="ios-lock-icon" viewBox="0 0 24 24"><path d="M18 10H9V7a3 3 0 0 1 6 0 .75.75 0 0 0 1.5 0 4.5 4.5 0 0 0-9 0v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zm-6 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>`;
     }
 
     function sanitizeScannedData(dataStr) {
@@ -1098,13 +1077,12 @@
       }, 900);
     }
 
-    // Triggered when trying to scan into a locked category/item
     function triggerLockedErrorState(targetRaw = null) {
       triggerUnreadableRedState();
       
       if (viewfinder) {
         viewfinder.classList.remove('shake-error');
-        void viewfinder.offsetWidth; // Force reflow for re-trigger
+        void viewfinder.offsetWidth;
         viewfinder.classList.add('shake-error');
         setTimeout(() => viewfinder.classList.remove('shake-error'), 450);
       }
@@ -1261,17 +1239,16 @@
         const headerLi = document.createElement('div');
         headerLi.className = 'list-category-header';
         
-        const catLockIcon = isCatLocked ? `<svg class="category-lock-icon" viewBox="0 0 24 24"><path d="M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2zm-7 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm4.5-6V8a4.5 4.5 0 0 0-9 0v3"/></svg>` : '';
+        const catLockIcon = isCatLocked ? getIosLockSvgHTML() : getIosUnlockSvgHTML();
+        
         headerLi.innerHTML = `
           <div class="category-header-title">
-            <span>${headerName}</span>
-            ${catLockIcon}
+            <span>${headerName} (${categoryCount})</span>
           </div>
-          <span>(${categoryCount})</span>
+          <div>${catLockIcon}</div>
         `;
 
         if (isModal) {
-          // Long press on category header to lock/unlock category
           let catPressTimer = null;
           headerLi.addEventListener('touchstart', (e) => {
             if (isEditMode) return;
@@ -1284,7 +1261,7 @@
                 lockedCategoriesSet.add(headerName);
               }
               renderGroupedUI();
-            }, 500);
+            }, 1000); // Updated hold duration: ~1s
           }, { passive: true });
 
           headerLi.addEventListener('touchend', () => clearTimeout(catPressTimer));
@@ -1304,7 +1281,7 @@
             li.classList.add('row-locked');
           }
 
-          const lockBadge = isItemLocked ? getLockSvgHTML() : '';
+          const statusRightContent = isItemLocked ? getIosLockSvgHTML() : '<span class="status-flash">✓</span>';
 
           if (isModal) {
             const isSelected = selectedSerialsInModal.has(item.raw);
@@ -1313,8 +1290,8 @@
             li.innerHTML = `
               <div class="selection-circle"></div>
               <div class="modal-row-content">
-                <span>${item.display} ${lockBadge}</span>
-                <span class="status-flash">✓</span>
+                <span>${item.display}</span>
+                <div class="row-status-icon">${statusRightContent}</div>
               </div>
             `;
 
@@ -1331,7 +1308,7 @@
                   lockedItemsSet.add(item.raw);
                 }
                 renderGroupedUI();
-              }, 500);
+              }, 1000); // Updated hold duration: ~1s
             }, { passive: true });
 
             li.addEventListener('touchend', () => clearTimeout(rowPressTimer));
@@ -1339,7 +1316,7 @@
 
             li.addEventListener('click', () => {
               if (!isEditMode) return;
-              if (isItemLocked) return; // Prevent selection if locked during edit mode
+              if (isItemLocked) return;
 
               if (selectedSerialsInModal.has(item.raw)) {
                 selectedSerialsInModal.delete(item.raw);
@@ -1352,7 +1329,7 @@
               updateDeleteButtonState();
             });
           } else {
-            li.innerHTML = `<span>${item.display} ${lockBadge}</span><span class="status-flash">✓</span>`;
+            li.innerHTML = `<span>${item.display}</span><div class="row-status-icon">${statusRightContent}</div>`;
           }
 
           targetContainer.appendChild(li);
@@ -1425,7 +1402,6 @@
 
       const itemCategory = getCategoryForItem({ text: processedText, isEncrypted: isEncrypted });
 
-      // Lock Guard Engine check
       if (lockedCategoriesSet.has(itemCategory) || lockedItemsSet.has(rawInput)) {
         triggerLockedErrorState(rawInput);
         return;
@@ -1524,21 +1500,25 @@
       rowElements.forEach(row => row.classList.remove('selected-row'));
     }
 
-    // Modal Pill Copy to Clipboard Functionality
-    copyPillBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
+    function handleCopyAction() {
       if (scannedCodes.length === 0) return;
 
       const exportText = scannedCodes.map(item => item.text).join('\n');
       navigator.clipboard.writeText(exportText).then(() => {
         tg?.HapticFeedback?.notificationOccurred('success');
-        copyPillText.innerText = 'Copied!';
-        setTimeout(() => {
-          copyPillText.innerText = 'Copy';
-        }, 1500);
       }).catch(() => {
         tg?.HapticFeedback?.notificationOccurred('error');
       });
+    }
+
+    baseCopyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleCopyAction();
+    });
+
+    modalCopyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleCopyAction();
     });
 
     editBtn.addEventListener('click', (e) => {
@@ -1621,7 +1601,6 @@
       });
     }
 
-    // Undo skips over locked elements
     document.getElementById('undo-btn').addEventListener('click', () => {
       if (scannedCodes.length === 0 || isUndoAnimating) return;
 
