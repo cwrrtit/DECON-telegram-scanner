@@ -1,1753 +1,302 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Scanner</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-
-  <style>
-    :root {
-      --tg-safe-top: 56px;
-      --tg-safe-bottom: 24px;
-      --app-corner-radius: 16px;
-      --button-corner-radius: 12px;
-      --status-red: #ff3b30;
-      --status-amber: #f4cb11;
-      --status-green: #00db62;
-      --status-white: #ffffff;
-      --status-idle-border: #3a3a3c;
-      --ios-blue: #007aff;
-      --ios-blue-pressed: #0062cc;
-      --copy-btn-bg: #2c2c2e;
-      --copy-btn-icon: #d1d1d6;
-      --copy-success-bg: #1c3b2b;
-      --copy-success-icon: #00db62;
-    }
-    
-    * {
-      box-sizing: border-box;
-      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace !important;
-    }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      background-color: #000000;
-      color: #ffffff;
-      overflow: hidden;
-    }
-
-    .app-container {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-      height: 100dvh;
-      padding-top: var(--tg-safe-top);
-      padding-bottom: 0px;
-      padding-left: 16px;
-      padding-right: 16px;
-      box-sizing: border-box;
-      position: relative;
-      overflow: hidden;
-      transition: padding-top 0.2s ease-out;
-    }
-
-    .app-container.camera-stopped {
-      padding-top: calc(var(--tg-safe-top) + 70px) !important;
-    }
-
-    #scanner-container {
-      position: relative; 
-      width: 100%;
-      max-width: 100%;
-      border-radius: var(--app-corner-radius);
-      overflow: hidden;
-      background: #000000;
-      margin-bottom: 12px;
-      flex-shrink: 0;
-    }
-
-    #interactive {
-      width: 100% !important;
-      height: auto !important;
-    }
-
-    #interactive video {
-      width: 100% !important;
-      height: auto !important;
-      object-fit: cover;
-    }
-
-    #interactive * {
-      border: none !important;
-      border-color: transparent !important;
-    }
-
-    #custom-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: auto; 
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-    }
-
-    #custom-viewfinder {
-      position: relative;
-      box-sizing: border-box;
-      width: 75vw; 
-      height: 55vw; 
-      max-width: 75%;
-      max-height: 55%;
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
-      border-radius: 18px; 
-      cursor: pointer;
-      transition: transform 0.05s ease;
-    }
-
-    /* iOS Error Shake Animation */
-    @keyframes iosShake {
-      0%, 100% { transform: translateX(0); }
-      20%, 60% { transform: translateX(-9px); }
-      40%, 80% { transform: translateX(9px); }
-    }
-
-    #custom-viewfinder.shake-error {
-      animation: iosShake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-    }
-
-    .scanner-corner {
-      position: absolute;
-      width: 36px; 
-      height: 36px; 
-      box-sizing: border-box;
-      transition: border-color 0.3s ease, filter 0.3s ease;
-    }
-
-    .tl {
-      top: -3px; left: -3px;
-      border-top: 5px solid #ffffff !important;
-      border-left: 5px solid #ffffff !important;
-      border-right: none !important; 
-      border-bottom: none !important;
-      border-top-left-radius: 21px;
-    }
-
-    .tr {
-      top: -3px; right: -3px;
-      border-top: 5px solid #ffffff !important;
-      border-right: 5px solid #ffffff !important;
-      border-left: none !important; 
-      border-bottom: none !important;
-      border-top-right-radius: 21px;
-    }
-
-    .bl {
-      bottom: -3px; left: -3px;
-      border-bottom: 5px solid #ffffff !important;
-      border-left: 5px solid #ffffff !important;
-      border-right: none !important; 
-      border-top: none !important;
-      border-bottom-left-radius: 21px;
-    }
-
-    .br {
-      bottom: -3px; right: -3px;
-      border-bottom: 5px solid #ffffff !important;
-      border-right: 5px solid #ffffff !important;
-      border-left: none !important; 
-      border-top: none !important;
-      border-bottom-right-radius: 21px;
-    }
-
-    #custom-viewfinder.scan-success .scanner-corner {
-      border-color: #00db62 !important; 
-      filter: drop-shadow(0px 0px 4px rgba(1, 231, 40, 0.75));
-    }
-
-    #custom-viewfinder.scan-error .scanner-corner {
-      border-color: #ff3b30 !important; 
-      filter: drop-shadow(0px 0px 4px rgba(255, 59, 48, 0.75));
-    }
-
-    #log-container {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      flex-grow: 1;
-      margin-bottom: 0px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .log-header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 0 4px 10px 4px;
-      flex-shrink: 0;
-      height: 30px;
-    }
-
-    .header-left-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    h3 {
-      margin: 0;
-      font-size: 13px;
-      text-transform: uppercase;
-      color: #a2a2a7; 
-      letter-spacing: 0.4px;
-      font-weight: 600;
-      line-height: 30px;
-    }
-
-    .status-dots-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      height: 30px;
-    }
-
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      box-sizing: border-box;
-      background-color: transparent;
-      border: 1px solid var(--status-idle-border);
-      transition: background-color 0.15s ease-in-out, 
-                  border-color 0.15s ease-in-out, 
-                  box-shadow 0.15s ease-in-out;
-    }
-
-    .status-dot.active-white {
-      background-color: var(--status-white);
-      border-color: var(--status-white);
-      box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
-    }
-
-    .status-dot.active-green {
-      background-color: var(--status-green);
-      border-color: var(--status-green);
-      box-shadow: 0 0 8px rgba(0, 219, 98, 0.6);
-    }
-
-    .status-dot.active-amber {
-      background-color: var(--status-amber);
-      border-color: var(--status-amber);
-      box-shadow: 0 0 8px rgba(244, 203, 17, 0.6);
-    }
-
-    .status-dot.active-red {
-      background-color: var(--status-red);
-      border-color: var(--status-red);
-      box-shadow: 0 0 8px rgba(255, 59, 48, 0.6);
-    }
-
-    .status-dot.active-blue {
-      background-color: var(--ios-blue);
-      border-color: var(--ios-blue);
-      box-shadow: 0 0 8px rgba(0, 122, 255, 0.6);
-    }
-
-    .icon-action-btn {
-      background-color: var(--copy-btn-bg);
-      color: var(--copy-btn-icon);
-      cursor: pointer;
-      border: none;
-      padding: 0 10px;
-      min-width: 36px;
-      height: 30px;
-      border-radius: var(--button-corner-radius);
-      user-select: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      -webkit-tap-highlight-color: transparent;
-      transition: background-color 0.2s ease, color 0.2s ease, transform 0.08s ease;
-      box-sizing: border-box;
-    }
-
-    .icon-action-btn svg {
-      width: 18px;
-      height: 18px;
-      fill: none;
-      stroke: var(--copy-btn-icon);
-      stroke-width: 2.8;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      transition: stroke 0.2s ease;
-    }
-
-    .icon-action-btn.copied {
-      background-color: var(--copy-success-bg) !important;
-    }
-
-    .icon-action-btn.copied svg {
-      stroke: var(--copy-success-icon) !important;
-    }
-
-    #undo-btn {
-      background-color: var(--ios-blue);
-    }
-
-    #undo-btn svg {
-      stroke: #78fefb;
-    }
-
-    .icon-action-btn:active {
-      transform: scale(0.94);
-    }
-
-    #scanned-list {
-      list-style-type: none;
-      padding: 0;
-      padding-bottom: 70px !important;
-      margin: 0;
-      width: 100%;
-      box-sizing: border-box;
-      border: 1px solid #2c2c2e; 
-      border-radius: var(--app-corner-radius);
-      background-color: #000000;
-      overflow-y: auto;
-      flex-grow: 1;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      display: none;
-      position: relative;
-      z-index: 1;
-    }
-
-    #scanned-list.has-items {
-      display: block;
-    }
-
-    .list-category-header {
-      position: -webkit-sticky;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background-color: #1c1c1e;
-      padding: 8px 18px;
-      font-size: 12px;
-      font-weight: 700;
-      color: #a2a2a7;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border-bottom: 1px solid #2c2c2e;
-      margin: 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      user-select: none;
-    }
-
-    .category-header-title {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .ios-lock-icon {
-      width: 18px;
-      height: 18px;
-      fill: #a2a2a7;
-      display: inline-block;
-      vertical-align: middle;
-      flex-shrink: 0;
-      transition: opacity 0.4s ease, transform 0.2s ease;
-    }
-
-    .ios-lock-icon.fade-out {
-      opacity: 0;
-      transform: scale(0.8);
-    }
-
-    #scanned-list li {
-      padding: 14px 18px;
-      font-size: 16px;
-      font-weight: 400;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #0a0a0a;
-      border-bottom: 1px solid #2c2c2e; 
-      transition: background-color 0.4s cubic-bezier(0.25, 1, 0.5, 1), 
-                  transform 0.55s cubic-bezier(0.25, 1, 0.5, 1), 
-                  opacity 0.45s ease, 
-                  max-height 0.45s cubic-bezier(0.25, 1, 0.5, 1), 
-                  padding 0.45s cubic-bezier(0.25, 1, 0.5, 1);
-      will-change: background-color, transform, opacity, max-height;
-      overflow: hidden;
-      max-height: 60px;
-    }
-
-    #scanned-list li:last-child {
-      border-bottom: none;
-    }
-
-    #scanned-list li span:first-child {
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-    }
-
-    .row-status-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 24px;
-      height: 24px;
-    }
-
-    .row-locked {
-      opacity: 0.55 !important;
-    }
-
-    @keyframes rowPulseGreen {
-      0% {
-        background-color: #009945;
-      }
-      100% {
-        background-color: #0a0a0a;
-      }
-    }
-
-    #scanned-list li.pulse-new-item {
-      animation: rowPulseGreen 1.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-    }
-
-    #scanned-list li.undo-target-glow {
-      background-color: var(--status-red) !important;
-    }
-
-    #scanned-list li.undo-slide-out {
-      background-color: var(--status-red) !important;
-      transform: translateX(-105%);
-      opacity: 0.2;
-    }
-
-    #scanned-list li.undo-collapse {
-      max-height: 0 !important;
-      padding-top: 0 !important;
-      padding-bottom: 0 !important;
-      border-bottom: none !important;
-      opacity: 0 !important;
-    }
-
-    .status-flash { 
-      color: #00db62 !important; 
-      font-weight: 500; 
-      font-size: 15px; 
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #control-panel {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding-left: 16px;
-      padding-right: 16px;
-      padding-bottom: calc(var(--tg-safe-bottom) + 6px);
-      padding-top: 40px;
-      z-index: 20;
-      pointer-events: none;
-      background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.85) 45%, rgba(0,0,0,1) 100%);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
-    }
-
-    .btn-complete-wrap {
-      position: relative;
-      width: 100%;
-      pointer-events: auto;
-    }
-
-    .btn {
-      position: relative;
-      width: 100%;
-      padding: 15px;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 1.2px;
-      border: none;
-      border-radius: 14px;
-      cursor: pointer;
-      background-color: #ffffff;
-      color: #000000;
-      z-index: 2;
-      -webkit-tap-highlight-color: transparent;
-      transition: background-color 0.05s ease, transform 0.05s ease;
-    }
-
-    .btn:active {
-      background-color: #e5e5ea !important;
-      transform: scale(0.98);
-    }
-
-    .btn-complete-wrap::before {
-      content: '';
-      position: absolute;
-      top: 4px;
-      left: 4%;
-      width: 92%;
-      height: 88%;
-      background: #ffffff;
-      border-radius: 14px;
-      filter: blur(18px);
-      opacity: 0.35;
-      z-index: 1;
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
-      transform: translate3d(0, 0, 0);
-      will-change: filter, opacity;
-      transition: opacity 0.3s ease;
-    }
-
-    #modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 999;
-      background: rgba(0, 0, 0, 0.45);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.38s cubic-bezier(0.25, 1, 0.5, 1);
-    }
-
-    #modal-overlay.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .modal-card {
-      width: 100%;
-      max-width: 420px;
-      max-height: 72vh;
-      background: rgba(28, 28, 30, 0.88);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: var(--app-corner-radius);
-      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.65);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      transform: scale(0.92);
-      transition: transform 0.38s cubic-bezier(0.25, 1, 0.5, 1);
-    }
-
-    #modal-overlay.active .modal-card {
-      transform: scale(1);
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 16px;
-      min-height: 52px;
-      max-height: 52px;
-      background: rgba(44, 44, 46, 0.6);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      box-sizing: border-box;
-    }
-
-    .modal-header h4 {
-      margin: 0;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      color: #a2a2a7;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .header-actions {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      height: 32px;
-    }
-
-    .edit-btn {
-      position: absolute;
-      right: 0;
-      background: var(--ios-blue);
-      border: none;
-      color: #78fefb;
-      padding: 0 14px;
-      border-radius: var(--button-corner-radius);
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 1;
-      transform: scale(1) translateX(0);
-      transform-origin: right center;
-      transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), 
-                  opacity 0.32s cubic-bezier(0.25, 1, 0.5, 1),
-                  background-color 0.15s ease;
-      pointer-events: auto;
-      white-space: nowrap;
-    }
-
-    .edit-btn:active {
-      background-color: var(--ios-blue-pressed);
-    }
-
-    .edit-actions-group {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      height: 32px;
-      opacity: 0;
-      transform: scale(0.9) translateX(10px);
-      transform-origin: right center;
-      pointer-events: none;
-      transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), 
-                  opacity 0.32s cubic-bezier(0.25, 1, 0.5, 1);
-    }
-
-    .is-editing .edit-btn {
-      opacity: 0;
-      transform: scale(0.85) translateX(8px);
-      pointer-events: none;
-    }
-
-    .is-editing .edit-actions-group {
-      opacity: 1;
-      transform: scale(1) translateX(0);
-      pointer-events: auto;
-    }
-
-    .action-btn-cancel {
-      background: #2c2c2e;
-      border: none;
-      color: #ffffff;
-      padding: 0;
-      width: 32px;
-      height: 32px;
-      border-radius: var(--button-corner-radius);
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background-color 0.2s ease, transform 0.1s ease;
-      box-sizing: border-box;
-    }
-
-    .action-btn-cancel:active {
-      background: #3a3a3c;
-      transform: scale(0.94);
-    }
-
-    .action-btn-cancel svg {
-      width: 14px;
-      height: 14px;
-      stroke: #ffffff;
-      stroke-width: 2.2;
-      stroke-linecap: round;
-      display: block;
-    }
-
-    .action-btn-delete {
-      border: none;
-      padding: 0 14px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      height: 32px;
-      border-radius: var(--button-corner-radius);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      line-height: 1;
-      box-sizing: border-box;
-      background-color: #2c2c2e;
-      color: #7a3232;
-      transition: background-color 0.38s cubic-bezier(0.25, 1, 0.5, 1), 
-                  color 0.38s cubic-bezier(0.25, 1, 0.5, 1), 
-                  transform 0.1s ease;
-    }
-
-    .action-btn-delete.has-selection {
-      background-color: rgba(255, 59, 48, 0.22);
-      color: var(--status-red);
-    }
-
-    .action-btn-delete.has-selection:active {
-      background-color: rgba(255, 59, 48, 0.35);
-      transform: scale(0.95);
-    }
-
-    .modal-body {
-      overflow-y: auto;
-      flex-grow: 1;
-      padding: 0;
-      position: relative;
-    }
-
-    .modal-list {
-      list-style-type: none;
-      padding: 0;
-      margin: 0;
-      width: 100%;
-    }
-
-    .modal-list li {
-      position: relative;
-      padding: 14px 18px;
-      font-size: 16px;
-      font-weight: 400;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #0a0a0a;
-      border-bottom: 1px solid #2c2c2e;
-      overflow: hidden;
-      max-height: 60px;
-      opacity: 1;
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: manipulation;
-      transition: max-height 0.45s cubic-bezier(0.25, 1, 0.5, 1),
-                  opacity 0.45s cubic-bezier(0.25, 1, 0.5, 1),
-                  padding 0.45s cubic-bezier(0.25, 1, 0.5, 1),
-                  background-color 0.2s ease;
-    }
-
-    .modal-list li.deleting {
-      max-height: 0 !important;
-      opacity: 0 !important;
-      padding-top: 0 !important;
-      padding-bottom: 0 !important;
-      border-bottom: none !important;
-    }
-
-    .modal-list li:last-child {
-      border-bottom: none;
-    }
-
-    .modal-row-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-      will-change: transform;
-      transform: translateX(0px);
-      transition: transform 0.52s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .modal-list li span:first-child {
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-    }
-
-    .selection-circle {
-      position: absolute;
-      left: -32px;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      border: 1.5px solid #545458;
-      box-sizing: border-box;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      will-change: transform;
-      transform: translateX(0px);
-      transition: transform 0.52s cubic-bezier(0.16, 1, 0.3, 1), 
-                  background-color 0.15s ease, 
-                  border-color 0.15s ease;
-    }
-
-    .selection-circle::after {
-      content: '';
-      width: 5px;
-      height: 9px;
-      border: solid #ffffff;
-      border-width: 0 2px 2px 0;
-      transform: rotate(45deg) translate(-1px, -1px);
-      opacity: 0;
-      transition: opacity 0.15s ease;
-    }
-
-    .is-editing .modal-row-content {
-      transform: translateX(36px);
-      transition: transform 0.42s cubic-bezier(0.2, 0.8, 0.2, 1);
-    }
-
-    .is-editing .selection-circle {
-      transform: translateX(50px);
-      transition: transform 0.42s cubic-bezier(0.2, 0.8, 0.2, 1), 
-                  background-color 0.15s ease, 
-                  border-color 0.15s ease;
-    }
-
-    .is-editing .status-flash {
-      display: none !important;
-    }
-
-    .modal-list li.selected-row {
-      background-color: #1c1c1e !important;
-    }
-
-    .modal-list li.selected-row .selection-circle {
-      background-color: var(--ios-blue);
-      border-color: var(--ios-blue);
-    }
-
-    .modal-list li.selected-row .selection-circle::after {
-      opacity: 1;
-    }
-
-    canvas#analysis-canvas {
-      display: none;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner App Interface</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1c1c1e;
+            --row-border: #2c2c2e;
+            --text-primary: #ffffff;
+            --text-secondary: #8e8e93;
+            --accent-blue: #007aff;
+            --duplicate-blue: #0a84ff;
+            --add-green: #30d158;
+            --lock-duration: 490ms;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* Mock Scanner Bounding Box Area */
+        .scanner-container {
+            width: 100%;
+            max-width: 360px;
+            height: 180px;
+            border: 2px dashed #444;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .scanner-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background: #2c2c2e;
+            color: #fff;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        button:active {
+            opacity: 0.7;
+        }
+
+        /* Pop-up Card */
+        .popup-card {
+            width: 100%;
+            max-width: 360px;
+            background-color: var(--card-bg);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #2c2c2e;
+        }
+
+        /* Header */
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--row-border);
+        }
+
+        .header-title-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-title {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--text-primary);
+            text-transform: uppercase;
+        }
+
+        .btn-edit {
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 16px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        /* Scrollable List Area */
+        .list-container {
+            max-height: 220px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        /* List Rows */
+        .list-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--row-border);
+            font-family: monospace;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            transition: background-color var(--lock-duration) ease;
+        }
+
+        .list-row:last-child {
+            border-bottom: none;
+        }
+
+        /* Blue Flash Keyframe Animation (Same dynamics as add-green) */
+        @keyframes flashBlueAnimation {
+            0% { background-color: transparent; }
+            30% { background-color: rgba(10, 132, 255, 0.4); }
+            100% { background-color: transparent; }
+        }
+
+        .flash-blue {
+            animation: flashBlueAnimation var(--lock-duration) ease-in-out;
+        }
+
+        /* Custom SVGs for Lock / Unlock */
+        .icon-btn {
+            background: none;
+            border: none;
+            padding: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-svg {
+            width: 18px;
+            height: 18px;
+            fill: #8e8e93;
+            transition: transform var(--lock-duration) cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .icon-btn:active .icon-svg {
+            transform: scale(0.9);
+        }
+
+        /* Copy icon standard styling */
+        .copy-icon {
+            width: 18px;
+            height: 18px;
+            fill: #8e8e93;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="app-container">
-    <div id="scanner-container">
-      <div id="interactive"></div>
-      
-      <div id="custom-overlay">
-        <div id="custom-viewfinder">
-          <div class="scanner-corner tl"></div>
-          <div class="scanner-corner tr"></div>
-          <div class="scanner-corner bl"></div>
-          <div class="scanner-corner br"></div>
+    <!-- Scanner Bounding Box Display -->
+    <div class="scanner-container">
+        <span style="font-size: 12px; color: #8e8e93; margin-bottom: 12px;">Scanner Bounding Box Viewport</span>
+        <div class="scanner-controls">
+            <button onclick="simulateScan('DMP-12')">Scan DMP-12 (Duplicate Lock)</button>
+            <button onclick="simulateScan('MID 21634')">Scan MID 21634 (Duplicate Lock)</button>
         </div>
-      </div>
     </div>
 
-    <canvas id="analysis-canvas" width="120" height="90"></canvas>
-
-    <div id="log-container">
-      <div class="log-header-row">
-        <div class="header-left-group">
-          <h3>TOTAL (<span id="count">0</span>)</h3>
-          <button type="button" class="icon-action-btn" id="base-copy-btn">
-            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          </button>
-        </div>
-        
-        <div class="status-dots-group" id="statusDotsGroup">
-          <span class="status-dot" id="dot-1"></span>
-          <span class="status-dot" id="dot-2"></span>
-          <span class="status-dot" id="dot-3"></span>
-          <span class="status-dot" id="dot-4"></span>
-        </div>
-
-        <button type="button" class="icon-action-btn" id="undo-btn">
-          <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
-        </button>
-      </div>
-      
-      <ul id="scanned-list"></ul>
-    </div>
-
-    <div id="control-panel">
-      <div class="btn-complete-wrap">
-        <button type="button" class="btn" id="done-btn">COMPLETE</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-overlay">
-    <div class="modal-card" id="modal-card">
-      <div class="modal-header" id="modal-header">
-        <h4>TOTAL (<span id="modal-count">0</span>)<button type="button" class="icon-action-btn" id="modal-copy-btn">
-            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          </button>
-        </h4>
-        <div class="header-actions">
-          <button class="edit-btn" id="modal-edit-btn">Edit</button>
-          <div class="edit-actions-group">
-            <button class="action-btn-cancel" id="edit-cancel-btn">
-              <svg viewBox="0 0 16 16"><path d="M3 3l10 10M13 3L3 13"/></svg>
-            </button>
-            <button class="action-btn-delete" id="edit-delete-btn">Delete</button>
-          </div>
-        </div>
-      </div>
-      <div class="modal-body">
-        <div class="modal-list" id="modal-scanned-list"></div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const tg = window.Telegram?.WebApp;
-
-    function updateLayoutInsets() {
-      if (!tg) return;
-
-      const contentInset = tg.contentSafeAreaInset || tg.safeAreaInset;
-      let topMargin = 56;
-      let bottomMargin = 24;
-
-      if (contentInset && contentInset.top > 0) {
-        topMargin = contentInset.top + 8;
-      }
-      if (contentInset && contentInset.bottom > 0) {
-        bottomMargin = contentInset.bottom + 10;
-      }
-
-      document.documentElement.style.setProperty('--tg-safe-top', `${topMargin}px`);
-      document.documentElement.style.setProperty('--tg-safe-bottom', `${bottomMargin}px`);
-    }
-
-    if (tg) {
-      tg.ready();
-      tg.expand();
-
-      if (typeof tg.requestFullscreen === 'function') {
-        tg.requestFullscreen();
-      }
-
-      updateLayoutInsets();
-
-      tg.onEvent('contentSafeAreaChanged', updateLayoutInsets);
-      tg.onEvent('safeAreaChanged', updateLayoutInsets);
-      tg.onEvent('fullscreenChanged', updateLayoutInsets);
-    }
-
-    const SECRET_KEY = "AkBR7!12K8Le#Bzz_ASH%PekMP45K416";
-
-    let scannedCodes = [];
-    const selectedSerialsInModal = new Set();
-    const lockedItemsSet = new Set();
-    const lockedCategoriesSet = new Set();
-    
-    const listElement = document.getElementById('scanned-list');
-    const modalListElement = document.getElementById('modal-scanned-list');
-    const countElement = document.getElementById('count');
-    const modalCountElement = document.getElementById('modal-count');
-    const viewfinder = document.getElementById('custom-viewfinder');
-    const analysisCanvas = document.getElementById('analysis-canvas');
-    const canvasCtx = analysisCanvas.getContext('2d', { willReadFrequently: true });
-    
-    const modalOverlay = document.getElementById('modal-overlay');
-    const modalCard = document.getElementById('modal-card');
-    const modalHeader = document.getElementById('modal-header');
-    const editBtn = document.getElementById('modal-edit-btn');
-    const editCancelBtn = document.getElementById('edit-cancel-btn');
-    const editDeleteBtn = document.getElementById('edit-delete-btn');
-    const doneBtn = document.getElementById('done-btn');
-    const baseCopyBtn = document.getElementById('base-copy-btn');
-    const modalCopyBtn = document.getElementById('modal-copy-btn');
-
-    const dotElements = [
-      document.getElementById('dot-1'),
-      document.getElementById('dot-2'),
-      document.getElementById('dot-3'),
-      document.getElementById('dot-4')
-    ];
-
-    let html5QrcodeScanner = null;
-    let lastScannedCode = "";
-    let lastScannedTime = 0;
-    let flashTimeout = null;
-    let overrideTimeout = null;
-    let duplicatePulseTimeout = null;
-    let isOverrideState = false;
-    let proximityInterval = null;
-    let isModalOpen = false;
-    let isEditMode = false;
-    let isUndoAnimating = false;
-    
-    let activeUniqueCode = null;
-
-    // Solid rounded pad lock matching lock ref_3.jpg
-    function getIosLockSvgHTML() {
-      return `<svg class="ios-lock-icon" viewBox="0 0 24 24"><path d="M17 10h-1V7a4 4 0 0 0-8 0v3H7a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3zm-6-3a2 2 0 0 1 4 0v3h-4V7z"/></svg>`;
-    }
-
-    function getIosUnlockSvgHTML() {
-      return `<svg class="ios-lock-icon" viewBox="0 0 24 24"><path d="M17 10H9V7a3 3 0 0 1 6 0h2a5 5 0 0 0-10 0v3H7a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3z"/></svg>`;
-    }
-
-    function sanitizeScannedData(dataStr) {
-      if (!dataStr) return "";
-      return dataStr.replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim();
-    }
-
-    function getRowByRawData(container, rawString) {
-      if (!container || !rawString) return null;
-      const allRows = container.querySelectorAll('li[data-raw]');
-      for (let i = 0; i < allRows.length; i++) {
-        if (allRows[i].getAttribute('data-raw') === rawString) {
-          return allRows[i];
-        }
-      }
-      return null;
-    }
-
-    function clearDotClasses() {
-      dotElements.forEach(dot => {
-        dot.className = 'status-dot';
-      });
-    }
-
-    function setProximityLevel(level) {
-      if (level === 1) {
-        activeUniqueCode = null;
-      }
-
-      if (isOverrideState || isModalOpen) return;
-      clearDotClasses();
-
-      for (let i = 0; i < level; i++) {
-        if (dotElements[i]) {
-          dotElements[i].classList.add('active-white');
-        }
-      }
-    }
-
-    function triggerSuccessGreenState() {
-      isOverrideState = true;
-      clearTimeout(overrideTimeout);
-      clearTimeout(duplicatePulseTimeout);
-      clearDotClasses();
-      dotElements.forEach(dot => dot.classList.add('active-green'));
-
-      overrideTimeout = setTimeout(() => {
-        isOverrideState = false;
-        setProximityLevel(1);
-      }, 700);
-    }
-
-    function triggerUnencryptedAmberState() {
-      isOverrideState = true;
-      clearTimeout(overrideTimeout);
-      clearTimeout(duplicatePulseTimeout);
-      clearDotClasses();
-      dotElements[0].classList.add('active-amber');
-      dotElements[1].classList.add('active-amber');
-      dotElements[2].classList.add('active-amber');
-
-      overrideTimeout = setTimeout(() => {
-        isOverrideState = false;
-        setProximityLevel(1);
-      }, 900);
-    }
-
-    function triggerDuplicateBlueState() {
-      isOverrideState = true;
-      clearTimeout(overrideTimeout);
-      clearTimeout(duplicatePulseTimeout);
-      clearDotClasses();
-      
-      dotElements[0].classList.add('active-blue');
-      dotElements[1].classList.add('active-blue');
-
-      duplicatePulseTimeout = setTimeout(() => {
-        isOverrideState = false;
-        setProximityLevel(1);
-      }, 500); 
-    }
-
-    function triggerUnreadableRedState() {
-      isOverrideState = true;
-      clearTimeout(overrideTimeout);
-      clearTimeout(duplicatePulseTimeout);
-      clearDotClasses();
-      dotElements[0].classList.add('active-red');
-
-      if (viewfinder) {
-        clearTimeout(flashTimeout);
-        viewfinder.classList.remove('scan-success');
-        viewfinder.classList.add('scan-error');
-        
-        flashTimeout = setTimeout(() => {
-          viewfinder.classList.remove('scan-error');
-        }, 900);
-      }
-
-      tg?.HapticFeedback?.notificationOccurred('error');
-
-      overrideTimeout = setTimeout(() => {
-        isOverrideState = false;
-        setProximityLevel(1);
-      }, 900);
-    }
-
-    function triggerLockedErrorState(targetRaw = null) {
-      triggerUnreadableRedState();
-      
-      if (viewfinder) {
-        viewfinder.classList.remove('shake-error');
-        void viewfinder.offsetWidth;
-        viewfinder.classList.add('shake-error');
-        setTimeout(() => viewfinder.classList.remove('shake-error'), 450);
-      }
-
-      if (targetRaw) {
-        const targetElement = getRowByRawData(listElement, targetRaw);
-        if (targetElement) {
-          pinRowToTop(listElement, targetElement);
-        }
-      }
-    }
-
-    function tryDecrypt(rawText) {
-      const sanitized = sanitizeScannedData(rawText);
-      try {
-        const trimmed = rawText.trim();
-        let decryptedText = "";
-
-        let bytes = CryptoJS.AES.decrypt(trimmed, SECRET_KEY);
-        decryptedText = bytes.toString(CryptoJS.enc.Utf8);
-
-        if (!decryptedText && /^[0-9a-fA-F]+$/.test(trimmed)) {
-          const cipherTextWordArray = CryptoJS.enc.Hex.parse(trimmed);
-          const cipherParams = CryptoJS.lib.CipherParams.create({
-            ciphertext: cipherTextWordArray
-          });
-          
-          bytes = CryptoJS.AES.decrypt(cipherParams, SECRET_KEY);
-          decryptedText = bytes.toString(CryptoJS.enc.Utf8);
-        }
-
-        if (decryptedText && decryptedText.length > 0) {
-          return { 
-            text: sanitizeScannedData(decryptedText), 
-            rawInput: sanitized,
-            isEncrypted: true 
-          };
-        }
-      } catch (err) {}
-
-      return { 
-        text: sanitized, 
-        rawInput: sanitized,
-        isEncrypted: false 
-      };
-    }
-
-    function analyzeFrameProximity() {
-      if (isOverrideState || isModalOpen) return;
-
-      const videoElement = document.querySelector("#interactive video");
-      if (!videoElement || videoElement.readyState < 2) return;
-
-      try {
-        canvasCtx.drawImage(videoElement, 0, 0, 120, 90);
-        const imgData = canvasCtx.getImageData(30, 22, 60, 45).data;
-        
-        let totalContrast = 0;
-
-        for (let i = 0; i < imgData.length; i += 8) {
-          const r = imgData[i];
-          if (i > 8) {
-            const prevR = imgData[i - 8];
-            totalContrast += Math.abs(r - prevR);
-          }
-        }
-
-        const avgContrast = totalContrast / (imgData.length / 8);
-
-        if (avgContrast < 12) {
-          setProximityLevel(1);
-        } else if (avgContrast >= 12 && avgContrast < 22) {
-          setProximityLevel(2);
-        } else if (avgContrast >= 22 && avgContrast < 35) {
-          setProximityLevel(3);
-        } else if (avgContrast >= 35) {
-          setProximityLevel(4);
-        }
-      } catch (e) {}
-    }
-
-    function startScanner() {
-      html5QrcodeScanner = new Html5Qrcode("interactive");
-      
-      const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
-        let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-        let boxWidth = Math.floor(minEdgeSize * 0.75);
-        let boxHeight = Math.floor(minEdgeSize * 0.55);
-        return { width: boxWidth, height: boxHeight };
-      }
-
-      const config = { 
-        fps: 15, 
-        qrbox: qrboxFunction, 
-        aspectRatio: 1.333334 
-      };
-      
-      html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess, onScanError)
-      .then(() => {
-        setProximityLevel(1);
-        proximityInterval = setInterval(analyzeFrameProximity, 100);
-      })
-      .catch((err) => alert("Camera setup error: " + err));
-    }
-
-    function onScanError(errorMessage) {
-      if (isModalOpen) return;
-      if (errorMessage && errorMessage.includes("ChecksumException")) {
-        triggerUnreadableRedState();
-      }
-    }
-
-    function updateDeleteButtonState() {
-      if (selectedSerialsInModal.size > 0) {
-        editDeleteBtn.classList.add('has-selection');
-      } else {
-        editDeleteBtn.classList.remove('has-selection');
-      }
-    }
-
-    function triggerUnlockMorphAndFade(containerElement, onComplete) {
-      const lockContainer = containerElement.querySelector('.row-status-icon') || containerElement.querySelector('div:last-child');
-      if (!lockContainer) {
-        onComplete();
-        return;
-      }
-      lockContainer.innerHTML = getIosUnlockSvgHTML();
-      const unlockSvg = lockContainer.querySelector('.ios-lock-icon');
-      if (unlockSvg) {
-        setTimeout(() => unlockSvg.classList.add('fade-out'), 50);
-        setTimeout(() => onComplete(), 400);
-      } else {
-        onComplete();
-      }
-    }
-
-    function buildGroupedDOM(targetContainer, isModal = false) {
-      targetContainer.innerHTML = "";
-      const groups = {};
-      
-      scannedCodes.forEach(item => {
-        if (item.isEncrypted) {
-          const match = item.text.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
-          if (match) {
-            const type = match[1].trim().toUpperCase();
-            const sn = match[2].trim();
-            if (!groups[type]) groups[type] = [];
-            groups[type].push({ display: sn, raw: item.rawInput, category: type });
-            return;
-          }
-        }
-        
-        if (!groups["OTHERS"]) groups["OTHERS"] = [];
-        groups["OTHERS"].push({ display: item.text, raw: item.rawInput, category: "OTHERS" });
-      });
-      
-      const itemHeaders = Object.keys(groups)
-        .filter(h => h !== "OTHERS")
-        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
-      
-      if (groups["OTHERS"]) {
-        itemHeaders.push("OTHERS");
-      }
-      
-      itemHeaders.forEach(headerName => {
-        const categoryItems = groups[headerName];
-        const categoryCount = categoryItems.length;
-        const isCatLocked = lockedCategoriesSet.has(headerName);
-
-        const headerLi = document.createElement('div');
-        headerLi.className = 'list-category-header';
-        
-        const catLockIcon = isCatLocked ? getIosLockSvgHTML() : '';
-        
-        headerLi.innerHTML = `
-          <div class="category-header-title">
-            <span>${headerName} (${categoryCount})</span>
-          </div>
-          <div class="row-status-icon">${catLockIcon}</div>
-        `;
-
-        if (isModal) {
-          let catPressTimer = null;
-          headerLi.addEventListener('touchstart', (e) => {
-            if (isEditMode) return;
-            catPressTimer = setTimeout(() => {
-              tg?.HapticFeedback?.impactOccurred('heavy');
-              setTimeout(() => tg?.HapticFeedback?.impactOccurred('heavy'), 80);
-              
-              if (lockedCategoriesSet.has(headerName)) {
-                triggerUnlockMorphAndFade(headerLi, () => {
-                  lockedCategoriesSet.delete(headerName);
-                  renderGroupedUI();
-                });
-              } else {
-                lockedCategoriesSet.add(headerName);
-                renderGroupedUI();
-              }
-            }, 550);
-          }, { passive: true });
-
-          headerLi.addEventListener('touchend', () => clearTimeout(catPressTimer));
-          headerLi.addEventListener('touchmove', () => clearTimeout(catPressTimer));
-        }
-
-        targetContainer.appendChild(headerLi);
-        
-        categoryItems.sort((a, b) => a.display.localeCompare(b.display, undefined, { numeric: true, sensitivity: 'base' }));
-        
-        categoryItems.forEach(item => {
-          const li = document.createElement('li');
-          li.setAttribute('data-raw', item.raw);
-          const isItemLocked = isCatLocked || lockedItemsSet.has(item.raw);
-
-          if (isItemLocked) {
-            li.classList.add('row-locked');
-          }
-
-          const statusRightContent = isItemLocked ? getIosLockSvgHTML() : '<span class="status-flash">✓</span>';
-
-          if (isModal) {
-            const isSelected = selectedSerialsInModal.has(item.raw);
-            if (isSelected) li.classList.add('selected-row');
-
-            li.innerHTML = `
-              <div class="selection-circle"></div>
-              <div class="modal-row-content">
-                <span>${item.display}</span>
-                <div class="row-status-icon">${statusRightContent}</div>
-              </div>
-            `;
-
-            let rowPressTimer = null;
-
-            li.addEventListener('touchstart', (e) => {
-              if (isEditMode) return;
-              rowPressTimer = setTimeout(() => {
-                tg?.HapticFeedback?.impactOccurred('heavy');
-                setTimeout(() => tg?.HapticFeedback?.impactOccurred('heavy'), 80);
+    <!-- Main Popup Window -->
+    <div class="popup-card">
+        <div class="card-header">
+            <div class="header-title-container">
+                <!-- Cleanly sitting brackets with no spaces: TOTAL (X) -->
+                <span class="header-title" id="total-count-text">TOTAL (1)</span>
                 
-                if (lockedItemsSet.has(item.raw)) {
-                  triggerUnlockMorphAndFade(li, () => {
-                    lockedItemsSet.delete(item.raw);
-                    renderGroupedUI();
-                  });
-                } else {
-                  lockedItemsSet.add(item.raw);
-                  renderGroupedUI();
-                }
-              }, 550);
-            }, { passive: true });
+                <!-- Duplicate / Copy Icon -->
+                <svg class="copy-icon" viewBox="0 0 24 24">
+                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                </svg>
+            </div>
+            <button class="btn-edit">Edit</button>
+        </div>
 
-            li.addEventListener('touchend', () => clearTimeout(rowPressTimer));
-            li.addEventListener('touchmove', () => clearTimeout(rowPressTimer));
+        <div class="list-container" id="list-container">
+            <!-- Row 1 -->
+            <div class="list-row" id="row-DMP-12" data-code="DMP-12">
+                <span class="item-label">DMP-12 (1)</span>
+                <button class="icon-btn" onclick="toggleLock(this)" data-locked="true" aria-label="Toggle Lock">
+                    <!-- Updated Lock Icon (Reference 4 Exact Style) -->
+                    <svg class="icon-svg lock-icon" viewBox="0 0 24 24">
+                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                    </svg>
+                </button>
+            </div>
 
-            li.addEventListener('click', () => {
-              if (!isEditMode) return;
-              if (isItemLocked) return;
+            <!-- Row 2 -->
+            <div class="list-row" id="row-MID 21634" data-code="MID 21634">
+                <span class="item-label">MID 21634</span>
+                <button class="icon-btn" onclick="toggleLock(this)" data-locked="true" aria-label="Toggle Lock">
+                    <!-- Updated Lock Icon (Reference 4 Exact Style) -->
+                    <svg class="icon-svg lock-icon" viewBox="0 0 24 24">
+                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
 
-              if (selectedSerialsInModal.has(item.raw)) {
-                selectedSerialsInModal.delete(item.raw);
-                li.classList.remove('selected-row');
-              } else {
-                selectedSerialsInModal.add(item.raw);
-                li.classList.add('selected-row');
-                tg?.HapticFeedback?.impactOccurred('light');
-              }
-              updateDeleteButtonState();
-            });
-          } else {
-            li.innerHTML = `<span>${item.display}</span><div class="row-status-icon">${statusRightContent}</div>`;
-          }
+    <script>
+        // SVG Definitions
+        const LOCK_SVG = `<path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>`;
+        const UNLOCK_SVG = `<path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z"/>`;
 
-          targetContainer.appendChild(li);
-        });
-      });
-    }
+        // Haptic Feedback Helper
+        function triggerHaptic(type) {
+            if (!navigator.vibrate) return;
 
-    function pinRowToTop(container, rowElement) {
-      if (!container || !rowElement) return;
-
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          const stickyHeader = container.querySelector('.list-category-header');
-          const headerHeight = stickyHeader ? stickyHeader.offsetHeight : 0;
-
-          const targetScrollTop = rowElement.offsetTop - headerHeight - 8;
-
-          container.scrollTo({
-            top: Math.max(0, targetScrollTop),
-            behavior: 'smooth'
-          });
-        });
-      });
-    }
-
-    function renderGroupedUI(newlyAddedRaw = null) {
-      if (scannedCodes.length > 0) {
-        listElement.classList.add('has-items');
-      } else {
-        listElement.classList.remove('has-items');
-      }
-
-      buildGroupedDOM(listElement, false);
-      buildGroupedDOM(modalListElement, true);
-
-      if (newlyAddedRaw) {
-        const targetElement = getRowByRawData(listElement, newlyAddedRaw);
-        if (targetElement) {
-          pinRowToTop(listElement, targetElement);
-          targetElement.classList.add('pulse-new-item');
-          setTimeout(() => {
-            targetElement.classList.remove('pulse-new-item');
-          }, 1400);
-        }
-      }
-    }
-
-    function getCategoryForItem(item) {
-      if (item.isEncrypted) {
-        const match = item.text.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
-        if (match) return match[1].trim().toUpperCase();
-      }
-      return "OTHERS";
-    }
-
-    function onScanSuccess(decodedText) {
-      if (isModalOpen || isUndoAnimating) return;
-
-      const now = Date.now();
-      
-      const result = tryDecrypt(decodedText);
-      const processedText = result.text;
-      const rawInput = result.rawInput;
-      const isEncrypted = result.isEncrypted;
-
-      if (!processedText || processedText.length === 0) {
-        triggerUnreadableRedState();
-        return;
-      }
-
-      const itemCategory = getCategoryForItem({ text: processedText, isEncrypted: isEncrypted });
-
-      if (lockedCategoriesSet.has(itemCategory) || lockedItemsSet.has(rawInput)) {
-        triggerLockedErrorState(rawInput);
-        return;
-      }
-
-      if (viewfinder) {
-        clearTimeout(flashTimeout);
-        viewfinder.classList.remove('scan-error');
-      }
-
-      const isDuplicate = scannedCodes.some(item => item.rawInput === rawInput);
-
-      if (isDuplicate) {
-        if (activeUniqueCode === rawInput) {
-          if (isEncrypted) {
-            triggerSuccessGreenState();
-          } else {
-            triggerUnencryptedAmberState();
-          }
-        } else {
-          triggerDuplicateBlueState();
-        }
-        
-        if (viewfinder) {
-          viewfinder.classList.add('scan-success');
-          flashTimeout = setTimeout(() => {
-            viewfinder.classList.remove('scan-success');
-          }, 900); 
+            if (type === 'heavy-single') {
+                // Heavy Single Haptic (Locking)
+                navigator.vibrate(60);
+            } else if (type === 'heavy-double') {
+                // Heavy Double Haptic (Unlocking)
+                navigator.vibrate([50, 40, 50]);
+            } else if (type === 'faceid-rejected') {
+                // Face-ID Wrong Face / Rejected Haptic Pattern
+                navigator.vibrate([70, 50, 65, 50, 75]);
+            }
         }
 
-        lastScannedTime = now;
-        return;
-      }
+        // Lock / Unlock Toggle Function with 490ms duration feel
+        function toggleLock(buttonEl) {
+            const isLocked = buttonEl.getAttribute('data-locked') === 'true';
+            const svgEl = buttonEl.querySelector('.icon-svg');
 
-      activeUniqueCode = rawInput;
-
-      if (isEncrypted) {
-        triggerSuccessGreenState();
-      } else {
-        triggerUnencryptedAmberState();
-      }
-
-      if (viewfinder) {
-        viewfinder.classList.add('scan-success');
-        flashTimeout = setTimeout(() => {
-          viewfinder.classList.remove('scan-success');
-        }, 900); 
-      }
-
-      lastScannedCode = decodedText;
-      lastScannedTime = now;
-
-      scannedCodes.unshift({ text: processedText, rawInput: rawInput, isEncrypted: isEncrypted });
-      countElement.innerText = scannedCodes.length;
-      modalCountElement.innerText = scannedCodes.length;
-      renderGroupedUI(rawInput);
-      tg?.HapticFeedback?.notificationOccurred('success');
-    }
-
-    document.getElementById('custom-overlay').addEventListener('click', () => {
-      if (!isModalOpen) {
-        triggerUnreadableRedState();
-      }
-    });
-
-    function openModal() {
-      if (scannedCodes.length === 0) return;
-
-      isModalOpen = true;
-      modalOverlay.classList.add('active');
-      tg?.HapticFeedback?.impactOccurred('medium');
-    }
-
-    function closeModal() {
-      exitEditMode();
-      modalOverlay.classList.remove('active');
-      isModalOpen = false;
-      setProximityLevel(1);
-    }
-
-    function enterEditMode() {
-      isEditMode = true;
-      updateDeleteButtonState();
-      modalHeader.classList.add('is-editing');
-      modalListElement.classList.add('is-editing');
-    }
-
-    function exitEditMode() {
-      isEditMode = false;
-      selectedSerialsInModal.clear();
-      updateDeleteButtonState();
-      modalHeader.classList.remove('is-editing');
-      modalListElement.classList.remove('is-editing');
-      
-      const rowElements = modalListElement.querySelectorAll('li');
-      rowElements.forEach(row => row.classList.remove('selected-row'));
-    }
-
-    function handleCopyAction(buttonElement) {
-      if (scannedCodes.length === 0) return;
-
-      const exportText = scannedCodes.map(item => item.text).join('\n');
-      navigator.clipboard.writeText(exportText).then(() => {
-        tg?.HapticFeedback?.notificationOccurred('success');
-        if (buttonElement) {
-          buttonElement.classList.add('copied');
-          setTimeout(() => {
-            buttonElement.classList.remove('copied');
-          }, 1500);
+            if (isLocked) {
+                // Unlock Action
+                buttonEl.setAttribute('data-locked', 'false');
+                svgEl.innerHTML = UNLOCK_SVG;
+                triggerHaptic('heavy-double');
+            } else {
+                // Lock Action
+                buttonEl.setAttribute('data-locked', 'true');
+                svgEl.innerHTML = LOCK_SVG;
+                triggerHaptic('heavy-single');
+            }
         }
-      }).catch(() => {
-        tg?.HapticFeedback?.notificationOccurred('error');
-      });
-    }
 
-    baseCopyBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      handleCopyAction(baseCopyBtn);
-    });
-
-    modalCopyBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      handleCopyAction(modalCopyBtn);
-    });
-
-    editBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      tg?.HapticFeedback?.impactOccurred('light');
-      enterEditMode();
-    });
-
-    editCancelBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      exitEditMode();
-    });
-
-    editDeleteBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (selectedSerialsInModal.size === 0) return;
-
-      tg?.HapticFeedback?.impactOccurred('heavy');
-      setTimeout(() => {
-        tg?.HapticFeedback?.impactOccurred('heavy');
-      }, 160);
-
-      const allModalRows = modalListElement.querySelectorAll('li');
-      allModalRows.forEach(row => {
-        const raw = row.getAttribute('data-raw');
-        if (selectedSerialsInModal.has(raw)) {
-          row.classList.add('deleting');
+        // Dynamically Update Total Header Title Formatting without inner spaces
+        function updateTotalCount(count) {
+            const totalTextEl = document.getElementById('total-count-text');
+            totalTextEl.textContent = `TOTAL (${count})`;
         }
-      });
 
-      setTimeout(() => {
-        scannedCodes = scannedCodes.filter(item => !selectedSerialsInModal.has(item.rawInput));
-        
-        exitEditMode();
+        // Simulate Scanning Duplicate Encrypted or Raw Code
+        function simulateScan(code) {
+            const targetRow = document.getElementById(`row-${code}`);
+            if (!targetRow) return;
 
-        setTimeout(() => {
-          countElement.innerText = scannedCodes.length;
-          modalCountElement.innerText = scannedCodes.length;
-          renderGroupedUI();
+            const lockBtn = targetRow.querySelector('.icon-btn');
+            const isLocked = lockBtn.getAttribute('data-locked') === 'true';
 
-          if (scannedCodes.length === 0) {
-            closeModal();
-          }
-        }, 150);
-      }, 380);
-    });
+            if (isLocked) {
+                // 1. Immediately autoscroll to bring locked row into view
+                targetRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-    listElement.addEventListener('click', openModal);
+                // 2. Flash duplicate blue color using same animation curve & duration
+                targetRow.classList.remove('flash-blue');
+                // Force Reflow
+                void targetRow.offsetWidth;
+                targetRow.classList.add('flash-blue');
 
-    modalOverlay.addEventListener('click', (e) => {
-      if (!modalCard.contains(e.target)) {
-        closeModal();
-      }
-    });
-
-    function sendSerialsBack(codeObjects) {
-      if (proximityInterval) clearInterval(proximityInterval);
-      
-      const initDataUnsafe = tg?.initDataUnsafe;
-      const chatId = initDataUnsafe?.user?.id;
-      
-      if (!chatId) {
-        alert("System Error: Telegram chat context unavailable.");
-        tg?.close();
-        return;
-      }
-
-      const scriptBaseUrl = "https://script.google.com/macros/s/AKfycbwb1tV24CFzbcPD70iA09hprOUg7oMSq7hGCxavDbvr7WmRbsFfHuEtvPtQy2Y9flbtMQ/exec";
-      
-      const serialList = codeObjects.map(item => item.text);
-      const serialsString = serialList.length > 0 ? serialList.join(",") : "No codes scanned";
-      const serialsParam = encodeURIComponent(serialsString);
-      const finalUrl = `${scriptBaseUrl}?chatId=${chatId}&serials=${serialsParam}`;
-
-      const fetchPromise = fetch(finalUrl, { mode: 'no-cors' });
-      const timeoutPromise = new Promise(resolve => setTimeout(resolve, 500));
-
-      Promise.race([fetchPromise, timeoutPromise]).finally(() => {
-        tg?.close();
-      });
-    }
-
-    document.getElementById('undo-btn').addEventListener('click', () => {
-      if (scannedCodes.length === 0 || isUndoAnimating) return;
-
-      let targetIndex = -1;
-      for (let i = 0; i < scannedCodes.length; i++) {
-        const item = scannedCodes[i];
-        const cat = getCategoryForItem(item);
-        if (!lockedCategoriesSet.has(cat) && !lockedItemsSet.has(item.rawInput)) {
-          targetIndex = i;
-          break;
+                // 3. Trigger heavy Face-ID rejection haptic
+                triggerHaptic('faceid-rejected');
+            }
         }
-      }
-
-      if (targetIndex === -1) {
-        tg?.HapticFeedback?.notificationOccurred('error');
-        return;
-      }
-
-      isUndoAnimating = true;
-      const itemToDelete = scannedCodes[targetIndex];
-      const targetElement = getRowByRawData(listElement, itemToDelete.rawInput);
-
-      if (targetElement) {
-        pinRowToTop(listElement, targetElement);
-        
-        targetElement.classList.add('undo-target-glow');
-        tg?.HapticFeedback?.impactOccurred('medium');
-
-        setTimeout(() => {
-          targetElement.classList.add('undo-slide-out');
-        }, 300);
-
-        setTimeout(() => {
-          targetElement.classList.add('undo-collapse');
-        }, 600);
-
-        setTimeout(() => {
-          scannedCodes.splice(targetIndex, 1);
-          countElement.innerText = scannedCodes.length;
-          modalCountElement.innerText = scannedCodes.length;
-          lastScannedCode = "";
-          lastScannedTime = 0;
-          activeUniqueCode = null;
-          isUndoAnimating = false;
-          renderGroupedUI();
-        }, 900);
-      } else {
-        scannedCodes.splice(targetIndex, 1);
-        countElement.innerText = scannedCodes.length;
-        modalCountElement.innerText = scannedCodes.length;
-        lastScannedCode = "";
-        lastScannedTime = 0;
-        activeUniqueCode = null;
-        isUndoAnimating = false;
-        renderGroupedUI();
-        tg?.HapticFeedback?.impactOccurred('medium');
-      }
-    });
-
-    doneBtn.addEventListener('pointerdown', () => {
-      tg?.HapticFeedback?.impactOccurred('heavy');
-    });
-
-    doneBtn.addEventListener('click', () => {
-      const container = document.querySelector('.app-container');
-      const scannerContainer = document.getElementById('scanner-container');
-
-      if (container) {
-        container.classList.add('camera-stopped');
-      }
-
-      if (scannerContainer) {
-        scannerContainer.style.display = 'none';
-      }
-
-      if (html5QrcodeScanner) {
-        html5QrcodeScanner.stop()
-          .then(() => sendSerialsBack(scannedCodes))
-          .catch(() => sendSerialsBack(scannedCodes));
-      } else {
-        sendSerialsBack(scannedCodes);
-      }
-    });
-
-    window.addEventListener('DOMContentLoaded', startScanner);
-  </script>
+    </script>
 </body>
 </html>
