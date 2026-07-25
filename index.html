@@ -426,8 +426,21 @@
       }
     }
 
+    @keyframes rowPulseBlue {
+      0% {
+        background-color: var(--ios-blue);
+      }
+      100% {
+        background-color: #0a0a0a;
+      }
+    }
+
     #scanned-list li.pulse-new-item {
       animation: rowPulseGreen 1.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+
+    #scanned-list li.pulse-duplicate-blue {
+      animation: rowPulseBlue 1.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     }
 
     #scanned-list li.undo-target-glow {
@@ -862,7 +875,7 @@
     <div id="log-container">
       <div class="log-header-row">
         <div class="header-left-group">
-          <h3>TOTAL (<span id="count">0</span>)</h3>
+          <h3>TOTAL(<span id="count">0</span>)</h3>
           <button type="button" class="icon-action-btn" id="base-copy-btn">
             <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
@@ -893,7 +906,7 @@
   <div id="modal-overlay">
     <div class="modal-card" id="modal-card">
       <div class="modal-header" id="modal-header">
-        <h4>TOTAL (<span id="modal-count">0</span>)<button type="button" class="icon-action-btn" id="modal-copy-btn">
+        <h4>TOTAL(<span id="modal-count">0</span>)<button type="button" class="icon-action-btn" id="modal-copy-btn">
             <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </h4>
@@ -995,9 +1008,9 @@
     
     let activeUniqueCode = null;
 
-    // Solid rounded pad lock matching lock ref_3.jpg
+    // Solid rounded pad lock matching lock ref_5.jpg shape
     function getIosLockSvgHTML() {
-      return `<svg class="ios-lock-icon" viewBox="0 0 24 24"><path d="M17 10h-1V7a4 4 0 0 0-8 0v3H7a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3zm-6-3a2 2 0 0 1 4 0v3h-4V7z"/></svg>`;
+      return `<svg class="ios-lock-icon" viewBox="0 0 24 24"><path d="M17 9V7c0-2.8-2.2-5-5-5S7 4.2 7 7v2c-1.7 0-3 1.3-3 3v7c0 1.7 1.3 3 3 3h10c1.7 0 3-1.3 3-3v-7c0-1.7-1.3-3-3-3zM9 7c0-1.7 1.3-3 3-3s3 1.3 3 3v2H9V7z"/></svg>`;
     }
 
     function getIosUnlockSvgHTML() {
@@ -1302,7 +1315,6 @@
             if (isEditMode) return;
             catPressTimer = setTimeout(() => {
               tg?.HapticFeedback?.impactOccurred('heavy');
-              setTimeout(() => tg?.HapticFeedback?.impactOccurred('heavy'), 80);
               
               if (lockedCategoriesSet.has(headerName)) {
                 triggerUnlockMorphAndFade(headerLi, () => {
@@ -1313,7 +1325,7 @@
                 lockedCategoriesSet.add(headerName);
                 renderGroupedUI();
               }
-            }, 550);
+            }, 500);
           }, { passive: true });
 
           headerLi.addEventListener('touchend', () => clearTimeout(catPressTimer));
@@ -1353,7 +1365,6 @@
               if (isEditMode) return;
               rowPressTimer = setTimeout(() => {
                 tg?.HapticFeedback?.impactOccurred('heavy');
-                setTimeout(() => tg?.HapticFeedback?.impactOccurred('heavy'), 80);
                 
                 if (lockedItemsSet.has(item.raw)) {
                   triggerUnlockMorphAndFade(li, () => {
@@ -1364,7 +1375,7 @@
                   lockedItemsSet.add(item.raw);
                   renderGroupedUI();
                 }
-              }, 550);
+              }, 500);
             }, { passive: true });
 
             li.addEventListener('touchend', () => clearTimeout(rowPressTimer));
@@ -1456,9 +1467,32 @@
         return;
       }
 
+      const isDuplicate = scannedCodes.some(item => item.rawInput === rawInput);
       const itemCategory = getCategoryForItem({ text: processedText, isEncrypted: isEncrypted });
+      const isLocked = lockedCategoriesSet.has(itemCategory) || lockedItemsSet.has(rawInput);
 
-      if (lockedCategoriesSet.has(itemCategory) || lockedItemsSet.has(rawInput)) {
+      if (isDuplicate && isLocked) {
+        triggerDuplicateBlueState();
+        
+        if (viewfinder) {
+          clearTimeout(flashTimeout);
+          viewfinder.classList.add('scan-success');
+          flashTimeout = setTimeout(() => {
+            viewfinder.classList.remove('scan-success');
+          }, 900); 
+        }
+
+        const targetElement = getRowByRawData(listElement, rawInput);
+        if (targetElement) {
+          pinRowToTop(listElement, targetElement);
+          targetElement.classList.add('pulse-duplicate-blue');
+          setTimeout(() => {
+            targetElement.classList.remove('pulse-duplicate-blue');
+          }, 1400);
+        }
+        lastScannedTime = now;
+        return;
+      } else if (isLocked) {
         triggerLockedErrorState(rawInput);
         return;
       }
@@ -1467,8 +1501,6 @@
         clearTimeout(flashTimeout);
         viewfinder.classList.remove('scan-error');
       }
-
-      const isDuplicate = scannedCodes.some(item => item.rawInput === rawInput);
 
       if (isDuplicate) {
         if (activeUniqueCode === rawInput) {
