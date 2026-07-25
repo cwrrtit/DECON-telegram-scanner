@@ -21,6 +21,10 @@
       --status-idle-border: #3a3a3c;
       --ios-blue: #007aff;
       --ios-blue-pressed: #0062cc;
+      --copy-btn-bg: #2c2c2e;
+      --copy-btn-icon: #d1d1d6;
+      --copy-success-bg: #1c3b2b;
+      --copy-success-icon: #00db62;
     }
     
     * {
@@ -260,8 +264,8 @@
     }
 
     .icon-action-btn {
-      background-color: var(--ios-blue);
-      color: #78fefb;
+      background-color: var(--copy-btn-bg);
+      color: var(--copy-btn-icon);
       cursor: pointer;
       border: none;
       padding: 0 10px;
@@ -273,7 +277,7 @@
       align-items: center;
       justify-content: center;
       -webkit-tap-highlight-color: transparent;
-      transition: background-color 0.08s ease, transform 0.08s ease;
+      transition: background-color 0.2s ease, color 0.2s ease, transform 0.08s ease;
       box-sizing: border-box;
     }
 
@@ -281,14 +285,30 @@
       width: 18px;
       height: 18px;
       fill: none;
-      stroke: #78fefb;
+      stroke: var(--copy-btn-icon);
       stroke-width: 2.8;
       stroke-linecap: round;
       stroke-linejoin: round;
+      transition: stroke 0.2s ease;
+    }
+
+    .icon-action-btn.copied {
+      background-color: var(--copy-success-bg) !important;
+    }
+
+    .icon-action-btn.copied svg {
+      stroke: var(--copy-success-icon) !important;
+    }
+
+    #undo-btn {
+      background-color: var(--ios-blue);
+    }
+
+    #undo-btn svg {
+      stroke: #78fefb;
     }
 
     .icon-action-btn:active {
-      background-color: var(--ios-blue-pressed);
       transform: scale(0.94);
     }
 
@@ -348,6 +368,12 @@
       display: inline-block;
       vertical-align: middle;
       flex-shrink: 0;
+      transition: opacity 0.4s ease, transform 0.2s ease;
+    }
+
+    .ios-lock-icon.fade-out {
+      opacity: 0;
+      transform: scale(0.8);
     }
 
     #scanned-list li {
@@ -415,7 +441,7 @@
     }
 
     .status-flash { 
-      color: #00db62; 
+      color: #00db62 !important; 
       font-weight: 500; 
       font-size: 15px; 
       display: flex;
@@ -963,13 +989,13 @@
     
     let activeUniqueCode = null;
 
-    // Standardized iOS 26 style SVG Lock & Unlock icons
+    // Standardized iOS Lock & Unlock icons matching unlock_2.jpg reference
     function getIosLockSvgHTML() {
       return `<svg class="ios-lock-icon" viewBox="0 0 24 24"><path d="M18 10h-1V7A5 5 0 0 0 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zm-6 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm3-7H9V7a3 3 0 0 1 6 0v3z"/></svg>`;
     }
 
     function getIosUnlockSvgHTML() {
-      return `<svg class="ios-lock-icon" viewBox="0 0 24 24"><path d="M18 10H9V7a3 3 0 0 1 6 0 .75.75 0 0 0 1.5 0 4.5 4.5 0 0 0-9 0v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zm-6 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>`;
+      return `<svg class="ios-lock-icon" viewBox="0 0 24 24"><path d="M12 2C8.686 2 6 4.686 6 8v3.1A3.98 3.98 0 0 0 3 15v5c0 2.209 1.791 4 4 4h10c2.209 0 4-1.791 4-4v-5c0-2.209-1.791-4-4-4h-8V8c0-1.657 1.343-3 3-3s3 1.343 3 3v1h3V8c0-3.314-2.686-6-6-6z"/></svg>`;
     }
 
     function sanitizeScannedData(dataStr) {
@@ -1203,6 +1229,22 @@
       }
     }
 
+    function triggerUnlockMorphAndFade(containerElement, onComplete) {
+      const lockContainer = containerElement.querySelector('.row-status-icon, div:last-child');
+      if (!lockContainer) {
+        onComplete();
+        return;
+      }
+      lockContainer.innerHTML = getIosUnlockSvgHTML();
+      const unlockSvg = lockContainer.querySelector('.ios-lock-icon');
+      if (unlockSvg) {
+        setTimeout(() => unlockSvg.classList.add('fade-out'), 50);
+        setTimeout(() => onComplete(), 450);
+      } else {
+        onComplete();
+      }
+    }
+
     function buildGroupedDOM(targetContainer, isModal = false) {
       targetContainer.innerHTML = "";
       const groups = {};
@@ -1239,7 +1281,7 @@
         const headerLi = document.createElement('div');
         headerLi.className = 'list-category-header';
         
-        const catLockIcon = isCatLocked ? getIosLockSvgHTML() : getIosUnlockSvgHTML();
+        const catLockIcon = isCatLocked ? getIosLockSvgHTML() : '';
         
         headerLi.innerHTML = `
           <div class="category-header-title">
@@ -1255,13 +1297,17 @@
             catPressTimer = setTimeout(() => {
               tg?.HapticFeedback?.impactOccurred('heavy');
               setTimeout(() => tg?.HapticFeedback?.impactOccurred('heavy'), 80);
+              
               if (lockedCategoriesSet.has(headerName)) {
-                lockedCategoriesSet.delete(headerName);
+                triggerUnlockMorphAndFade(headerLi, () => {
+                  lockedCategoriesSet.delete(headerName);
+                  renderGroupedUI();
+                });
               } else {
                 lockedCategoriesSet.add(headerName);
+                renderGroupedUI();
               }
-              renderGroupedUI();
-            }, 1000); // Updated hold duration: ~1s
+            }, 1000);
           }, { passive: true });
 
           headerLi.addEventListener('touchend', () => clearTimeout(catPressTimer));
@@ -1302,13 +1348,17 @@
               rowPressTimer = setTimeout(() => {
                 tg?.HapticFeedback?.impactOccurred('heavy');
                 setTimeout(() => tg?.HapticFeedback?.impactOccurred('heavy'), 80);
+                
                 if (lockedItemsSet.has(item.raw)) {
-                  lockedItemsSet.delete(item.raw);
+                  triggerUnlockMorphAndFade(li, () => {
+                    lockedItemsSet.delete(item.raw);
+                    renderGroupedUI();
+                  });
                 } else {
                   lockedItemsSet.add(item.raw);
+                  renderGroupedUI();
                 }
-                renderGroupedUI();
-              }, 1000); // Updated hold duration: ~1s
+              }, 1000);
             }, { passive: true });
 
             li.addEventListener('touchend', () => clearTimeout(rowPressTimer));
@@ -1500,12 +1550,18 @@
       rowElements.forEach(row => row.classList.remove('selected-row'));
     }
 
-    function handleCopyAction() {
+    function handleCopyAction(buttonElement) {
       if (scannedCodes.length === 0) return;
 
       const exportText = scannedCodes.map(item => item.text).join('\n');
       navigator.clipboard.writeText(exportText).then(() => {
         tg?.HapticFeedback?.notificationOccurred('success');
+        if (buttonElement) {
+          buttonElement.classList.add('copied');
+          setTimeout(() => {
+            buttonElement.classList.remove('copied');
+          }, 1500);
+        }
       }).catch(() => {
         tg?.HapticFeedback?.notificationOccurred('error');
       });
@@ -1513,12 +1569,12 @@
 
     baseCopyBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      handleCopyAction();
+      handleCopyAction(baseCopyBtn);
     });
 
     modalCopyBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      handleCopyAction();
+      handleCopyAction(modalCopyBtn);
     });
 
     editBtn.addEventListener('click', (e) => {
