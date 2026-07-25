@@ -1,4 +1,4 @@
-=<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -358,12 +358,17 @@
       justify-content: space-between;
       align-items: center;
       user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     .category-header-title {
       display: flex;
       align-items: center;
       gap: 6px;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     .ios-lock-icon {
@@ -580,8 +585,8 @@
       justify-content: space-between;
       align-items: center;
       padding: 0 16px;
-      min-height: 40px;
-      max-height: 40px;
+      min-height: 48px;
+      max-height: 48px;
       background: rgba(44, 44, 46, 0.6);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       box-sizing: border-box;
@@ -597,6 +602,8 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      height: 32px;
+      line-height: 32px;
     }
 
     .header-actions {
@@ -604,7 +611,7 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      height: 28px;
+      height: 32px;
     }
 
     .edit-btn {
@@ -619,7 +626,7 @@
       font-weight: 600;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      height: 28px;
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -631,6 +638,7 @@
                   background-color 0.15s ease;
       pointer-events: auto;
       white-space: nowrap;
+      box-sizing: border-box;
     }
 
     .edit-btn:active {
@@ -641,7 +649,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      height: 28px;
+      height: 32px;
       opacity: 0;
       transform: scale(0.9) translateX(10px);
       transform-origin: right center;
@@ -667,8 +675,8 @@
       border: none;
       color: #ffffff;
       padding: 0;
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       border-radius: var(--button-corner-radius);
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
@@ -700,7 +708,7 @@
       font-weight: 700;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      height: 28px;
+      height: 32px;
       border-radius: var(--button-corner-radius);
       display: flex;
       align-items: center;
@@ -1827,4 +1835,3 @@
   </script>
 </body>
 </html>
-```[cite: 4]
