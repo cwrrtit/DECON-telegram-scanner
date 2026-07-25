@@ -448,6 +448,12 @@
       transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out;
     }
 
+    #scanned-list li.unlocked-duplicate-persistent {
+      background-color: var(--ios-blue-muted-duplicate) !important;
+      opacity: 1 !important;
+      transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out;
+    }
+
     #scanned-list li.undo-target-glow {
       background-color: var(--status-red) !important;
     }
@@ -1380,7 +1386,6 @@
                 tg?.HapticFeedback?.impactOccurred('heavy');
                 
                 if (isCatLocked) {
-                  // Master locked by header: long pressing individual row to unlock does nothing
                   return;
                 }
 
@@ -1525,20 +1530,19 @@
         triggerDuplicateBlueState();
         
         if (viewfinder) {
-          viewfinder.classList.add('scan-duplicate-locked');
-          clearTimeout(window.lockedDuplicateViewfinderTimeout);
-          window.lockedDuplicateViewfinderTimeout = setTimeout(() => {
-            viewfinder.classList.remove('scan-duplicate-locked');
-          }, 600); 
+          viewfinder.classList.add('scan-success');
+          flashTimeout = setTimeout(() => {
+            viewfinder.classList.remove('scan-success');
+          }, 900); 
         }
 
         const targetElement = getRowByRawData(listElement, rawInput);
         if (targetElement) {
           pinRowToTop(listElement, targetElement);
-          targetElement.classList.add('locked-duplicate-persistent');
-          clearTimeout(targetElement.lockedDupTimeout);
-          targetElement.lockedDupTimeout = setTimeout(() => {
-            targetElement.classList.remove('locked-duplicate-persistent');
+          targetElement.classList.add('unlocked-duplicate-persistent');
+          clearTimeout(targetElement.unlockedDupTimeout);
+          targetElement.unlockedDupTimeout = setTimeout(() => {
+            targetElement.classList.remove('unlocked-duplicate-persistent');
           }, 600);
         }
 
