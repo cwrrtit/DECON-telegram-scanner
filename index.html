@@ -21,7 +21,7 @@
       --status-idle-border: #3a3a3c;
       --ios-blue: #007aff;
       --ios-blue-pressed: #0062cc;
-      --ios-blue-muted-duplicate: #0056b3;
+      --ios-blue-muted-duplicate: #004080;
       --copy-btn-bg: #2c2c2e;
       --copy-btn-icon: #d1d1d6;
       --copy-success-bg: #1c3b2b;
@@ -979,6 +979,7 @@
     let scannedCodes = [];
     const selectedSerialsInModal = new Set();
     const lockedCategoriesSet = new Set();
+    const lockedRowsSet = new Set();
     
     const listElement = document.getElementById('scanned-list');
     const modalListElement = document.getElementById('modal-scanned-list');
@@ -1330,10 +1331,12 @@
               if (lockedCategoriesSet.has(headerName)) {
                 triggerUnlockMorphAndFade(headerLi, () => {
                   lockedCategoriesSet.delete(headerName);
+                  categoryItems.forEach(i => lockedRowsSet.delete(i.raw));
                   renderGroupedUI();
                 });
               } else {
                 lockedCategoriesSet.add(headerName);
+                categoryItems.forEach(i => lockedRowsSet.add(i.raw));
                 renderGroupedUI();
               }
             }, 500);
@@ -1350,7 +1353,7 @@
         categoryItems.forEach(item => {
           const li = document.createElement('li');
           li.setAttribute('data-raw', item.raw);
-          const isItemLocked = isCatLocked;
+          const isItemLocked = isCatLocked || lockedRowsSet.has(item.raw);
 
           if (isItemLocked) {
             li.classList.add('row-locked');
@@ -1369,6 +1372,32 @@
                 <div class="row-status-icon">${statusRightContent}</div>
               </div>
             `;
+
+            let rowPressTimer = null;
+            li.addEventListener('touchstart', (e) => {
+              if (isEditMode) return;
+              rowPressTimer = setTimeout(() => {
+                tg?.HapticFeedback?.impactOccurred('heavy');
+                
+                if (isCatLocked) {
+                  // Master locked by header: long pressing individual row to unlock does nothing
+                  return;
+                }
+
+                if (lockedRowsSet.has(item.raw)) {
+                  triggerUnlockMorphAndFade(li, () => {
+                    lockedRowsSet.delete(item.raw);
+                    renderGroupedUI();
+                  });
+                } else {
+                  lockedRowsSet.add(item.raw);
+                  renderGroupedUI();
+                }
+              }, 500);
+            }, { passive: true });
+
+            li.addEventListener('touchend', () => clearTimeout(rowPressTimer));
+            li.addEventListener('touchmove', () => clearTimeout(rowPressTimer));
 
             li.addEventListener('click', () => {
               if (!isEditMode) return;
@@ -1458,7 +1487,7 @@
 
       const isDuplicate = scannedCodes.some(item => item.rawInput === rawInput);
       const itemCategory = getCategoryForItem({ text: processedText, isEncrypted: isEncrypted });
-      const isLocked = lockedCategoriesSet.has(itemCategory);
+      const isLocked = lockedCategoriesSet.has(itemCategory) || lockedRowsSet.has(rawInput);
 
       if (isDuplicate && isLocked) {
         triggerDuplicateBlueState();
@@ -1738,7 +1767,7 @@
       for (let i = 0; i < scannedCodes.length; i++) {
         const item = scannedCodes[i];
         const cat = getCategoryForItem(item);
-        if (!lockedCategoriesSet.has(cat)) {
+        if (!lockedCategoriesSet.has(cat) && !lockedRowsSet.has(item.rawInput)) {
           targetIndex = i;
           break;
         }
