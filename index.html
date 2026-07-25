@@ -405,6 +405,14 @@
       align-items: center;
     }
 
+    .row-status-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 24px;
+    }
+
     .row-locked {
       opacity: 0.55 !important;
     }
@@ -573,12 +581,12 @@
       margin: 0;
       font-size: 13px;
       text-transform: uppercase;
-      letter-spacing: 0.6px;
+      letter-spacing: 0.4px;
       color: #a2a2a7;
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .header-actions {
@@ -885,9 +893,7 @@
   <div id="modal-overlay">
     <div class="modal-card" id="modal-card">
       <div class="modal-header" id="modal-header">
-        <h4>
-          TOTAL (<span id="modal-count">0</span>)
-          <button type="button" class="icon-action-btn" id="modal-copy-btn">
+        <h4>TOTAL (<span id="modal-count">0</span>)<button type="button" class="icon-action-btn" id="modal-copy-btn">
             <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </h4>
@@ -989,13 +995,13 @@
     
     let activeUniqueCode = null;
 
-    // Standardized iOS Lock & Unlock icons matching unlock_2.jpg reference
+    // Solid rounded pad lock matching lock ref_3.jpg
     function getIosLockSvgHTML() {
-      return `<svg class="ios-lock-icon" viewBox="0 0 24 24"><path d="M18 10h-1V7A5 5 0 0 0 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zm-6 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm3-7H9V7a3 3 0 0 1 6 0v3z"/></svg>`;
+      return `<svg class="ios-lock-icon" viewBox="0 0 24 24"><path d="M17 10h-1V7a4 4 0 0 0-8 0v3H7a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3zm-6-3a2 2 0 0 1 4 0v3h-4V7z"/></svg>`;
     }
 
     function getIosUnlockSvgHTML() {
-      return `<svg class="ios-lock-icon" viewBox="0 0 24 24"><path d="M12 2C8.686 2 6 4.686 6 8v3.1A3.98 3.98 0 0 0 3 15v5c0 2.209 1.791 4 4 4h10c2.209 0 4-1.791 4-4v-5c0-2.209-1.791-4-4-4h-8V8c0-1.657 1.343-3 3-3s3 1.343 3 3v1h3V8c0-3.314-2.686-6-6-6z"/></svg>`;
+      return `<svg class="ios-lock-icon" viewBox="0 0 24 24"><path d="M17 10H9V7a3 3 0 0 1 6 0h2a5 5 0 0 0-10 0v3H7a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3z"/></svg>`;
     }
 
     function sanitizeScannedData(dataStr) {
@@ -1230,7 +1236,7 @@
     }
 
     function triggerUnlockMorphAndFade(containerElement, onComplete) {
-      const lockContainer = containerElement.querySelector('.row-status-icon, div:last-child');
+      const lockContainer = containerElement.querySelector('.row-status-icon') || containerElement.querySelector('div:last-child');
       if (!lockContainer) {
         onComplete();
         return;
@@ -1239,7 +1245,7 @@
       const unlockSvg = lockContainer.querySelector('.ios-lock-icon');
       if (unlockSvg) {
         setTimeout(() => unlockSvg.classList.add('fade-out'), 50);
-        setTimeout(() => onComplete(), 450);
+        setTimeout(() => onComplete(), 400);
       } else {
         onComplete();
       }
@@ -1287,7 +1293,7 @@
           <div class="category-header-title">
             <span>${headerName} (${categoryCount})</span>
           </div>
-          <div>${catLockIcon}</div>
+          <div class="row-status-icon">${catLockIcon}</div>
         `;
 
         if (isModal) {
@@ -1307,7 +1313,7 @@
                 lockedCategoriesSet.add(headerName);
                 renderGroupedUI();
               }
-            }, 1000);
+            }, 550);
           }, { passive: true });
 
           headerLi.addEventListener('touchend', () => clearTimeout(catPressTimer));
@@ -1358,7 +1364,7 @@
                   lockedItemsSet.add(item.raw);
                   renderGroupedUI();
                 }
-              }, 1000);
+              }, 550);
             }, { passive: true });
 
             li.addEventListener('touchend', () => clearTimeout(rowPressTimer));
