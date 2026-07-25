@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+=<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -200,7 +200,7 @@
       align-items: center;
       margin: 0 4px 6px 4px;
       flex-shrink: 0;
-      height: 24px;
+      height: 32px;
     }
 
     .header-left-group {
@@ -216,14 +216,14 @@
       color: #a2a2a7; 
       letter-spacing: 0.4px;
       font-weight: 600;
-      line-height: 24px;
+      line-height: 32px;
     }
 
     .status-dots-group {
       display: flex;
       align-items: center;
       gap: 10px;
-      height: 24px;
+      height: 32px;
     }
 
     .status-dot {
@@ -275,7 +275,7 @@
       border: none;
       padding: 0 10px;
       min-width: 36px;
-      height: 26px;
+      height: 32px;
       border-radius: var(--button-corner-radius);
       user-select: none;
       display: inline-flex;
@@ -436,7 +436,7 @@
     }
 
     #scanned-list li.locked-duplicate-persistent {
-      background-color: rgba(0, 122, 255, 0.2) !important;
+      background-color: var(--ios-blue) !important;
       transition: background-color 0.2s ease-in-out;
     }
 
@@ -1819,7 +1819,7 @@
           .then(() => sendSerialsBack(scannedCodes))
           .catch(() => sendSerialsBack(scannedCodes));
       } else {
-        sendSerialsBack(scannedCodes);
+        sendSerialsBack(scannedCodes.length);
       }
     });
 
@@ -1827,3 +1827,4 @@
   </script>
 </body>
 </html>
+```[cite: 4]
