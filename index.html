@@ -21,6 +21,7 @@
       --status-idle-border: #3a3a3c;
       --ios-blue: #007aff;
       --ios-blue-pressed: #0062cc;
+      --ios-blue-muted-duplicate: #0056b3;
       --copy-btn-bg: #2c2c2e;
       --copy-btn-icon: #d1d1d6;
       --copy-success-bg: #1c3b2b;
@@ -369,6 +370,7 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
+      -webkit-user-modify: read-only;
     }
 
     .ios-lock-icon {
@@ -441,8 +443,9 @@
     }
 
     #scanned-list li.locked-duplicate-persistent {
-      background-color: var(--ios-blue) !important;
-      transition: background-color 0.2s ease-in-out;
+      background-color: var(--ios-blue-muted-duplicate) !important;
+      opacity: 1 !important;
+      transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out;
     }
 
     #scanned-list li.undo-target-glow {
@@ -585,8 +588,8 @@
       justify-content: space-between;
       align-items: center;
       padding: 0 16px;
-      min-height: 48px;
-      max-height: 48px;
+      min-height: 44px;
+      max-height: 44px;
       background: rgba(44, 44, 46, 0.6);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       box-sizing: border-box;
@@ -794,6 +797,10 @@
       color: #ffffff;
       display: flex;
       align-items: center;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-user-modify: read-only;
     }
 
     .selection-circle {
@@ -971,7 +978,6 @@
 
     let scannedCodes = [];
     const selectedSerialsInModal = new Set();
-    const lockedItemsSet = new Set();
     const lockedCategoriesSet = new Set();
     
     const listElement = document.getElementById('scanned-list');
@@ -1344,7 +1350,7 @@
         categoryItems.forEach(item => {
           const li = document.createElement('li');
           li.setAttribute('data-raw', item.raw);
-          const isItemLocked = isCatLocked || lockedItemsSet.has(item.raw);
+          const isItemLocked = isCatLocked;
 
           if (isItemLocked) {
             li.classList.add('row-locked');
@@ -1363,28 +1369,6 @@
                 <div class="row-status-icon">${statusRightContent}</div>
               </div>
             `;
-
-            let rowPressTimer = null;
-
-            li.addEventListener('touchstart', (e) => {
-              if (isEditMode) return;
-              rowPressTimer = setTimeout(() => {
-                tg?.HapticFeedback?.impactOccurred('heavy');
-                
-                if (lockedItemsSet.has(item.raw)) {
-                  triggerUnlockMorphAndFade(li, () => {
-                    lockedItemsSet.delete(item.raw);
-                    renderGroupedUI();
-                  });
-                } else {
-                  lockedItemsSet.add(item.raw);
-                  renderGroupedUI();
-                }
-              }, 500);
-            }, { passive: true });
-
-            li.addEventListener('touchend', () => clearTimeout(rowPressTimer));
-            li.addEventListener('touchmove', () => clearTimeout(rowPressTimer));
 
             li.addEventListener('click', () => {
               if (!isEditMode) return;
@@ -1474,7 +1458,7 @@
 
       const isDuplicate = scannedCodes.some(item => item.rawInput === rawInput);
       const itemCategory = getCategoryForItem({ text: processedText, isEncrypted: isEncrypted });
-      const isLocked = lockedCategoriesSet.has(itemCategory) || lockedItemsSet.has(rawInput);
+      const isLocked = lockedCategoriesSet.has(itemCategory);
 
       if (isDuplicate && isLocked) {
         triggerDuplicateBlueState();
@@ -1754,7 +1738,7 @@
       for (let i = 0; i < scannedCodes.length; i++) {
         const item = scannedCodes[i];
         const cat = getCategoryForItem(item);
-        if (!lockedCategoriesSet.has(cat) && !lockedItemsSet.has(item.rawInput)) {
+        if (!lockedCategoriesSet.has(cat)) {
           targetIndex = i;
           break;
         }
