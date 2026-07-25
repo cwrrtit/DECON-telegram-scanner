@@ -1522,21 +1522,24 @@
       }
 
       if (isDuplicate) {
-        if (activeUniqueCode === rawInput) {
-          if (isEncrypted) {
-            triggerSuccessGreenState();
-          } else {
-            triggerUnencryptedAmberState();
-          }
-        } else {
-          triggerDuplicateBlueState();
-        }
+        triggerDuplicateBlueState();
         
         if (viewfinder) {
-          viewfinder.classList.add('scan-success');
-          flashTimeout = setTimeout(() => {
-            viewfinder.classList.remove('scan-success');
-          }, 900); 
+          viewfinder.classList.add('scan-duplicate-locked');
+          clearTimeout(window.lockedDuplicateViewfinderTimeout);
+          window.lockedDuplicateViewfinderTimeout = setTimeout(() => {
+            viewfinder.classList.remove('scan-duplicate-locked');
+          }, 600); 
+        }
+
+        const targetElement = getRowByRawData(listElement, rawInput);
+        if (targetElement) {
+          pinRowToTop(listElement, targetElement);
+          targetElement.classList.add('locked-duplicate-persistent');
+          clearTimeout(targetElement.lockedDupTimeout);
+          targetElement.lockedDupTimeout = setTimeout(() => {
+            targetElement.classList.remove('locked-duplicate-persistent');
+          }, 600);
         }
 
         lastScannedTime = now;
