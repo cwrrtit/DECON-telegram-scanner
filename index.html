@@ -179,6 +179,11 @@
       filter: drop-shadow(0px 0px 4px rgba(255, 59, 48, 0.75));
     }
 
+    #custom-viewfinder.scan-duplicate-locked .scanner-corner {
+      border-color: var(--ios-blue) !important;
+      filter: drop-shadow(0px 0px 4px rgba(0, 122, 255, 0.75));
+    }
+
     #log-container {
       width: 100%;
       display: flex;
@@ -193,9 +198,9 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin: 0 4px 10px 4px;
+      margin: 0 4px 6px 4px;
       flex-shrink: 0;
-      height: 30px;
+      height: 24px;
     }
 
     .header-left-group {
@@ -206,19 +211,19 @@
 
     h3 {
       margin: 0;
-      font-size: 13px;
+      font-size: 12px;
       text-transform: uppercase;
       color: #a2a2a7; 
       letter-spacing: 0.4px;
       font-weight: 600;
-      line-height: 30px;
+      line-height: 24px;
     }
 
     .status-dots-group {
       display: flex;
       align-items: center;
       gap: 10px;
-      height: 30px;
+      height: 24px;
     }
 
     .status-dot {
@@ -270,7 +275,7 @@
       border: none;
       padding: 0 10px;
       min-width: 36px;
-      height: 30px;
+      height: 26px;
       border-radius: var(--button-corner-radius);
       user-select: none;
       display: inline-flex;
@@ -341,7 +346,7 @@
       top: 0;
       z-index: 10;
       background-color: #1c1c1e;
-      padding: 8px 18px;
+      padding: 4px 18px;
       font-size: 12px;
       font-weight: 700;
       color: #a2a2a7;
@@ -426,21 +431,13 @@
       }
     }
 
-    @keyframes rowPulseBlue {
-      0% {
-        background-color: var(--ios-blue);
-      }
-      100% {
-        background-color: #0a0a0a;
-      }
-    }
-
     #scanned-list li.pulse-new-item {
       animation: rowPulseGreen 1.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     }
 
-    #scanned-list li.pulse-duplicate-blue {
-      animation: rowPulseBlue 1.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    #scanned-list li.locked-duplicate-persistent {
+      background-color: rgba(0, 122, 255, 0.2) !important;
+      transition: background-color 0.2s ease-in-out;
     }
 
     #scanned-list li.undo-target-glow {
@@ -583,8 +580,8 @@
       justify-content: space-between;
       align-items: center;
       padding: 0 16px;
-      min-height: 52px;
-      max-height: 52px;
+      min-height: 40px;
+      max-height: 40px;
       background: rgba(44, 44, 46, 0.6);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       box-sizing: border-box;
@@ -607,7 +604,7 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      height: 32px;
+      height: 28px;
     }
 
     .edit-btn {
@@ -622,7 +619,7 @@
       font-weight: 600;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      height: 32px;
+      height: 28px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -644,7 +641,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      height: 32px;
+      height: 28px;
       opacity: 0;
       transform: scale(0.9) translateX(10px);
       transform-origin: right center;
@@ -670,8 +667,8 @@
       border: none;
       color: #ffffff;
       padding: 0;
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       border-radius: var(--button-corner-radius);
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
@@ -703,7 +700,7 @@
       font-weight: 700;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      height: 32px;
+      height: 28px;
       border-radius: var(--button-corner-radius);
       display: flex;
       align-items: center;
@@ -1475,20 +1472,21 @@
         triggerDuplicateBlueState();
         
         if (viewfinder) {
-          clearTimeout(flashTimeout);
-          viewfinder.classList.add('scan-success');
-          flashTimeout = setTimeout(() => {
-            viewfinder.classList.remove('scan-success');
-          }, 900); 
+          viewfinder.classList.add('scan-duplicate-locked');
+          clearTimeout(window.lockedDuplicateViewfinderTimeout);
+          window.lockedDuplicateViewfinderTimeout = setTimeout(() => {
+            viewfinder.classList.remove('scan-duplicate-locked');
+          }, 600); 
         }
 
         const targetElement = getRowByRawData(listElement, rawInput);
         if (targetElement) {
           pinRowToTop(listElement, targetElement);
-          targetElement.classList.add('pulse-duplicate-blue');
-          setTimeout(() => {
-            targetElement.classList.remove('pulse-duplicate-blue');
-          }, 1400);
+          targetElement.classList.add('locked-duplicate-persistent');
+          clearTimeout(targetElement.lockedDupTimeout);
+          targetElement.lockedDupTimeout = setTimeout(() => {
+            targetElement.classList.remove('locked-duplicate-persistent');
+          }, 600);
         }
         lastScannedTime = now;
         return;
@@ -1588,10 +1586,56 @@
       rowElements.forEach(row => row.classList.remove('selected-row'));
     }
 
+    function formatDataForClipboard() {
+      if (scannedCodes.length === 0) return "";
+
+      let formattedText = "Scanned Items\n\n";
+      const groups = {};
+
+      scannedCodes.forEach(item => {
+        let disp = item.text;
+        let cat = "OTHERS";
+        if (item.isEncrypted) {
+          const match = item.text.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
+          if (match) {
+            cat = match[1].trim().toUpperCase();
+            disp = match[2].trim();
+          }
+        }
+        if (!groups[cat]) groups[cat] = [];
+        groups[cat].push(disp);
+      });
+
+      let headers = Object.keys(groups).filter(k => k !== "OTHERS");
+      headers.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+      const sortSerials = (arr) => arr.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+      headers.forEach(header => {
+        if (groups[header] && groups[header].length > 0) {
+          formattedText += `${header}\n`;
+          sortSerials(groups[header]).forEach(serial => {
+            formattedText += `• ${serial}\n`;
+          });
+          formattedText += `\n`;
+        }
+      });
+
+      if (groups["OTHERS"] && groups["OTHERS"].length > 0) {
+        formattedText += `OTHERS\n`;
+        sortSerials(groups["OTHERS"]).forEach(serial => {
+          formattedText += `• ${serial}\n`;
+        });
+        formattedText += `\n`;
+      }
+
+      return formattedText.trim();
+    }
+
     function handleCopyAction(buttonElement) {
       if (scannedCodes.length === 0) return;
 
-      const exportText = scannedCodes.map(item => item.text).join('\n');
+      const exportText = formatDataForClipboard();
       navigator.clipboard.writeText(exportText).then(() => {
         tg?.HapticFeedback?.notificationOccurred('success');
         if (buttonElement) {
