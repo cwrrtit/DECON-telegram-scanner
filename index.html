@@ -601,6 +601,12 @@
       box-sizing: border-box;
     }
 
+    .modal-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     .modal-header h4 {
       margin: 0;
       font-size: 13px;
@@ -608,9 +614,6 @@
       letter-spacing: 0.4px;
       color: #a2a2a7;
       font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 10px;
       height: 32px;
       line-height: 32px;
     }
@@ -924,10 +927,12 @@
   <div id="modal-overlay">
     <div class="modal-card" id="modal-card">
       <div class="modal-header" id="modal-header">
-        <h4>TOTAL (<span id="modal-count">0</span>)<button type="button" class="icon-action-btn" id="modal-copy-btn">
+        <div class="modal-title-wrap">
+          <h4>TOTAL (<span id="modal-count">0</span>)</h4>
+          <button type="button" class="icon-action-btn" id="modal-copy-btn">
             <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
-        </h4>
+        </div>
         <div class="header-actions">
           <button class="edit-btn" id="modal-edit-btn">Edit</button>
           <div class="edit-actions-group">
