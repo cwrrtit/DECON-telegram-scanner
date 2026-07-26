@@ -619,7 +619,7 @@
       border-radius: 15px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;
       color: #E1E1E1;
       font-weight: 700;
       font-size: 12px;
@@ -639,21 +639,28 @@
       width: 100%;
       display: flex;
       align-items: center;
+      justify-content: center;
+    }
+
+    .ticker-track {
+      display: flex;
+      white-space: nowrap;
+      will-change: transform;
+      width: max-content;
     }
 
     .ticker-text {
       white-space: nowrap;
       display: inline-block;
-      will-change: transform;
     }
 
-    .ticker-text.animate-marquee {
+    .ticker-track.animate-marquee {
       animation: marqueeAnimation 8s linear infinite;
     }
 
     @keyframes marqueeAnimation {
       0% { transform: translateX(0%); }
-      100% { transform: translateX(-50%); }
+      100% { transform: translateX(-100%); }
     }
 
     .updown-arrow-icon {
@@ -793,7 +800,7 @@
       align-items: center;
       justify-content: center;
       opacity: 1;
-      transition: background-color 0.15s ease, opacity 0.2s ease;
+      transition: background-color 0.15s ease, opacity 0.32s cubic-bezier(0.25, 1, 0.5, 1), transform 0.32s cubic-bezier(0.25, 1, 0.5, 1);
       pointer-events: auto;
       white-space: nowrap;
       box-sizing: border-box;
@@ -801,6 +808,12 @@
 
     .edit-btn:active {
       background-color: var(--ios-blue-pressed);
+    }
+
+    .is-editing .edit-btn {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.9);
     }
 
     .plus-btn-modal {
@@ -826,6 +839,9 @@
     }
 
     .edit-actions-group {
+      position: absolute;
+      right: 0;
+      top: 0;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -1139,7 +1155,10 @@
           </button>
           <div class="create-btn-static" id="create-btn-target">
             <div class="ticker-wrapper" id="create-btn-ticker-wrap">
-              <span class="ticker-text" id="create-btn-text">CREATE</span>
+              <div class="ticker-track" id="ticker-track">
+                <span class="ticker-text" id="create-btn-text">CREATE</span>
+                <span class="ticker-text" id="create-btn-text-clone" style="display: none;"></span>
+              </div>
             </div>
             <svg class="updown-arrow-icon" id="create-btn-arrow" style="display: none;" viewBox="0 0 24 24">
               <path d="M12 5l-5 5h10l-5-5zm0 14l5-5H7l5 5z"/>
@@ -1268,7 +1287,9 @@
     const middleBarContainer = document.getElementById('middle-bar-container');
 
     const createBtnTarget = document.getElementById('create-btn-target');
+    const tickerTrack = document.getElementById('ticker-track');
     const createBtnText = document.getElementById('create-btn-text');
+    const createBtnTextClone = document.getElementById('create-btn-text-clone');
     const createBtnArrow = document.getElementById('create-btn-arrow');
     const focusModalOverlay = document.getElementById('focus-modal-overlay');
     const focusModalCard = document.getElementById('focus-modal-card');
@@ -1561,14 +1582,19 @@
         // Ticker Marquee Check
         const parentWidth = createBtnTarget.clientWidth - 32;
         if (createBtnText.scrollWidth > parentWidth) {
-          createBtnText.innerText = `${activeFocusCategory}   •   ${activeFocusCategory}   •   `;
-          createBtnText.classList.add('animate-marquee');
+          const marqueeString = `${activeFocusCategory}\u00A0\u00A0\u00A0•\u00A0\u00A0\u00A0`;
+          createBtnText.innerText = marqueeString;
+          createBtnTextClone.innerText = marqueeString;
+          createBtnTextClone.style.display = 'inline-block';
+          tickerTrack.classList.add('animate-marquee');
         } else {
-          createBtnText.classList.remove('animate-marquee');
+          createBtnTextClone.style.display = 'none';
+          tickerTrack.classList.remove('animate-marquee');
         }
       } else {
         createBtnText.innerText = "CREATE";
-        createBtnText.classList.remove('animate-marquee');
+        createBtnTextClone.style.display = 'none';
+        tickerTrack.classList.remove('animate-marquee');
         createBtnArrow.style.display = 'none';
       }
     }
@@ -1932,7 +1958,7 @@
 
         const targetElement = getRowByRawData(listElement, rawInput);
         if (targetElement) {
-          pinRowToTop(listElement, targetElement);
+          pinRowToTop(listElement, rawInput);
           targetElement.classList.add('unlocked-duplicate-persistent');
           clearTimeout(targetElement.unlockedDupTimeout);
           targetElement.unlockedDupTimeout = setTimeout(() => {
