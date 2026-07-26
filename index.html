@@ -24,7 +24,7 @@
       --ios-blue-muted-duplicate: #004080;
       --copy-btn-bg: #2c2c2e;
       --copy-btn-icon: #d1d1d6;
-      --copy-success-bg: #1c3b2b;
+      --copy-success-bg: #103B23;
       --copy-success-icon: #00db62;
     }
     
@@ -220,6 +220,15 @@
       line-height: 32px;
     }
 
+    .saved-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #a2a2a7;
+      letter-spacing: 0.4px;
+      font-weight: 600;
+      line-height: 32px;
+    }
+
     .status-dots-group {
       display: flex;
       align-items: center;
@@ -306,22 +315,10 @@
       stroke: var(--copy-success-icon) !important;
     }
 
-    #undo-btn {
-      background-color: var(--ios-blue);
-    }
-
-    #undo-btn svg {
-      stroke: #78fefb;
-    }
-
-    .icon-action-btn:active {
-      transform: scale(0.94);
-    }
-
     #scanned-list {
       list-style-type: none;
       padding: 0;
-      padding-bottom: 70px !important;
+      padding-bottom: 90px !important;
       margin: 0;
       width: 100%;
       box-sizing: border-box;
@@ -481,6 +478,7 @@
       justify-content: center;
     }
 
+    /* CONTROL PANEL & NEW ACTION BAR UI */
     #control-panel {
       position: absolute;
       bottom: 0;
@@ -489,7 +487,7 @@
       padding-left: 16px;
       padding-right: 16px;
       padding-bottom: calc(var(--tg-safe-bottom) + 6px);
-      padding-top: 40px;
+      padding-top: 30px;
       z-index: 20;
       pointer-events: none;
       background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.85) 45%, rgba(0,0,0,1) 100%);
@@ -499,53 +497,168 @@
       -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
     }
 
-    .btn-complete-wrap {
-      position: relative;
+    .action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       width: 100%;
       pointer-events: auto;
     }
 
-    .btn {
-      position: relative;
-      width: 100%;
-      padding: 15px;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 1.2px;
-      border: none;
-      border-radius: 14px;
+    /* Undo Button */
+    .action-btn-undo {
+      width: 48px;
+      height: 48px;
+      border-radius: 24px;
+      background: #1882FF;
+      border: 1px solid transparent;
+      background-image: linear-gradient(#1882FF, #1882FF), 
+                        linear-gradient(180deg, #60B5FF 0%, #0056B3 100%);
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      background-color: #ffffff;
-      color: #000000;
-      z-index: 2;
       -webkit-tap-highlight-color: transparent;
-      transition: background-color 0.05s ease, transform 0.05s ease;
+      flex-shrink: 0;
+      transition: transform 0.08s ease;
     }
 
-    .btn:active {
-      background-color: #e5e5ea !important;
-      transform: scale(0.98);
+    .action-btn-undo:active {
+      transform: scale(0.94);
     }
 
-    .btn-complete-wrap::before {
+    .action-btn-undo svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: #78fefb;
+      stroke-width: 2.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Middle Pill Bar (Copy + Create) */
+    .middle-bar {
+      display: flex;
+      align-items: center;
+      flex-grow: 1;
+      height: 48px;
+      background: #232425;
+      border-radius: 24px;
+      padding: 3px 4px 3px 6px;
+      border: 1px solid transparent;
+      background-image: linear-gradient(#232425, #232425), 
+                        linear-gradient(180deg, #444648 0%, #171819 100%);
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
+      transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .middle-bar.copy-active {
+      background: #103B23;
+      box-shadow: 0 0 12px rgba(0, 219, 98, 0.4);
+    }
+
+    .copy-hitbox {
+      background: transparent;
+      border: none;
+      height: 100%;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.08s ease;
+    }
+
+    .copy-hitbox:active {
+      transform: scale(0.92);
+    }
+
+    .copy-hitbox svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: #d1d1d6;
+      stroke-width: 2.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke 0.2s ease;
+    }
+
+    .middle-bar.copy-active .copy-hitbox svg {
+      stroke: #00db62 !important;
+    }
+
+    .create-btn-static {
+      flex-grow: 1;
+      height: 100%;
+      background: #161718;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #E1E1E1;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 1px;
+      user-select: none;
+    }
+
+    /* Done Button Wrapper & Button */
+    .done-btn-wrap {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .done-btn-wrap::before {
       content: '';
       position: absolute;
-      top: 4px;
+      top: 2px;
       left: 4%;
       width: 92%;
-      height: 88%;
+      height: 90%;
       background: #ffffff;
-      border-radius: 14px;
-      filter: blur(18px);
-      opacity: 0.35;
+      border-radius: 24px;
+      filter: blur(14px);
+      opacity: 0.3;
       z-index: 1;
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
-      transform: translate3d(0, 0, 0);
-      will-change: filter, opacity;
-      transition: opacity 0.3s ease;
+      pointer-events: none;
     }
 
+    .done-btn {
+      position: relative;
+      z-index: 2;
+      height: 48px;
+      padding: 0 22px;
+      background: #EAEAEA;
+      color: #000000;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      border-radius: 24px;
+      border: 1px solid transparent;
+      background-image: linear-gradient(#EAEAEA, #EAEAEA), 
+                        linear-gradient(180deg, #FFFFFF 0%, #999999 100%);
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.05s ease, background-color 0.05s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .done-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* MODAL STYLES */
     #modal-overlay {
       position: fixed;
       top: 0;
@@ -897,9 +1010,6 @@
       <div class="log-header-row">
         <div class="header-left-group">
           <h3>TOTAL (<span id="count">0</span>)</h3>
-          <button type="button" class="icon-action-btn" id="base-copy-btn">
-            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          </button>
         </div>
         
         <div class="status-dots-group" id="statusDotsGroup">
@@ -909,17 +1019,33 @@
           <span class="status-dot" id="dot-4"></span>
         </div>
 
-        <button type="button" class="icon-action-btn" id="undo-btn">
-          <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
-        </button>
+        <div class="saved-label">SAVED</div>
       </div>
       
       <ul id="scanned-list"></ul>
     </div>
 
     <div id="control-panel">
-      <div class="btn-complete-wrap">
-        <button type="button" class="btn" id="done-btn">COMPLETE</button>
+      <div class="action-bar">
+        <!-- UNDO BUTTON -->
+        <button type="button" class="action-btn-undo" id="undo-btn" aria-label="Undo">
+          <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
+        </button>
+
+        <!-- MIDDLE COMBINED BAR (COPY + CREATE) -->
+        <div class="middle-bar" id="middle-bar-container">
+          <button type="button" class="copy-hitbox" id="base-copy-btn" aria-label="Copy">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+          <div class="create-btn-static">
+            <span>CREATE</span>
+          </div>
+        </div>
+
+        <!-- DONE BUTTON -->
+        <div class="done-btn-wrap">
+          <button type="button" class="done-btn" id="done-btn">DONE</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1009,6 +1135,7 @@
     const doneBtn = document.getElementById('done-btn');
     const baseCopyBtn = document.getElementById('base-copy-btn');
     const modalCopyBtn = document.getElementById('modal-copy-btn');
+    const middleBarContainer = document.getElementById('middle-bar-container');
 
     const dotElements = [
       document.getElementById('dot-1'),
@@ -1675,13 +1802,18 @@
       return formattedText.trim();
     }
 
-    function handleCopyAction(buttonElement) {
+    function handleCopyAction(buttonElement, containerToGlow = null) {
       if (scannedCodes.length === 0) return;
 
       const exportText = formatDataForClipboard();
       navigator.clipboard.writeText(exportText).then(() => {
         tg?.HapticFeedback?.notificationOccurred('success');
-        if (buttonElement) {
+        if (containerToGlow) {
+          containerToGlow.classList.add('copy-active');
+          setTimeout(() => {
+            containerToGlow.classList.remove('copy-active');
+          }, 1500);
+        } else if (buttonElement) {
           buttonElement.classList.add('copied');
           setTimeout(() => {
             buttonElement.classList.remove('copied');
@@ -1694,7 +1826,7 @@
 
     baseCopyBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      handleCopyAction(baseCopyBtn);
+      handleCopyAction(baseCopyBtn, middleBarContainer);
     });
 
     modalCopyBtn.addEventListener('click', (e) => {
