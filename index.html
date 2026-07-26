@@ -1338,6 +1338,18 @@
       return dataStr.replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim();
     }
 
+    function parseBracketPattern(str) {
+      if (!str) return null;
+      const match = str.match(/^\(([^)]+)\)\s*(.+)$/s);
+      if (match) {
+        return {
+          category: match[1].trim().toUpperCase(),
+          serial: match[2].trim()
+        };
+      }
+      return null;
+    }
+
     function getRowByRawData(container, rawString) {
       if (!container || !rawString) return null;
       const allRows = container.querySelectorAll('li[data-raw]');
@@ -1484,10 +1496,11 @@
         }
       } catch (err) {}
 
+      const parsed = parseBracketPattern(sanitized);
       return { 
         text: sanitized, 
         rawInput: sanitized,
-        isEncrypted: false 
+        isEncrypted: parsed !== null 
       };
     }
 
@@ -1624,24 +1637,26 @@
       }
     }
 
+    function getCategoryForItem(item) {
+      if (item.focusCategory) return item.focusCategory;
+      const parsed = parseBracketPattern(item.text);
+      if (parsed) return parsed.category;
+      return "OTHERS";
+    }
+
+    function getSerialForItem(item) {
+      const parsed = parseBracketPattern(item.text);
+      if (parsed) return parsed.serial;
+      return item.text;
+    }
+
     function buildGroupedDOM(targetContainer, isModal = false) {
       targetContainer.innerHTML = "";
       const groups = {};
       
       scannedCodes.forEach(item => {
-        let type = "OTHERS";
-        let displaySN = item.text;
-
-        if (item.focusCategory) {
-          type = item.focusCategory;
-          displaySN = item.text;
-        } else if (item.isEncrypted) {
-          const match = item.text.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
-          if (match) {
-            type = match[1].trim().toUpperCase();
-            displaySN = match[2].trim();
-          }
-        }
+        let type = getCategoryForItem(item);
+        let displaySN = getSerialForItem(item);
         
         if (!groups[type]) groups[type] = [];
         groups[type].push({ display: displaySN, raw: item.rawInput, category: type, originalItem: item });
@@ -1893,15 +1908,6 @@
       }
     }
 
-    function getCategoryForItem(item) {
-      if (item.focusCategory) return item.focusCategory;
-      if (item.isEncrypted) {
-        const match = item.text.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
-        if (match) return match[1].trim().toUpperCase();
-      }
-      return "OTHERS";
-    }
-
     function onScanSuccess(decodedText) {
       if (isModalOpen || isFocusModalOpen || isUndoAnimating) return;
 
@@ -1920,16 +1926,15 @@
       let currentFocusCategoryAssignment = null;
       if (activeFocusCategory) {
         currentFocusCategoryAssignment = activeFocusCategory;
-        if (isEncrypted) {
-          const match = processedText.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
-          if (match) {
-            processedText = match[2].trim();
-          }
+        const parsed = parseBracketPattern(processedText);
+        if (parsed) {
+          processedText = parsed.serial;
         }
       }
 
       const isDuplicate = scannedCodes.some(item => item.rawInput === rawInput || item.text === processedText);
-      const itemCategory = currentFocusCategoryAssignment || getCategoryForItem({ text: processedText, isEncrypted: isEncrypted });
+      const tempItem = { text: processedText, isEncrypted: isEncrypted, focusCategory: currentFocusCategoryAssignment };
+      const itemCategory = getCategoryForItem(tempItem);
       
       const isLocked = (activeFocusCategory !== null && itemCategory !== activeFocusCategory) || 
                        lockedCategoriesSet.has(itemCategory) || 
@@ -2093,23 +2098,15 @@
     function formatDataForClipboard() {
       if (scannedCodes.length === 0) return "";
 
-      let formattedText = "";
+      let formattedText = "Scanned Items\n\n";
       const groups = {};
 
       scannedCodes.forEach(item => {
-        let disp = item.text;
         let cat = getCategoryForItem(item);
-        
-        if (item.isEncrypted && !item.focusCategory) {
-          const match = item.text.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
-          if (match) {
-            cat = match[1].trim().toUpperCase();
-            disp = match[2].trim();
-          }
-        }
+        let serial = getSerialForItem(item);
 
         if (!groups[cat]) groups[cat] = [];
-        groups[cat].push(disp);
+        groups[cat].push(serial);
       });
 
       let headers = Object.keys(groups).filter(k => k !== "OTHERS");
@@ -2119,18 +2116,18 @@
 
       headers.forEach(header => {
         if (groups[header] && groups[header].length > 0) {
-          formattedText += `**${header}**\n`;
+          formattedText += `${header}\n`;
           sortSerials(groups[header]).forEach(serial => {
-            formattedText += `• ${serial}\n`;
+            formattedText += `- ${serial}\n`;
           });
           formattedText += `\n`;
         }
       });
 
       if (groups["OTHERS"] && groups["OTHERS"].length > 0) {
-        formattedText += `**OTHERS**\n`;
+        formattedText += `OTHERS\n`;
         sortSerials(groups["OTHERS"]).forEach(serial => {
-          formattedText += `• ${serial}\n`;
+          formattedText += `- ${serial}\n`;
         });
         formattedText += `\n`;
       }
