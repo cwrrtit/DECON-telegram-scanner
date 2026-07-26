@@ -2096,12 +2096,19 @@
     }
 
     function formatDataForClipboard() {
-      if (scannedCodes.length === 0) return "";
+      // 1. Exclude any items that match the string "Scanned Items"
+      const validItems = scannedCodes.filter(item => {
+        const textStr = (item.text || "").trim().toLowerCase();
+        const rawStr = (item.rawInput || "").trim().toLowerCase();
+        return textStr !== "scanned items" && rawStr !== "scanned items";
+      });
+
+      if (validItems.length === 0) return "";
 
       let formattedText = "Scanned Items\n\n";
       const groups = {};
 
-      scannedCodes.forEach(item => {
+      validItems.forEach(item => {
         let cat = getCategoryForItem(item);
         let serial = getSerialForItem(item);
 
@@ -2114,6 +2121,7 @@
 
       const sortSerials = (arr) => arr.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
+      // Print normal categories
       headers.forEach(header => {
         if (groups[header] && groups[header].length > 0) {
           formattedText += `${header}\n`;
@@ -2124,12 +2132,16 @@
         }
       });
 
-      if (groups["OTHERS"] && groups["OTHERS"].length > 0) {
-        formattedText += `OTHERS\n`;
-        sortSerials(groups["OTHERS"]).forEach(serial => {
-          formattedText += `- ${serial}\n`;
-        });
-        formattedText += `\n`;
+      // Print OTHERS category ONLY if it contains valid non-header serials
+      if (groups["OTHERS"]) {
+        const filteredOthers = groups["OTHERS"].filter(s => (s || "").trim().toLowerCase() !== "scanned items");
+        if (filteredOthers.length > 0) {
+          formattedText += `OTHERS\n`;
+          sortSerials(filteredOthers).forEach(serial => {
+            formattedText += `- ${serial}\n`;
+          });
+          formattedText += `\n`;
+        }
       }
 
       return formattedText.trim();
