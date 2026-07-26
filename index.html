@@ -1952,7 +1952,7 @@
 
         const targetElement = getRowByRawData(listElement, rawInput);
         if (targetElement) {
-          pinRowToTop(listElement, rawInput);
+          pinRowToTop(listElement, targetElement);
           targetElement.classList.add('locked-duplicate-persistent');
           clearTimeout(targetElement.lockedDupTimeout);
           targetElement.lockedDupTimeout = setTimeout(() => {
@@ -1983,7 +1983,7 @@
 
         const targetElement = getRowByRawData(listElement, rawInput);
         if (targetElement) {
-          pinRowToTop(listElement, rawInput);
+          pinRowToTop(listElement, targetElement);
           targetElement.classList.add('unlocked-duplicate-persistent');
           clearTimeout(targetElement.unlockedDupTimeout);
           targetElement.unlockedDupTimeout = setTimeout(() => {
