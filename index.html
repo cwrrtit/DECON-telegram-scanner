@@ -528,7 +528,6 @@
       box-sizing: border-box;
     }
 
-    /* Custom Gradient Border fallback for rounded edges */
     .action-btn-undo::before {
       content: '';
       position: absolute;
@@ -572,6 +571,7 @@
       border: 1px solid rgba(255, 255, 255, 0.08);
       transition: background-color 0.2s ease, box-shadow 0.2s ease;
       box-sizing: border-box;
+      overflow: hidden;
     }
 
     .middle-bar.copy-active {
@@ -590,6 +590,7 @@
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       transition: transform 0.08s ease;
+      flex-shrink: 0;
     }
 
     .copy-hitbox:active {
@@ -618,12 +619,49 @@
       border-radius: 15px;
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
       color: #E1E1E1;
       font-weight: 700;
       font-size: 12px;
       letter-spacing: 1px;
       user-select: none;
+      -webkit-user-select: none;
+      padding: 0 12px;
+      overflow: hidden;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    /* News Ticker Marquee for long Category names */
+    .ticker-wrapper {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      display: flex;
+      align-items: center;
+    }
+
+    .ticker-text {
+      white-space: nowrap;
+      display: inline-block;
+      will-change: transform;
+    }
+
+    .ticker-text.animate-marquee {
+      animation: marqueeAnimation 8s linear infinite;
+    }
+
+    @keyframes marqueeAnimation {
+      0% { transform: translateX(0%); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .updown-arrow-icon {
+      width: 14px;
+      height: 14px;
+      fill: #a2a2a7;
+      margin-left: 6px;
+      flex-shrink: 0;
     }
 
     /* Done Button Wrapper & Button */
@@ -737,11 +775,10 @@
       align-items: center;
       justify-content: flex-end;
       height: 32px;
+      gap: 8px;
     }
 
     .edit-btn {
-      position: absolute;
-      right: 0;
       background: var(--ios-blue);
       border: none;
       color: #78fefb;
@@ -756,11 +793,7 @@
       align-items: center;
       justify-content: center;
       opacity: 1;
-      transform: scale(1) translateX(0);
-      transform-origin: right center;
-      transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), 
-                  opacity 0.32s cubic-bezier(0.25, 1, 0.5, 1),
-                  background-color 0.15s ease;
+      transition: background-color 0.15s ease, opacity 0.2s ease;
       pointer-events: auto;
       white-space: nowrap;
       box-sizing: border-box;
@@ -768,6 +801,28 @@
 
     .edit-btn:active {
       background-color: var(--ios-blue-pressed);
+    }
+
+    .plus-btn-modal {
+      background: #2c2c2e;
+      border: none;
+      color: #ffffff;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--button-corner-radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .plus-btn-modal:active {
+      background: #3a3a3c;
+      transform: scale(0.94);
     }
 
     .edit-actions-group {
@@ -781,12 +836,6 @@
       pointer-events: none;
       transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), 
                   opacity 0.32s cubic-bezier(0.25, 1, 0.5, 1);
-    }
-
-    .is-editing .edit-btn {
-      opacity: 0;
-      transform: scale(0.85) translateX(8px);
-      pointer-events: none;
     }
 
     .is-editing .edit-actions-group {
@@ -983,6 +1032,57 @@
       opacity: 1;
     }
 
+    /* Focus Mode Specific Overlay & Modal Styling */
+    #focus-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.38s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    #focus-modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .focus-cat-item {
+      padding: 14px 18px;
+      background: #141416;
+      border-bottom: 1px solid #2c2c2e;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: opacity 0.2s ease, background-color 0.2s ease;
+    }
+
+    .focus-cat-item.focused-active {
+      background: #1c1c1e;
+      color: #ffffff;
+    }
+
+    .focus-cat-item.unfocused-greyed {
+      opacity: 0.38 !important;
+      color: #8e8e93;
+    }
+
     canvas#analysis-canvas {
       display: none;
     }
@@ -1037,8 +1137,13 @@
           <button type="button" class="copy-hitbox" id="base-copy-btn" aria-label="Copy">
             <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
-          <div class="create-btn-static">
-            <span>CREATE</span>
+          <div class="create-btn-static" id="create-btn-target">
+            <div class="ticker-wrapper" id="create-btn-ticker-wrap">
+              <span class="ticker-text" id="create-btn-text">CREATE</span>
+            </div>
+            <svg class="updown-arrow-icon" id="create-btn-arrow" style="display: none;" viewBox="0 0 24 24">
+              <path d="M12 5l-5 5h10l-5-5zm0 14l5-5H7l5 5z"/>
+            </svg>
           </div>
         </div>
 
@@ -1050,6 +1155,7 @@
     </div>
   </div>
 
+  <!-- STANDARD LOG MODAL -->
   <div id="modal-overlay">
     <div class="modal-card" id="modal-card">
       <div class="modal-header" id="modal-header">
@@ -1071,6 +1177,24 @@
       </div>
       <div class="modal-body">
         <div class="modal-list" id="modal-scanned-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOCUS MODE POPUP MODAL -->
+  <div id="focus-modal-overlay">
+    <div class="modal-card" id="focus-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <h4>CUSTOM CATEGORY</h4>
+        </div>
+        <div class="header-actions">
+          <button class="edit-btn" id="focus-header-edit-btn">Edit</button>
+          <button class="plus-btn-modal" id="focus-add-cat-btn">+</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-list" id="focus-cat-list"></div>
       </div>
     </div>
   </div>
@@ -1118,6 +1242,12 @@
     const lockedCategoriesSet = new Set();
     const lockedRowsSet = new Set();
     
+    // FOCUS MODE STATE VARIABLES
+    let customCategories = []; // Array of string category names
+    let activeFocusCategory = null; // String name or null
+    let isFocusModalOpen = false;
+    let isFocusHeaderEditMode = false;
+
     const listElement = document.getElementById('scanned-list');
     const modalListElement = document.getElementById('modal-scanned-list');
     const countElement = document.getElementById('count');
@@ -1136,6 +1266,15 @@
     const baseCopyBtn = document.getElementById('base-copy-btn');
     const modalCopyBtn = document.getElementById('modal-copy-btn');
     const middleBarContainer = document.getElementById('middle-bar-container');
+
+    const createBtnTarget = document.getElementById('create-btn-target');
+    const createBtnText = document.getElementById('create-btn-text');
+    const createBtnArrow = document.getElementById('create-btn-arrow');
+    const focusModalOverlay = document.getElementById('focus-modal-overlay');
+    const focusModalCard = document.getElementById('focus-modal-card');
+    const focusCatList = document.getElementById('focus-cat-list');
+    const focusAddCatBtn = document.getElementById('focus-add-cat-btn');
+    const focusHeaderEditBtn = document.getElementById('focus-header-edit-btn');
 
     const dotElements = [
       document.getElementById('dot-1'),
@@ -1194,7 +1333,7 @@
         activeUniqueCode = null;
       }
 
-      if (isOverrideState || isModalOpen) return;
+      if (isOverrideState || isModalOpen || isFocusModalOpen) return;
       clearDotClasses();
 
       for (let i = 0; i < level; i++) {
@@ -1326,7 +1465,7 @@
     }
 
     function analyzeFrameProximity() {
-      if (isOverrideState || isModalOpen) return;
+      if (isOverrideState || isModalOpen || isFocusModalOpen) return;
 
       const videoElement = document.querySelector("#interactive video");
       if (!videoElement || videoElement.readyState < 2) return;
@@ -1384,7 +1523,7 @@
     }
 
     function onScanError(errorMessage) {
-      if (isModalOpen) return;
+      if (isModalOpen || isFocusModalOpen) return;
       if (errorMessage && errorMessage.includes("ChecksumException")) {
         triggerUnreadableRedState();
       }
@@ -1414,24 +1553,52 @@
       }
     }
 
+    function updateActionBarButton() {
+      if (activeFocusCategory) {
+        createBtnText.innerText = activeFocusCategory;
+        createBtnArrow.style.display = 'block';
+
+        // Ticker Marquee Check
+        const parentWidth = createBtnTarget.clientWidth - 32;
+        if (createBtnText.scrollWidth > parentWidth) {
+          createBtnText.innerText = `${activeFocusCategory}   •   ${activeFocusCategory}   •   `;
+          createBtnText.classList.add('animate-marquee');
+        } else {
+          createBtnText.classList.remove('animate-marquee');
+        }
+      } else {
+        createBtnText.innerText = "CREATE";
+        createBtnText.classList.remove('animate-marquee');
+        createBtnArrow.style.display = 'none';
+      }
+    }
+
     function buildGroupedDOM(targetContainer, isModal = false) {
       targetContainer.innerHTML = "";
       const groups = {};
       
       scannedCodes.forEach(item => {
-        if (item.isEncrypted) {
+        let type = "OTHERS";
+        let displaySN = item.text;
+
+        if (item.focusCategory) {
+          type = item.focusCategory;
+          displaySN = item.text;
+        } else if (item.isEncrypted) {
           const match = item.text.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
           if (match) {
-            const type = match[1].trim().toUpperCase();
-            const sn = match[2].trim();
-            if (!groups[type]) groups[type] = [];
-            groups[type].push({ display: sn, raw: item.rawInput, category: type });
-            return;
+            type = match[1].trim().toUpperCase();
+            displaySN = match[2].trim();
           }
         }
         
-        if (!groups["OTHERS"]) groups["OTHERS"] = [];
-        groups["OTHERS"].push({ display: item.text, raw: item.rawInput, category: "OTHERS" });
+        if (!groups[type]) groups[type] = [];
+        groups[type].push({ display: displaySN, raw: item.rawInput, category: type, originalItem: item });
+      });
+
+      // Ensure custom categories exist as headers even if empty when rendering
+      customCategories.forEach(cat => {
+        if (!groups[cat]) groups[cat] = [];
       });
       
       const itemHeaders = Object.keys(groups)
@@ -1445,10 +1612,14 @@
       itemHeaders.forEach(headerName => {
         const categoryItems = groups[headerName];
         const categoryCount = categoryItems.length;
-        const isCatLocked = lockedCategoriesSet.has(headerName);
+        
+        // In Focus Mode, unfocused categories are forced greyed and locked
+        const isFocusLocked = activeFocusCategory !== null && headerName !== activeFocusCategory;
+        const isCatLocked = isFocusLocked || lockedCategoriesSet.has(headerName);
 
         const headerLi = document.createElement('div');
         headerLi.className = 'list-category-header';
+        if (isFocusLocked) headerLi.classList.add('row-locked');
         
         const catLockIcon = isCatLocked ? getIosLockSvgHTML() : '';
         
@@ -1462,7 +1633,7 @@
         if (isModal) {
           let catPressTimer = null;
           headerLi.addEventListener('touchstart', (e) => {
-            if (isEditMode) return;
+            if (isEditMode || isFocusLocked) return;
             catPressTimer = setTimeout(() => {
               tg?.HapticFeedback?.impactOccurred('heavy');
               
@@ -1513,7 +1684,7 @@
 
             let rowPressTimer = null;
             li.addEventListener('touchstart', (e) => {
-              if (isEditMode) return;
+              if (isEditMode || isFocusLocked) return;
               rowPressTimer = setTimeout(() => {
                 tg?.HapticFeedback?.impactOccurred('heavy');
                 
@@ -1556,6 +1727,77 @@
 
           targetContainer.appendChild(li);
         });
+      });
+
+      updateFocusCategoryModalList();
+    }
+
+    function updateFocusCategoryModalList() {
+      focusCatList.innerHTML = "";
+      if (customCategories.length === 0) {
+        const emptyLi = document.createElement('div');
+        emptyLi.style.padding = '18px';
+        emptyLi.style.textAlign = 'center';
+        emptyLi.style.color = '#8e8e93';
+        emptyLi.style.fontSize = '13px';
+        emptyLi.innerText = 'No Custom Categories Created';
+        focusCatList.appendChild(emptyLi);
+        return;
+      }
+
+      customCategories.forEach((catName, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'focus-cat-item';
+
+        const isFocused = activeFocusCategory === catName;
+        const isGreyed = activeFocusCategory !== null && !isFocused;
+
+        if (isFocused) itemDiv.classList.add('focused-active');
+        if (isGreyed) itemDiv.classList.add('unfocused-greyed');
+
+        itemDiv.innerHTML = `
+          <span>${catName}</span>
+          ${isFocused ? '<span style="color:#00db62; font-size:12px;">ACTIVE</span>' : ''}
+        `;
+
+        let catTimer = null;
+
+        itemDiv.addEventListener('touchstart', () => {
+          if (isFocusHeaderEditMode) return;
+          catTimer = setTimeout(() => {
+            tg?.HapticFeedback?.impactOccurred('heavy');
+            if (activeFocusCategory === catName) {
+              activeFocusCategory = null; // Unfocus
+            } else {
+              activeFocusCategory = catName; // Focus
+            }
+            updateActionBarButton();
+            renderGroupedUI();
+          }, 500);
+        }, { passive: true });
+
+        itemDiv.addEventListener('touchend', () => clearTimeout(catTimer));
+        itemDiv.addEventListener('touchmove', () => clearTimeout(catTimer));
+
+        itemDiv.addEventListener('click', () => {
+          if (isFocusHeaderEditMode) {
+            const newName = prompt("Edit category name:", catName);
+            if (newName && newName.trim().length > 0) {
+              const sanitized = newName.trim().toUpperCase();
+              if (sanitized !== catName) {
+                customCategories[index] = sanitized;
+                if (activeFocusCategory === catName) activeFocusCategory = sanitized;
+                scannedCodes.forEach(item => {
+                  if (item.focusCategory === catName) item.focusCategory = sanitized;
+                });
+                updateActionBarButton();
+                renderGroupedUI();
+              }
+            }
+          }
+        });
+
+        focusCatList.appendChild(itemDiv);
       });
     }
 
@@ -1600,6 +1842,7 @@
     }
 
     function getCategoryForItem(item) {
+      if (item.focusCategory) return item.focusCategory;
       if (item.isEncrypted) {
         const match = item.text.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
         if (match) return match[1].trim().toUpperCase();
@@ -1608,12 +1851,12 @@
     }
 
     function onScanSuccess(decodedText) {
-      if (isModalOpen || isUndoAnimating) return;
+      if (isModalOpen || isFocusModalOpen || isUndoAnimating) return;
 
       const now = Date.now();
       
       const result = tryDecrypt(decodedText);
-      const processedText = result.text;
+      let processedText = result.text;
       const rawInput = result.rawInput;
       const isEncrypted = result.isEncrypted;
 
@@ -1622,9 +1865,24 @@
         return;
       }
 
+      // Focus Mode Routing Override
+      let currentFocusCategoryAssignment = null;
+      if (activeFocusCategory) {
+        currentFocusCategoryAssignment = activeFocusCategory;
+        if (isEncrypted) {
+          const match = processedText.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
+          if (match) {
+            processedText = match[2].trim();
+          }
+        }
+      }
+
       const isDuplicate = scannedCodes.some(item => item.rawInput === rawInput);
-      const itemCategory = getCategoryForItem({ text: processedText, isEncrypted: isEncrypted });
-      const isLocked = lockedCategoriesSet.has(itemCategory) || lockedRowsSet.has(rawInput);
+      const itemCategory = currentFocusCategoryAssignment || getCategoryForItem({ text: processedText, isEncrypted: isEncrypted });
+      
+      const isLocked = (activeFocusCategory !== null && itemCategory !== activeFocusCategory) || 
+                       lockedCategoriesSet.has(itemCategory) || 
+                       lockedRowsSet.has(rawInput);
 
       if (isDuplicate && recentlyAddedSet.has(rawInput)) {
         return;
@@ -1704,7 +1962,12 @@
       lastScannedCode = decodedText;
       lastScannedTime = now;
 
-      scannedCodes.unshift({ text: processedText, rawInput: rawInput, isEncrypted: isEncrypted });
+      scannedCodes.unshift({ 
+        text: processedText, 
+        rawInput: rawInput, 
+        isEncrypted: isEncrypted,
+        focusCategory: currentFocusCategoryAssignment
+      });
       
       recentlyAddedSet.add(rawInput);
       setTimeout(() => {
@@ -1719,7 +1982,7 @@
 
     viewfinder.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (!isModalOpen) {
+      if (!isModalOpen && !isFocusModalOpen) {
         triggerUnreadableRedState();
       }
     });
@@ -1736,6 +1999,21 @@
       exitEditMode();
       modalOverlay.classList.remove('active');
       isModalOpen = false;
+      setProximityLevel(1);
+    }
+
+    function openFocusModal() {
+      isFocusModalOpen = true;
+      focusModalOverlay.classList.add('active');
+      updateFocusCategoryModalList();
+    }
+
+    function closeFocusModal() {
+      isFocusHeaderEditMode = false;
+      focusHeaderEditBtn.innerText = "Edit";
+      focusHeaderEditBtn.style.background = "var(--ios-blue)";
+      focusModalOverlay.classList.remove('active');
+      isFocusModalOpen = false;
       setProximityLevel(1);
     }
 
@@ -1765,14 +2043,7 @@
 
       scannedCodes.forEach(item => {
         let disp = item.text;
-        let cat = "OTHERS";
-        if (item.isEncrypted) {
-          const match = item.text.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
-          if (match) {
-            cat = match[1].trim().toUpperCase();
-            disp = match[2].trim();
-          }
-        }
+        let cat = getCategoryForItem(item);
         if (!groups[cat]) groups[cat] = [];
         groups[cat].push(disp);
       });
@@ -1880,6 +2151,54 @@
       }, 380);
     });
 
+    /* Focus Mode Modal Event Handlers */
+    let createPressTimer = null;
+
+    createBtnTarget.addEventListener('touchstart', (e) => {
+      createPressTimer = setTimeout(() => {
+        tg?.HapticFeedback?.impactOccurred('heavy');
+        openFocusModal();
+      }, 550);
+    }, { passive: true });
+
+    createBtnTarget.addEventListener('touchend', () => clearTimeout(createPressTimer));
+    createBtnTarget.addEventListener('touchmove', () => clearTimeout(createPressTimer));
+
+    focusAddCatBtn.addEventListener('click', () => {
+      tg?.HapticFeedback?.impactOccurred('light');
+      const catName = prompt("Enter new category name:");
+      if (catName && catName.trim().length > 0) {
+        const sanitized = catName.trim().toUpperCase();
+        if (!customCategories.includes(sanitized)) {
+          customCategories.push(sanitized);
+          if (!activeFocusCategory) {
+            activeFocusCategory = sanitized;
+            updateActionBarButton();
+          }
+          renderGroupedUI();
+        }
+      }
+    });
+
+    focusHeaderEditBtn.addEventListener('click', () => {
+      tg?.HapticFeedback?.impactOccurred('light');
+      isFocusHeaderEditMode = !isFocusHeaderEditMode;
+      if (isFocusHeaderEditMode) {
+        focusHeaderEditBtn.innerText = "✓";
+        focusHeaderEditBtn.style.background = "#00db62";
+      } else {
+        focusHeaderEditBtn.innerText = "Edit";
+        focusHeaderEditBtn.style.background = "var(--ios-blue)";
+      }
+      updateFocusCategoryModalList();
+    });
+
+    focusModalOverlay.addEventListener('click', (e) => {
+      if (!focusModalCard.contains(e.target)) {
+        closeFocusModal();
+      }
+    });
+
     listElement.addEventListener('click', openModal);
 
     modalOverlay.addEventListener('click', (e) => {
@@ -1928,6 +2247,12 @@
       for (let i = 0; i < scannedCodes.length; i++) {
         const item = scannedCodes[i];
         const cat = getCategoryForItem(item);
+
+        // Undo restricted to active Focus category in Focus Mode
+        if (activeFocusCategory !== null && cat !== activeFocusCategory) {
+          continue;
+        }
+
         if (!lockedCategoriesSet.has(cat) && !lockedRowsSet.has(item.rawInput)) {
           targetIndex = i;
           break;
