@@ -2093,12 +2093,21 @@
     function formatDataForClipboard() {
       if (scannedCodes.length === 0) return "";
 
-      let formattedText = "Scanned Items\n\n";
+      let formattedText = "";
       const groups = {};
 
       scannedCodes.forEach(item => {
         let disp = item.text;
         let cat = getCategoryForItem(item);
+        
+        if (item.isEncrypted && !item.focusCategory) {
+          const match = item.text.match(/^\(([A-Za-z0-9\s_-]+)\)\s*(.+)$/);
+          if (match) {
+            cat = match[1].trim().toUpperCase();
+            disp = match[2].trim();
+          }
+        }
+
         if (!groups[cat]) groups[cat] = [];
         groups[cat].push(disp);
       });
@@ -2110,7 +2119,7 @@
 
       headers.forEach(header => {
         if (groups[header] && groups[header].length > 0) {
-          formattedText += `${header}\n`;
+          formattedText += `**${header}**\n`;
           sortSerials(groups[header]).forEach(serial => {
             formattedText += `• ${serial}\n`;
           });
@@ -2119,7 +2128,7 @@
       });
 
       if (groups["OTHERS"] && groups["OTHERS"].length > 0) {
-        formattedText += `OTHERS\n`;
+        formattedText += `**OTHERS**\n`;
         sortSerials(groups["OTHERS"]).forEach(serial => {
           formattedText += `• ${serial}\n`;
         });
