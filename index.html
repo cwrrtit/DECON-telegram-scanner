@@ -116,7 +116,6 @@
       transition: transform 0.05s ease;
     }
 
-    /* iOS Error Shake Animation */
     @keyframes iosShake {
       0%, 100% { transform: translateX(0); }
       20%, 60% { transform: translateX(-9px); }
@@ -484,7 +483,6 @@
       justify-content: center;
     }
 
-    /* CONTROL PANEL & ACTION BAR UI */
     #control-panel {
       position: absolute;
       bottom: 0;
@@ -509,7 +507,6 @@
       pointer-events: auto;
     }
 
-    /* Undo Button with Glass Gradient Stroke */
     .action-btn-undo {
       width: 54px;
       height: 48px;
@@ -559,7 +556,6 @@
       z-index: 2;
     }
 
-    /* Middle Pill Bar (Copy + Create) */
     .middle-bar {
       display: flex;
       align-items: center;
@@ -626,13 +622,14 @@
       letter-spacing: 1px;
       user-select: none;
       -webkit-user-select: none;
-      padding: 0 12px;
+      padding: 0 8px;
       overflow: hidden;
       cursor: pointer;
       touch-action: manipulation;
+      position: relative;
     }
 
-    /* News Ticker Marquee for long Category names */
+    /* SMOOTH CONTINUOUS MARQUEE TICKER */
     .ticker-wrapper {
       position: relative;
       overflow: hidden;
@@ -655,12 +652,12 @@
     }
 
     .ticker-track.animate-marquee {
-      animation: marqueeAnimation 8s linear infinite;
+      animation: continuousMarquee 14s linear infinite;
     }
 
-    @keyframes marqueeAnimation {
+    @keyframes continuousMarquee {
       0% { transform: translateX(0%); }
-      100% { transform: translateX(-100%); }
+      100% { transform: translateX(-50%); }
     }
 
     .updown-arrow-icon {
@@ -671,7 +668,6 @@
       flex-shrink: 0;
     }
 
-    /* Done Button Wrapper & Button */
     .done-btn-wrap {
       position: relative;
       flex-shrink: 0;
@@ -703,7 +699,7 @@
       background-color: #d8d8d8;
     }
 
-    /* MODAL STYLES */
+    /* MODALS */
     #modal-overlay {
       position: fixed;
       top: 0;
@@ -1048,7 +1044,6 @@
       opacity: 1;
     }
 
-    /* Focus Mode Specific Overlay & Modal Styling */
     #focus-modal-overlay {
       position: fixed;
       top: 0;
@@ -1143,12 +1138,10 @@
 
     <div id="control-panel">
       <div class="action-bar">
-        <!-- UNDO BUTTON -->
         <button type="button" class="action-btn-undo" id="undo-btn" aria-label="Undo">
           <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
         </button>
 
-        <!-- MIDDLE COMBINED BAR (COPY + CREATE) -->
         <div class="middle-bar" id="middle-bar-container">
           <button type="button" class="copy-hitbox" id="base-copy-btn" aria-label="Copy">
             <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -1166,7 +1159,6 @@
           </div>
         </div>
 
-        <!-- DONE BUTTON -->
         <div class="done-btn-wrap">
           <button type="button" class="done-btn" id="done-btn">DONE</button>
         </div>
@@ -1174,7 +1166,6 @@
     </div>
   </div>
 
-  <!-- STANDARD LOG MODAL -->
   <div id="modal-overlay">
     <div class="modal-card" id="modal-card">
       <div class="modal-header" id="modal-header">
@@ -1200,7 +1191,6 @@
     </div>
   </div>
 
-  <!-- FOCUS MODE POPUP MODAL -->
   <div id="focus-modal-overlay">
     <div class="modal-card" id="focus-modal-card">
       <div class="modal-header">
@@ -1261,9 +1251,8 @@
     const lockedCategoriesSet = new Set();
     const lockedRowsSet = new Set();
     
-    // FOCUS MODE STATE VARIABLES
-    let customCategories = []; // Array of string category names
-    let activeFocusCategory = null; // String name or null
+    let customCategories = []; 
+    let activeFocusCategory = null; 
     let isFocusModalOpen = false;
     let isFocusHeaderEditMode = false;
 
@@ -1576,23 +1565,36 @@
 
     function updateActionBarButton() {
       if (activeFocusCategory) {
-        createBtnText.innerText = activeFocusCategory;
         createBtnArrow.style.display = 'block';
 
-        // Ticker Marquee Check
         const parentWidth = createBtnTarget.clientWidth - 32;
-        if (createBtnText.scrollWidth > parentWidth) {
-          const marqueeString = `${activeFocusCategory}\u00A0\u00A0\u00A0•\u00A0\u00A0\u00A0`;
-          createBtnText.innerText = marqueeString;
-          createBtnTextClone.innerText = marqueeString;
+        
+        // Measure text length using temporary node
+        const tempSpan = document.createElement('span');
+        tempSpan.style.visibility = 'hidden';
+        tempSpan.style.position = 'absolute';
+        tempSpan.style.fontSize = '12px';
+        tempSpan.style.fontWeight = '700';
+        tempSpan.innerText = activeFocusCategory;
+        document.body.appendChild(tempSpan);
+        const textWidth = tempSpan.clientWidth;
+        document.body.removeChild(tempSpan);
+
+        if (textWidth > parentWidth) {
+          const formattedString = `${activeFocusCategory}\u00A0\u00A0\u00A0•\u00A0\u00A0\u00A0`;
+          createBtnText.innerText = formattedString;
+          createBtnTextClone.innerText = formattedString;
           createBtnTextClone.style.display = 'inline-block';
           tickerTrack.classList.add('animate-marquee');
         } else {
+          createBtnText.innerText = activeFocusCategory;
+          createBtnTextClone.innerText = '';
           createBtnTextClone.style.display = 'none';
           tickerTrack.classList.remove('animate-marquee');
         }
       } else {
         createBtnText.innerText = "CREATE";
+        createBtnTextClone.innerText = '';
         createBtnTextClone.style.display = 'none';
         tickerTrack.classList.remove('animate-marquee');
         createBtnArrow.style.display = 'none';
@@ -1622,7 +1624,6 @@
         groups[type].push({ display: displaySN, raw: item.rawInput, category: type, originalItem: item });
       });
 
-      // Ensure custom categories exist as headers even if empty when rendering
       customCategories.forEach(cat => {
         if (!groups[cat]) groups[cat] = [];
       });
@@ -1639,7 +1640,6 @@
         const categoryItems = groups[headerName];
         const categoryCount = categoryItems.length;
         
-        // In Focus Mode, unfocused categories are forced greyed and locked
         const isFocusLocked = activeFocusCategory !== null && headerName !== activeFocusCategory;
         const isCatLocked = isFocusLocked || lockedCategoriesSet.has(headerName);
 
@@ -1793,9 +1793,9 @@
           catTimer = setTimeout(() => {
             tg?.HapticFeedback?.impactOccurred('heavy');
             if (activeFocusCategory === catName) {
-              activeFocusCategory = null; // Unfocus
+              activeFocusCategory = null; 
             } else {
-              activeFocusCategory = catName; // Focus
+              activeFocusCategory = catName; 
             }
             updateActionBarButton();
             renderGroupedUI();
@@ -1877,6 +1877,7 @@
     }
 
     function onScanSuccess(decodedText) {
+      // Camera stays alive visually, but scanning logic ignores captures when modals are open
       if (isModalOpen || isFocusModalOpen || isUndoAnimating) return;
 
       const now = Date.now();
@@ -1891,7 +1892,6 @@
         return;
       }
 
-      // Focus Mode Routing Override
       let currentFocusCategoryAssignment = null;
       if (activeFocusCategory) {
         currentFocusCategoryAssignment = activeFocusCategory;
@@ -1903,7 +1903,8 @@
         }
       }
 
-      const isDuplicate = scannedCodes.some(item => item.rawInput === rawInput);
+      // GLOBAL DUPLICATE PREVENTION: Checks against ALL previously logged items regardless of category/mode
+      const isDuplicate = scannedCodes.some(item => item.rawInput === rawInput || item.text === processedText);
       const itemCategory = currentFocusCategoryAssignment || getCategoryForItem({ text: processedText, isEncrypted: isEncrypted });
       
       const isLocked = (activeFocusCategory !== null && itemCategory !== activeFocusCategory) || 
@@ -2179,7 +2180,6 @@
       }, 380);
     });
 
-    /* Focus Mode Modal Event Handlers */
     let createPressTimer = null;
 
     createBtnTarget.addEventListener('touchstart', (e) => {
@@ -2276,7 +2276,6 @@
         const item = scannedCodes[i];
         const cat = getCategoryForItem(item);
 
-        // Undo restricted to active Focus category in Focus Mode
         if (activeFocusCategory !== null && cat !== activeFocusCategory) {
           continue;
         }
