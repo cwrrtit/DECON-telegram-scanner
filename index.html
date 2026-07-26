@@ -1988,7 +1988,7 @@
 
         const targetElement = getRowByRawData(listElement, rawInput);
         if (targetElement) {
-          pinRowToTop(listElement, targetElement);
+          pinRowToTop(listElement, rawInput);
           targetElement.classList.add('unlocked-duplicate-persistent');
           clearTimeout(targetElement.unlockedDupTimeout);
           targetElement.unlockedDupTimeout = setTimeout(() => {
@@ -2096,8 +2096,19 @@
     }
 
     function formatDataForClipboard() {
+      // Process scannedCodes to ensure decryption where applicable
+      const processedItems = scannedCodes.map(item => {
+        if (typeof item === 'string') {
+          return tryDecrypt(item);
+        }
+        if (item && item.rawInput && !item.text) {
+          return tryDecrypt(item.rawInput);
+        }
+        return item;
+      }).filter(Boolean);
+
       // 1. Exclude any items that match the string "Scanned Items"
-      const validItems = scannedCodes.filter(item => {
+      const validItems = processedItems.filter(item => {
         const textStr = (item.text || "").trim().toLowerCase();
         const rawStr = (item.rawInput || "").trim().toLowerCase();
         return textStr !== "scanned items" && rawStr !== "scanned items";
