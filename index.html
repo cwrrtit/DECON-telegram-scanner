@@ -652,7 +652,7 @@
     }
 
     .ticker-track.animate-marquee {
-      animation: continuousMarquee 14s linear infinite;
+      animation: continuousMarquee 6s linear infinite;
     }
 
     @keyframes continuousMarquee {
@@ -1532,6 +1532,13 @@
       .catch((err) => alert("Camera setup error: " + err));
     }
 
+    function ensureCameraRunning() {
+      const videoElement = document.querySelector("#interactive video");
+      if (videoElement && videoElement.paused) {
+        videoElement.play().catch(() => {});
+      }
+    }
+
     function onScanError(errorMessage) {
       if (isModalOpen || isFocusModalOpen) return;
       if (errorMessage && errorMessage.includes("ChecksumException")) {
@@ -1581,7 +1588,8 @@
         document.body.removeChild(tempSpan);
 
         if (textWidth > parentWidth) {
-          const formattedString = `${activeFocusCategory}\u00A0\u00A0\u00A0•\u00A0\u00A0\u00A0`;
+          // Removed the dot character '•' and tightened string gap spacing
+          const formattedString = `${activeFocusCategory}\u00A0`;
           createBtnText.innerText = formattedString;
           createBtnTextClone.innerText = formattedString;
           createBtnTextClone.style.display = 'inline-block';
@@ -1807,19 +1815,23 @@
 
         itemDiv.addEventListener('click', () => {
           if (isFocusHeaderEditMode) {
-            const newName = prompt("Edit category name:", catName);
-            if (newName && newName.trim().length > 0) {
-              const sanitized = newName.trim().toUpperCase();
-              if (sanitized !== catName) {
-                customCategories[index] = sanitized;
-                if (activeFocusCategory === catName) activeFocusCategory = sanitized;
-                scannedCodes.forEach(item => {
-                  if (item.focusCategory === catName) item.focusCategory = sanitized;
-                });
-                updateActionBarButton();
-                renderGroupedUI();
+            // Executed via setTimeout to avoid blocking video stream rendering
+            setTimeout(() => {
+              const newName = prompt("Edit category name:", catName);
+              ensureCameraRunning();
+              if (newName && newName.trim().length > 0) {
+                const sanitized = newName.trim().toUpperCase();
+                if (sanitized !== catName) {
+                  customCategories[index] = sanitized;
+                  if (activeFocusCategory === catName) activeFocusCategory = sanitized;
+                  scannedCodes.forEach(item => {
+                    if (item.focusCategory === catName) item.focusCategory = sanitized;
+                  });
+                  updateActionBarButton();
+                  renderGroupedUI();
+                }
               }
-            }
+            }, 50);
           }
         });
 
@@ -1877,7 +1889,6 @@
     }
 
     function onScanSuccess(decodedText) {
-      // Camera stays alive visually, but scanning logic ignores captures when modals are open
       if (isModalOpen || isFocusModalOpen || isUndoAnimating) return;
 
       const now = Date.now();
@@ -2027,6 +2038,7 @@
       exitEditMode();
       modalOverlay.classList.remove('active');
       isModalOpen = false;
+      ensureCameraRunning();
       setProximityLevel(1);
     }
 
@@ -2043,6 +2055,7 @@
       focusHeaderEditBtn.style.background = "var(--ios-blue)";
       focusModalOverlay.classList.remove('active');
       isFocusModalOpen = false;
+      ensureCameraRunning();
       setProximityLevel(1);
     }
 
@@ -2194,18 +2207,22 @@
 
     focusAddCatBtn.addEventListener('click', () => {
       tg?.HapticFeedback?.impactOccurred('light');
-      const catName = prompt("Enter new category name:");
-      if (catName && catName.trim().length > 0) {
-        const sanitized = catName.trim().toUpperCase();
-        if (!customCategories.includes(sanitized)) {
-          customCategories.push(sanitized);
-          if (!activeFocusCategory) {
-            activeFocusCategory = sanitized;
-            updateActionBarButton();
+      // Executed via setTimeout to avoid blocking video stream rendering
+      setTimeout(() => {
+        const catName = prompt("Enter new category name:");
+        ensureCameraRunning();
+        if (catName && catName.trim().length > 0) {
+          const sanitized = catName.trim().toUpperCase();
+          if (!customCategories.includes(sanitized)) {
+            customCategories.push(sanitized);
+            if (!activeFocusCategory) {
+              activeFocusCategory = sanitized;
+              updateActionBarButton();
+            }
+            renderGroupedUI();
           }
-          renderGroupedUI();
         }
-      }
+      }, 50);
     });
 
     focusHeaderEditBtn.addEventListener('click', () => {
@@ -2249,7 +2266,7 @@
 
       const scriptBaseUrl = "https://script.google.com/macros/s/AKfycbwb1tV24CFzbcPD70iA09hprOUg7oMSq7hGCxavDbvr7WmRbsFfHuEtvPtQy2Y9flbtMQ/exec";
       
-      const serialList = codeObjects.map(item => item.text);
+      const serialList = Array.isArray(codeObjects) ? codeObjects.map(item => item.text) : [];
       const serialsString = serialList.length > 0 ? serialList.join(",") : "No codes scanned";
       const serialsParam = encodeURIComponent(serialsString);
       const finalUrl = `${scriptBaseUrl}?chatId=${chatId}&serials=${serialsParam}`;
@@ -2353,7 +2370,7 @@
           .then(() => sendSerialsBack(scannedCodes))
           .catch(() => sendSerialsBack(scannedCodes));
       } else {
-        sendSerialsBack(scannedCodes.length);
+        sendSerialsBack(scannedCodes);
       }
     });
 
