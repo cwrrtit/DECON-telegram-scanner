@@ -652,7 +652,7 @@
     }
 
     .ticker-track.animate-marquee {
-      animation: continuousMarquee 6s linear infinite;
+      animation: continuousMarquee 8s linear infinite;
     }
 
     @keyframes continuousMarquee {
@@ -1576,7 +1576,6 @@
 
         const parentWidth = createBtnTarget.clientWidth - 32;
         
-        // Measure text length using temporary node
         const tempSpan = document.createElement('span');
         tempSpan.style.visibility = 'hidden';
         tempSpan.style.position = 'absolute';
@@ -1588,8 +1587,7 @@
         document.body.removeChild(tempSpan);
 
         if (textWidth > parentWidth) {
-          // Removed the dot character '•' and tightened string gap spacing
-          const formattedString = `${activeFocusCategory}\u00A0`;
+          const formattedString = `${activeFocusCategory}\u00A0\u00A0\u00A0\u00A0`;
           createBtnText.innerText = formattedString;
           createBtnTextClone.innerText = formattedString;
           createBtnTextClone.style.display = 'inline-block';
@@ -1780,6 +1778,7 @@
       }
 
       customCategories.forEach((catName, index) => {
+        const count = scannedCodes.filter(item => getCategoryForItem(item) === catName).length;
         const itemDiv = document.createElement('div');
         itemDiv.className = 'focus-cat-item';
 
@@ -1791,7 +1790,10 @@
 
         itemDiv.innerHTML = `
           <span>${catName}</span>
-          ${isFocused ? '<span style="color:#00db62; font-size:12px;">ACTIVE</span>' : ''}
+          <span style="display:flex; align-items:center; gap:8px;">
+            ${isFocused ? '<span style="color:#00db62; font-size:12px;">ACTIVE</span>' : ''}
+            <span style="font-weight:700;">(${count})</span>
+          </span>
         `;
 
         let catTimer = null;
@@ -1815,7 +1817,6 @@
 
         itemDiv.addEventListener('click', () => {
           if (isFocusHeaderEditMode) {
-            // Executed via setTimeout to avoid blocking video stream rendering
             setTimeout(() => {
               const newName = prompt("Edit category name:", catName);
               ensureCameraRunning();
@@ -1914,7 +1915,6 @@
         }
       }
 
-      // GLOBAL DUPLICATE PREVENTION: Checks against ALL previously logged items regardless of category/mode
       const isDuplicate = scannedCodes.some(item => item.rawInput === rawInput || item.text === processedText);
       const itemCategory = currentFocusCategoryAssignment || getCategoryForItem({ text: processedText, isEncrypted: isEncrypted });
       
@@ -1939,7 +1939,7 @@
 
         const targetElement = getRowByRawData(listElement, rawInput);
         if (targetElement) {
-          pinRowToTop(listElement, targetElement);
+          pinRowToTop(listElement, rawInput);
           targetElement.classList.add('locked-duplicate-persistent');
           clearTimeout(targetElement.lockedDupTimeout);
           targetElement.lockedDupTimeout = setTimeout(() => {
@@ -2207,7 +2207,6 @@
 
     focusAddCatBtn.addEventListener('click', () => {
       tg?.HapticFeedback?.impactOccurred('light');
-      // Executed via setTimeout to avoid blocking video stream rendering
       setTimeout(() => {
         const catName = prompt("Enter new category name:");
         ensureCameraRunning();
@@ -2266,9 +2265,8 @@
 
       const scriptBaseUrl = "https://script.google.com/macros/s/AKfycbwb1tV24CFzbcPD70iA09hprOUg7oMSq7hGCxavDbvr7WmRbsFfHuEtvPtQy2Y9flbtMQ/exec";
       
-      const serialList = Array.isArray(codeObjects) ? codeObjects.map(item => item.text) : [];
-      const serialsString = serialList.length > 0 ? serialList.join(",") : "No codes scanned";
-      const serialsParam = encodeURIComponent(serialsString);
+      const formattedOutput = formatDataForClipboard();
+      const serialsParam = encodeURIComponent(formattedOutput);
       const finalUrl = `${scriptBaseUrl}?chatId=${chatId}&serials=${serialsParam}`;
 
       const fetchPromise = fetch(finalUrl, { mode: 'no-cors' });
