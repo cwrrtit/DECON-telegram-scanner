@@ -778,7 +778,7 @@
       align-items: center;
       justify-content: flex-end;
       height: 32px;
-      gap: 8px;
+      gap: 12px;
     }
 
     .edit-btn {
@@ -816,7 +816,7 @@
       background: #2c2c2e;
       border: none;
       color: #ffffff;
-      width: 32px;
+      width: 40px;
       height: 32px;
       border-radius: var(--button-corner-radius);
       display: flex;
@@ -832,6 +832,23 @@
     .plus-btn-modal:active {
       background: #3a3a3c;
       transform: scale(0.94);
+    }
+
+    #focus-header-edit-btn {
+      min-width: 44px;
+      height: 32px;
+      padding: 0 12px;
+    }
+
+    .focus-tick-svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 3.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      display: block;
     }
 
     .edit-actions-group {
@@ -1630,15 +1647,11 @@
         groups[type].push({ display: displaySN, raw: item.rawInput, category: type, originalItem: item });
       });
 
-      customCategories.forEach(cat => {
-        if (!groups[cat]) groups[cat] = [];
-      });
-      
       const itemHeaders = Object.keys(groups)
         .filter(h => h !== "OTHERS")
         .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
       
-      if (groups["OTHERS"]) {
+      if (groups["OTHERS"] && groups["OTHERS"].length > 0) {
         itemHeaders.push("OTHERS");
       }
       
@@ -2051,7 +2064,7 @@
 
     function closeFocusModal() {
       isFocusHeaderEditMode = false;
-      focusHeaderEditBtn.innerText = "Edit";
+      focusHeaderEditBtn.innerHTML = "Edit";
       focusHeaderEditBtn.style.background = "var(--ios-blue)";
       focusModalOverlay.classList.remove('active');
       isFocusModalOpen = false;
@@ -2228,10 +2241,10 @@
       tg?.HapticFeedback?.impactOccurred('light');
       isFocusHeaderEditMode = !isFocusHeaderEditMode;
       if (isFocusHeaderEditMode) {
-        focusHeaderEditBtn.innerText = "✓";
+        focusHeaderEditBtn.innerHTML = `<svg class="focus-tick-svg" viewBox="0 0 24 24"><path d="M5 12.5L9.5 17L19 7"/></svg>`;
         focusHeaderEditBtn.style.background = "#00db62";
       } else {
-        focusHeaderEditBtn.innerText = "Edit";
+        focusHeaderEditBtn.innerHTML = "Edit";
         focusHeaderEditBtn.style.background = "var(--ios-blue)";
       }
       updateFocusCategoryModalList();
