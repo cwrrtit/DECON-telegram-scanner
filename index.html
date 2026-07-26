@@ -629,7 +629,6 @@
       position: relative;
     }
 
-    /* SMOOTH CONTINUOUS MARQUEE TICKER */
     .ticker-wrapper {
       position: relative;
       overflow: hidden;
@@ -2096,7 +2095,6 @@
     }
 
     function formatDataForClipboard() {
-      // 1. Exclude any items that match the string "Scanned Items"
       const validItems = scannedCodes.filter(item => {
         const textStr = (item.text || "").trim().toLowerCase();
         const rawStr = (item.rawInput || "").trim().toLowerCase();
@@ -2121,7 +2119,6 @@
 
       const sortSerials = (arr) => arr.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
-      // Print normal categories
       headers.forEach(header => {
         if (groups[header] && groups[header].length > 0) {
           formattedText += `${header}\n`;
@@ -2132,7 +2129,56 @@
         }
       });
 
-      // Print OTHERS category ONLY if it contains valid non-header serials
+      if (groups["OTHERS"]) {
+        const filteredOthers = groups["OTHERS"].filter(s => (s || "").trim().toLowerCase() !== "scanned items");
+        if (filteredOthers.length > 0) {
+          formattedText += `OTHERS\n`;
+          sortSerials(filteredOthers).forEach(serial => {
+            formattedText += `- ${serial}\n`;
+          });
+          formattedText += `\n`;
+        }
+      }
+
+      return formattedText.trim();
+    }
+
+    // Format payload specifically for Google Apps Script / Telegram transmission without "Scanned Items" title
+    function formatDataForTelegram() {
+      const validItems = scannedCodes.filter(item => {
+        const textStr = (item.text || "").trim().toLowerCase();
+        const rawStr = (item.rawInput || "").trim().toLowerCase();
+        return textStr !== "scanned items" && rawStr !== "scanned items";
+      });
+
+      if (validItems.length === 0) return "";
+
+      let formattedText = "";
+      const groups = {};
+
+      validItems.forEach(item => {
+        let cat = getCategoryForItem(item);
+        let serial = getSerialForItem(item);
+
+        if (!groups[cat]) groups[cat] = [];
+        groups[cat].push(serial);
+      });
+
+      let headers = Object.keys(groups).filter(k => k !== "OTHERS");
+      headers.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+      const sortSerials = (arr) => arr.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+      headers.forEach(header => {
+        if (groups[header] && groups[header].length > 0) {
+          formattedText += `${header}\n`;
+          sortSerials(groups[header]).forEach(serial => {
+            formattedText += `- ${serial}\n`;
+          });
+          formattedText += `\n`;
+        }
+      });
+
       if (groups["OTHERS"]) {
         const filteredOthers = groups["OTHERS"].filter(s => (s || "").trim().toLowerCase() !== "scanned items");
         if (filteredOthers.length > 0) {
@@ -2296,7 +2342,8 @@
 
       const scriptBaseUrl = "https://script.google.com/macros/s/AKfycbwb1tV24CFzbcPD70iA09hprOUg7oMSq7hGCxavDbvr7WmRbsFfHuEtvPtQy2Y9flbtMQ/exec";
       
-      const formattedOutput = formatDataForClipboard();
+      // Use clean payload for Telegram transmission
+      const formattedOutput = formatDataForTelegram();
       const serialsParam = encodeURIComponent(formattedOutput);
       const finalUrl = `${scriptBaseUrl}?chatId=${chatId}&serials=${serialsParam}`;
 
