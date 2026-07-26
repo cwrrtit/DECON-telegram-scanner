@@ -1991,6 +1991,7 @@
       if (scannedCodes.length === 0) return;
 
       isModalOpen = true;
+      clearDotClasses();
       modalOverlay.classList.add('active');
       tg?.HapticFeedback?.impactOccurred('medium');
     }
@@ -2004,6 +2005,7 @@
 
     function openFocusModal() {
       isFocusModalOpen = true;
+      clearDotClasses();
       focusModalOverlay.classList.add('active');
       updateFocusCategoryModalList();
     }
