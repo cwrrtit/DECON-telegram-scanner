@@ -1049,6 +1049,24 @@
                   border-color 0.15s ease;
     }
 
+    .is-editing .selection-circle::after {
+      opacity: 1;
+    }
+
+    /* Decoupled Left Content Class to allow right-aligned metadata to stay pinned */
+    .focus-cat-left-content {
+      display: flex;
+      align-items: center;
+      will-change: transform;
+      transform: translateX(0px);
+      transition: transform 0.52s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .is-editing .focus-cat-left-content {
+      transform: translateX(36px);
+      transition: transform 0.42s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
     .is-editing .status-flash {
       display: none !important;
     }
@@ -1859,15 +1877,16 @@
         if (isGreyed) itemDiv.classList.add('unfocused-greyed');
         if (isSelected && isFocusHeaderEditMode) itemDiv.classList.add('selected-row');
 
+        // STRUCTURAL UPDATE: Left content isolated in .focus-cat-left-content to slide, right metadata pinned.
         itemDiv.innerHTML = `
           <div class="selection-circle"></div>
-          <div class="modal-row-content">
+          <div class="focus-cat-left-content">
             <span class="rename-hitbox" style="padding: 4px 0;">${catName}</span>
-            <span style="display:flex; align-items:center; gap:8px;">
-              ${isFocused ? '<span style="color:#00db62; font-size:12px;">ACTIVE</span>' : ''}
-              <span style="font-weight:700;">(${count})</span>
-            </span>
           </div>
+          <span style="display:flex; align-items:center; gap:8px;">
+            ${isFocused ? '<span style="color:#00db62; font-size:12px;">ACTIVE</span>' : ''}
+            <span style="font-weight:700;">(${count})</span>
+          </span>
         `;
 
         let catTimer = null;
