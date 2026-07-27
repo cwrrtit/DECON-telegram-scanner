@@ -867,6 +867,7 @@
                   opacity 0.32s cubic-bezier(0.25, 1, 0.5, 1);
     }
 
+    /* Custom spacing for the edit actions in the focus modal so it doesn't overlap '+' button */
     #focus-modal-card .edit-actions-group {
       right: 52px; 
     }
@@ -1052,6 +1053,7 @@
       opacity: 0;
     }
 
+    /* Decoupled Left Content Class to allow right-aligned metadata to stay pinned */
     .focus-cat-left-content {
       display: flex;
       align-items: center;
@@ -1388,8 +1390,7 @@
 
     function parseBracketPattern(str) {
       if (!str) return null;
-      // Fixed regex: removed '\s*' between closing bracket and content to strictly match (ITEM)SERIAL format
-      const match = str.match(/^\(([^)]+)\)(.+)$/s);
+      const match = str.match(/^\(([^)]+)\)\s*(.+)$/s);
       if (match) {
         return {
           category: match[1].trim().toUpperCase(),
@@ -1876,6 +1877,7 @@
         if (isGreyed) itemDiv.classList.add('unfocused-greyed');
         if (isSelected && isFocusHeaderEditMode) itemDiv.classList.add('selected-row');
 
+        // STRUCTURAL UPDATE: Left content isolated in .focus-cat-left-content to slide, right metadata pinned.
         itemDiv.innerHTML = `
           <div class="selection-circle"></div>
           <div class="focus-cat-left-content">
@@ -2216,7 +2218,7 @@
 
       if (validItems.length === 0) return "";
 
-      let formattedText = "____________________";
+      let formattedText = "REMOVE THIS LINE\n\n";
       const groups = {};
 
       validItems.forEach(item => {
@@ -2294,6 +2296,7 @@
       enterEditMode();
     });
 
+    // Handle cancel interactions safely to prevent touch propagation bugs 
     const handleEditCancel = (e) => {
       e.stopPropagation();
       e.preventDefault();
