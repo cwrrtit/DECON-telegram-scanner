@@ -1537,19 +1537,19 @@
         }
 
         if (decryptedText && decryptedText.length > 0) {
-          const cleanDecrypted = sanitizeScannedData(decryptedText);
           return { 
-            text: cleanDecrypted, 
+            text: sanitizeScannedData(decryptedText), 
             rawInput: sanitized,
             isEncrypted: true 
           };
         }
       } catch (err) {}
 
+      const parsed = parseBracketPattern(sanitized);
       return { 
         text: sanitized, 
         rawInput: sanitized,
-        isEncrypted: false  
+        isEncrypted: parsed !== null 
       };
     }
 
@@ -2005,17 +2005,15 @@
       }
 
       let currentFocusCategoryAssignment = null;
-      const bracketParsed = parseBracketPattern(processedText);
-
-      if (bracketParsed) {
-        processedText = bracketParsed.serial;
-        currentFocusCategoryAssignment = bracketParsed.category;
-      } else if (activeFocusCategory) {
+      if (activeFocusCategory) {
         currentFocusCategoryAssignment = activeFocusCategory;
-        
+        const parsed = parseBracketPattern(processedText);
+        if (parsed) {
+          processedText = parsed.serial;
+        }
       }
 
-      const isDuplicate = scannedCodes.some(item => item.rawInput === rawInput || (item.text === processedText && getCategoryForItem(item) === (currentFocusCategoryAssignment || getCategoryForItem(item))));
+      const isDuplicate = scannedCodes.some(item => item.rawInput === rawInput || item.text === processedText);
       const tempItem = { text: processedText, isEncrypted: isEncrypted, focusCategory: currentFocusCategoryAssignment };
       const itemCategory = getCategoryForItem(tempItem);
       
@@ -2204,7 +2202,9 @@
         if (typeof item === 'string') {
           return tryDecrypt(item);
         }
-        
+        if (item && item.rawInput && !item.text) {
+          return tryDecrypt(item.rawInput);
+        }
         return item;
       }).filter(Boolean);
 
