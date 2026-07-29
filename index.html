@@ -14,12 +14,17 @@
       --tg-safe-bottom: 24px;
       --app-corner-radius: 16px;
       --button-corner-radius: 12px;
-      --status-red: #ff3b30;
-      --status-amber: #f4cb11;
-      --status-green: #00db62;
-      --status-white: #ffffff;
-      --status-idle-border: #3a3a3c;
-      --ios-blue: #007aff;
+      --status-red: #FF4433;
+      --status-amber: #FFBD2E;
+      --status-green: #00DB62;
+      --status-blue: #0084FF;
+      --status-white: #FFFFFF;
+      --color-light-gray: #CDCDCD;
+      --color-medium: #5F5F5F;
+      --color-dark4: #2C2C2E;
+      --color-dark3: #161616;
+      --color-dark2: #0E0E0E;
+      --ios-blue: #0084FF;
       --ios-blue-pressed: #0062cc;
       --ios-blue-muted-duplicate: #004080;
       --copy-btn-bg: #2c2c2e;
@@ -176,13 +181,13 @@
     }
 
     #custom-viewfinder.scan-error .scanner-corner {
-      border-color: #ff3b30 !important; 
-      filter: drop-shadow(0px 0px 4px rgba(255, 59, 48, 0.75));
+      border-color: #ff4433 !important; 
+      filter: drop-shadow(0px 0px 4px rgba(255, 68, 51, 0.75));
     }
 
     #custom-viewfinder.scan-duplicate-locked .scanner-corner {
       border-color: var(--ios-blue) !important;
-      filter: drop-shadow(0px 0px 4px rgba(0, 122, 255, 0.75));
+      filter: drop-shadow(0px 0px 4px rgba(0, 132, 255, 0.75));
     }
 
     #log-container {
@@ -221,53 +226,27 @@
       line-height: 32px;
     }
 
-    .status-dots-group {
+    /* DOTMATRIX DISPLAY GRID */
+    .dotmatrix-container {
       display: flex;
-      align-items: center;
-      gap: 16px;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-end;
+      justify-content: center;
       height: 32px;
     }
 
-    .status-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      box-sizing: border-box;
-      background-color: transparent;
-      border: 1px solid var(--status-idle-border);
-      transition: background-color 0.15s ease-in-out, 
-                  border-color 0.15s ease-in-out, 
-                  box-shadow 0.15s ease-in-out;
+    .dotmatrix-row {
+      display: flex;
+      gap: 2px;
     }
 
-    .status-dot.active-white {
-      background-color: var(--status-white);
-      border-color: var(--status-white);
-      box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
-    }
-
-    .status-dot.active-green {
-      background-color: var(--status-green);
-      border-color: var(--status-green);
-      box-shadow: 0 0 8px rgba(0, 219, 98, 0.6);
-    }
-
-    .status-dot.active-amber {
-      background-color: var(--status-amber);
-      border-color: var(--status-amber);
-      box-shadow: 0 0 8px rgba(244, 203, 17, 0.6);
-    }
-
-    .status-dot.active-red {
-      background-color: var(--status-red);
-      border-color: var(--status-red);
-      box-shadow: 0 0 8px rgba(255, 59, 48, 0.6);
-    }
-
-    .status-dot.active-blue {
-      background-color: var(--ios-blue);
-      border-color: var(--ios-blue);
-      box-shadow: 0 0 8px rgba(0, 122, 255, 0.6);
+    .dotmatrix-square {
+      width: 7px;
+      height: 7px;
+      border-radius: 1px;
+      background-color: var(--color-dark2);
+      transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
     }
 
     .icon-action-btn {
@@ -854,7 +833,6 @@
                   opacity 0.32s cubic-bezier(0.25, 1, 0.5, 1);
     }
 
-    /* Custom spacing for the edit actions in the focus modal so it doesn't overlap '+' button */
     #focus-modal-card .edit-actions-group {
       right: 52px; 
     }
@@ -918,12 +896,12 @@
     }
 
     .action-btn-delete.has-selection {
-      background-color: rgba(255, 59, 48, 0.22);
+      background-color: rgba(255, 68, 51, 0.22);
       color: var(--status-red);
     }
 
     .action-btn-delete.has-selection:active {
-      background-color: rgba(255, 59, 48, 0.35);
+      background-color: rgba(255, 68, 51, 0.35);
       transform: scale(0.95);
     }
 
@@ -1040,7 +1018,6 @@
       opacity: 0;
     }
 
-    /* Decoupled Left Content Class to allow right-aligned metadata to stay pinned */
     .focus-cat-left-content {
       display: flex;
       align-items: center;
@@ -1167,11 +1144,32 @@
           <h3>TOTAL (<span id="count">0</span>)</h3>
         </div>
         
-        <div class="status-dots-group" id="statusDotsGroup">
-          <span class="status-dot" id="dot-1"></span>
-          <span class="status-dot" id="dot-2"></span>
-          <span class="status-dot" id="dot-3"></span>
-          <span class="status-dot" id="dot-4"></span>
+        <!-- 20-SQUARE DOTMATRIX DISPLAY -->
+        <div class="dotmatrix-container" id="dotmatrixGroup">
+          <div class="dotmatrix-row" id="dotmatrix-row-top">
+            <div class="dotmatrix-square" id="sq-1"></div>
+            <div class="dotmatrix-square" id="sq-2"></div>
+            <div class="dotmatrix-square" id="sq-3"></div>
+            <div class="dotmatrix-square" id="sq-4"></div>
+            <div class="dotmatrix-square" id="sq-5"></div>
+            <div class="dotmatrix-square" id="sq-6"></div>
+            <div class="dotmatrix-square" id="sq-7"></div>
+            <div class="dotmatrix-square" id="sq-8"></div>
+            <div class="dotmatrix-square" id="sq-9"></div>
+            <div class="dotmatrix-square" id="sq-10"></div>
+          </div>
+          <div class="dotmatrix-row" id="dotmatrix-row-bottom">
+            <div class="dotmatrix-square" id="sq-11"></div>
+            <div class="dotmatrix-square" id="sq-12"></div>
+            <div class="dotmatrix-square" id="sq-13"></div>
+            <div class="dotmatrix-square" id="sq-14"></div>
+            <div class="dotmatrix-square" id="sq-15"></div>
+            <div class="dotmatrix-square" id="sq-16"></div>
+            <div class="dotmatrix-square" id="sq-17"></div>
+            <div class="dotmatrix-square" id="sq-18"></div>
+            <div class="dotmatrix-square" id="sq-19"></div>
+            <div class="dotmatrix-square" id="sq-20"></div>
+          </div>
         </div>
       </div>
       
@@ -1338,12 +1336,25 @@
     const focusEditDeleteBtn = document.getElementById('focus-edit-delete-btn');
     const focusModalHeader = document.getElementById('focus-modal-header');
 
-    const dotElements = [
-      document.getElementById('dot-1'),
-      document.getElementById('dot-2'),
-      document.getElementById('dot-3'),
-      document.getElementById('dot-4')
-    ];
+    // DOTMATRIX SPECIFIC COLOR CODES
+    const COLOR_HEX = {
+      blue: "#0084FF",
+      amber: "#FFBD2E",
+      green: "#00DB62",
+      red: "#FF4433",
+      white: "#FFFFFF",
+      lightGray: "#CDCDCD",
+      medium: "#5F5F5F",
+      dark4: "#2C2C2E",
+      dark3: "#161616",
+      dark2: "#0E0E0E"
+    };
+
+    // Cache elements 1 through 20
+    const squareElements = [];
+    for (let i = 1; i <= 20; i++) {
+      squareElements[i] = document.getElementById(`sq-${i}`);
+    }
 
     let html5QrcodeScanner = null;
     let lastScannedCode = "";
@@ -1396,33 +1407,70 @@
       return null;
     }
 
-    function clearDotClasses() {
-      dotElements.forEach(dot => {
-        dot.className = 'status-dot';
-      });
+    // DOTMATRIX COLOR MAPPER FUNCTION
+    function setDotMatrixColors(colorArray) {
+      for (let i = 1; i <= 20; i++) {
+        if (squareElements[i]) {
+          const colorCode = colorArray[i - 1] || COLOR_HEX.dark2;
+          squareElements[i].style.backgroundColor = colorCode;
+          if (colorCode === COLOR_HEX.white || colorCode === COLOR_HEX.green) {
+            squareElements[i].style.boxShadow = `0 0 4px ${colorCode}66`;
+          } else {
+            squareElements[i].style.boxShadow = 'none';
+          }
+        }
+      }
     }
 
-    function setProximityLevel(level) {
-      if (level === 1) {
+    function setDotMatrixInactive() {
+      setDotMatrixColors(Array(20).fill(COLOR_HEX.dark2));
+    }
+
+    // PROXIMITY GRADIENT SCALING (1 to 10 steps)
+    function setProximityLevel(step) {
+      if (step === 1) {
         activeUniqueCode = null;
       }
 
       if (isOverrideState || isModalOpen || isFocusModalOpen) return;
-      clearDotClasses();
 
-      for (let i = 0; i < level; i++) {
-        if (dotElements[i]) {
-          dotElements[i].classList.add('active-white');
-        }
+      const colors = Array(20).fill(COLOR_HEX.dark2);
+      const gradientRamp = [
+        COLOR_HEX.white,
+        COLOR_HEX.lightGray,
+        COLOR_HEX.medium,
+        COLOR_HEX.dark4,
+        COLOR_HEX.dark3
+      ];
+
+      if (step >= 10) {
+        setDotMatrixColors(Array(20).fill(COLOR_HEX.white));
+        return;
       }
+
+      for (let col = 1; col <= 10; col++) {
+        let colColor = COLOR_HEX.dark2;
+        if (col <= step) {
+          colColor = COLOR_HEX.white;
+        } else {
+          const offset = col - step - 1;
+          if (offset >= 0 && offset < gradientRamp.length) {
+            colColor = gradientRamp[offset];
+          }
+        }
+        colors[col - 1] = colColor;       // Top row
+        colors[col + 9] = colColor;      // Bottom row
+      }
+
+      setDotMatrixColors(colors);
     }
 
     function triggerSuccessGreenState() {
       isOverrideState = true;
       clearTimeout(overrideTimeout);
       clearTimeout(duplicatePulseTimeout);
-      clearDotClasses();
-      dotElements.forEach(dot => dot.classList.add('active-green'));
+      
+      setDotMatrixColors(Array(20).fill(COLOR_HEX.green));
 
       overrideTimeout = setTimeout(() => {
         isOverrideState = false;
@@ -1434,10 +1482,13 @@
       isOverrideState = true;
       clearTimeout(overrideTimeout);
       clearTimeout(duplicatePulseTimeout);
-      clearDotClasses();
-      dotElements[0].classList.add('active-amber');
-      dotElements[1].classList.add('active-amber');
-      dotElements[2].classList.add('active-amber');
+      
+      const amberSquares = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,19,20]);
+      const colors = Array.from({ length: 20 }, (_, i) => 
+        amberSquares.has(i + 1) ? COLOR_HEX.amber : COLOR_HEX.dark2
+      );
+
+      setDotMatrixColors(colors);
 
       overrideTimeout = setTimeout(() => {
         isOverrideState = false;
@@ -1449,10 +1500,13 @@
       isOverrideState = true;
       clearTimeout(overrideTimeout);
       clearTimeout(duplicatePulseTimeout);
-      clearDotClasses();
       
-      dotElements[0].classList.add('active-blue');
-      dotElements[1].classList.add('active-blue');
+      const blueSquares = new Set([1,2,4,5,6,8,9,10,11,12,14,15,16,18,19,20]);
+      const colors = Array.from({ length: 20 }, (_, i) => 
+        blueSquares.has(i + 1) ? COLOR_HEX.blue : COLOR_HEX.dark2
+      );
+
+      setDotMatrixColors(colors);
 
       duplicatePulseTimeout = setTimeout(() => {
         isOverrideState = false;
@@ -1464,8 +1518,13 @@
       isOverrideState = true;
       clearTimeout(overrideTimeout);
       clearTimeout(duplicatePulseTimeout);
-      clearDotClasses();
-      dotElements[0].classList.add('active-red');
+      
+      const redSquares = new Set([1,2,3,4,6,11,12,14,15]);
+      const colors = Array.from({ length: 20 }, (_, i) => 
+        redSquares.has(i + 1) ? COLOR_HEX.red : COLOR_HEX.dark2
+      );
+
+      setDotMatrixColors(colors);
 
       if (viewfinder) {
         clearTimeout(flashTimeout);
@@ -1561,15 +1620,20 @@
 
         const avgContrast = totalContrast / (imgData.length / 8);
 
-        if (avgContrast < 12) {
-          setProximityLevel(1);
-        } else if (avgContrast >= 12 && avgContrast < 22) {
-          setProximityLevel(2);
-        } else if (avgContrast >= 22 && avgContrast < 35) {
-          setProximityLevel(3);
-        } else if (avgContrast >= 35) {
-          setProximityLevel(4);
-        }
+        // Linear scaling across 10 steps
+        let calculatedStep = 1;
+        if (avgContrast < 8) calculatedStep = 1;
+        else if (avgContrast >= 8 && avgContrast < 12) calculatedStep = 2;
+        else if (avgContrast >= 12 && avgContrast < 16) calculatedStep = 3;
+        else if (avgContrast >= 16 && avgContrast < 20) calculatedStep = 4;
+        else if (avgContrast >= 20 && avgContrast < 24) calculatedStep = 5;
+        else if (avgContrast >= 24 && avgContrast < 28) calculatedStep = 6;
+        else if (avgContrast >= 28 && avgContrast < 32) calculatedStep = 7;
+        else if (avgContrast >= 32 && avgContrast < 36) calculatedStep = 8;
+        else if (avgContrast >= 36 && avgContrast < 40) calculatedStep = 9;
+        else if (avgContrast >= 40) calculatedStep = 10;
+
+        setProximityLevel(calculatedStep);
       } catch (e) {}
     }
 
@@ -1862,7 +1926,6 @@
         if (isGreyed) itemDiv.classList.add('unfocused-greyed');
         if (isSelected && isFocusHeaderEditMode) itemDiv.classList.add('selected-row');
 
-        // STRUCTURAL UPDATE: Left content isolated in .focus-cat-left-content to slide, right metadata pinned.
         itemDiv.innerHTML = `
           <div class="selection-circle"></div>
           <div class="focus-cat-left-content">
@@ -2115,7 +2178,7 @@
       if (scannedCodes.length === 0) return;
 
       isModalOpen = true;
-      clearDotClasses();
+      setDotMatrixInactive();
       modalOverlay.classList.add('active');
       tg?.HapticFeedback?.impactOccurred('medium');
     }
@@ -2130,7 +2193,7 @@
 
     function openFocusModal() {
       isFocusModalOpen = true;
-      clearDotClasses();
+      setDotMatrixInactive();
       focusModalOverlay.classList.add('active');
       updateFocusCategoryModalList();
     }
@@ -2281,7 +2344,6 @@
       enterEditMode();
     });
 
-    // Handle cancel interactions safely to prevent touch propagation bugs 
     const handleEditCancel = (e) => {
       e.stopPropagation();
       e.preventDefault();
