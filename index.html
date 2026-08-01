@@ -236,42 +236,6 @@
       line-height: 32px;
     }
 
-    /* 7-SEGMENT DISPLAY */
-    .seven-segment-display {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      font-family: 'EmbeddedFont2', monospace !important;
-      font-size: 21px;
-      font-style: italic;
-      font-weight: bold;
-      line-height: 1;
-    }
-
-    .seven-segment-display .digit {
-      position: relative;
-      display: inline-flex;
-      justify-content: flex-end;
-      width: 0.6em; 
-    }
-
-    .seven-segment-display .bg {
-      color: var(--color-dark2);
-      position: absolute;
-      right: 0; top: 0;
-      z-index: 1;
-    }
-
-    .seven-segment-display .bg.lit-bg {
-      color: var(--color-dark3);
-    }
-
-    .seven-segment-display .fg {
-      color: var(--status-white);
-      position: relative;
-      z-index: 2;
-    }
-
     /* DOTMATRIX DISPLAY GRID */
     .dotmatrix-container {
       display: flex;
@@ -355,15 +319,6 @@
       display: block;
     }
 
-    .list-category-header,
-    .category-header-title,
-    .modal-header h4,
-    #focus-modal-header h4,
-    .focus-cat-item {
-      font-family: 'EmbeddedFont1', monospace !important;
-      font-size: 12px !important;
-    }
-
     .list-category-header {
       position: -webkit-sticky;
       position: sticky;
@@ -371,6 +326,7 @@
       z-index: 10;
       background-color: #1c1c1e;
       padding: 4px 18px;
+      font-size: 12px;
       font-weight: 700;
       color: #a2a2a7;
       text-transform: uppercase;
@@ -638,8 +594,7 @@
       justify-content: center;
       color: #E1E1E1;
       font-weight: 700;
-      font-family: 'EmbeddedFont1', monospace !important;
-      font-size: 13px !important;
+      font-size: 12px;
       letter-spacing: 1px;
       user-select: none;
       -webkit-user-select: none;
@@ -668,12 +623,8 @@
     }
 
     .ticker-text {
-          font-family: 'EmbeddedFont1', monospace !important;
-      font-size: 13px !important;
       white-space: nowrap;
       display: inline-block;
-            text-align: center;
-      letter-spacing: 1px;
     }
 
     .ticker-track.animate-marquee {
@@ -705,10 +656,9 @@
       padding: 0 26px;
       background: #EAEAEA;
       color: #000000;
-      font-family: 'EmbeddedFont1', monospace !important;
-      font-size: 13px !important;
+      font-size: 12px;
       font-weight: 800;
-      letter-spacing: 1px;
+      letter-spacing: 1.2px;
       border-radius: 18px;
       border: 1px solid #707074;
       box-sizing: border-box;
@@ -789,6 +739,7 @@
 
     .modal-header h4 {
       margin: 0;
+      font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 0.4px;
       color: #a2a2a7;
@@ -1144,6 +1095,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      font-size: 14px;
       font-weight: 700;
       color: #ffffff;
       cursor: pointer;
@@ -1199,13 +1151,7 @@
     <div id="log-container">
       <div class="log-header-row">
         <div class="header-left-group">
-          <span id="count" style="display:none;">0</span>
-          <div class="seven-segment-display" id="main-seven-segment">
-            <div class="digit"><span class="bg">8</span><span class="fg"></span></div>
-            <div class="digit"><span class="bg">8</span><span class="fg"></span></div>
-            <div class="digit"><span class="bg">8</span><span class="fg"></span></div>
-            <div class="digit"><span class="bg">8</span><span class="fg"></span></div>
-          </div>
+          <h3>TOTAL (<span id="count">0</span>)</h3>
         </div>
         
         <!-- 20-SQUARE DOTMATRIX DISPLAY -->
@@ -1274,13 +1220,7 @@
     <div class="modal-card" id="modal-card">
       <div class="modal-header" id="modal-header">
         <div class="modal-title-wrap">
-          <span id="modal-count" style="display:none;">0</span>
-          <div class="seven-segment-display" id="modal-seven-segment">
-            <div class="digit"><span class="bg">8</span><span class="fg"></span></div>
-            <div class="digit"><span class="bg">8</span><span class="fg"></span></div>
-            <div class="digit"><span class="bg">8</span><span class="fg"></span></div>
-            <div class="digit"><span class="bg">8</span><span class="fg"></span></div>
-          </div>
+          <h4>TOTAL (<span id="modal-count">0</span>)</h4>
           <button type="button" class="icon-action-btn" id="modal-copy-btn">
             <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
@@ -1325,53 +1265,6 @@
   </div>
 
   <script>
-    // --- 7-SEGMENT DISPLAY OBSERVER ---
-    document.addEventListener("DOMContentLoaded", () => {
-      const main7Seg = document.getElementById('main-seven-segment');
-      const modal7Seg = document.getElementById('modal-seven-segment');
-
-      function update7SegUI(displayEl, val) {
-        if(!displayEl) return;
-        const digits = displayEl.querySelectorAll('.digit');
-        const count = parseInt(val) || 0;
-        if (count === 0) {
-          for(let i=0; i<4; i++) {
-            digits[i].querySelector('.bg').className = 'bg';
-            digits[i].querySelector('.fg').innerText = '';
-          }
-        } else {
-          let str = count.toString().substring(0, 4);
-          let padded = str.padStart(4, ' ');
-          for(let i=0; i<4; i++) {
-            if (padded[i] !== ' ') {
-              digits[i].querySelector('.bg').className = 'bg lit-bg';
-              digits[i].querySelector('.fg').innerText = padded[i];
-            } else {
-              digits[i].querySelector('.bg').className = 'bg';
-              digits[i].querySelector('.fg').innerText = '';
-            }
-          }
-        }
-      }
-
-      const observer7Seg = new MutationObserver(mutations => {
-        mutations.forEach(mut => {
-          if (mut.target.id === 'count') {
-            update7SegUI(main7Seg, mut.target.innerText);
-          } else if (mut.target.id === 'modal-count') {
-            update7SegUI(modal7Seg, mut.target.innerText);
-          }
-        });
-      });
-
-      const countEl = document.getElementById('count');
-      const modalCountEl = document.getElementById('modal-count');
-      if (countEl) observer7Seg.observe(countEl, { childList: true, characterData: true, subtree: true });
-      if (modalCountEl) observer7Seg.observe(modalCountEl, { childList: true, characterData: true, subtree: true });
-    });
-    // ----------------------------------
-
-
     const tg = window.Telegram?.WebApp;
 
     function updateLayoutInsets() {
