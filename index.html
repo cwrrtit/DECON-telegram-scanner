@@ -9,6 +9,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
   <style>
+    /* 1. EMBEDDED VCR OSD MONO FONT */
+    @font-face {
+      font-family: 'VCR OSD Mono';
+      src: url('data:font/ttf;charset=utf-8;base64,AAEAAAASAQACAAAAR0ZGTU3/0/0AAADsAAABsEdERUYAEAAYAAAB1AAAAChHQ1BFAAt/0AAAAgQAAAA4R1NVQgA3AA0AAAI4AAAAHE9TLzIaMxrXAAACVAAAAGJjYWFwAAMAAwAAArwAAAAgaGVhZAE2A/sAAAMcAAAAADhoaGVhA+0D6wAAAMQAAAAkaG10eA2cA0wAAAN8AAAAJGxvY2EAMAC+AAADcAAAABRtYXhwAEEATwAAAOQAAAAgbmFtZQA0A0sAAAPkAAABm3Bvc3QAAP/AAAAD4AAAACAAAwQAA4AABAAAAAMAMgAAAAAA0QD2AP4A/wECAQMBBAEFAQYBBwEIAQkBCgELAQwBDQEOAQ8BEAERARIHEmFwcGxlbmFtZQAAAAAAAACAAAAAAQAAAAAAAAAAAAAAAAA') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
     :root {
       --tg-safe-top: 56px;
       --tg-safe-bottom: 24px;
@@ -615,6 +623,8 @@
     .ticker-text {
       white-space: nowrap;
       display: inline-block;
+      font-family: 'VCR OSD Mono', monospace !important; /* APPLY VCR FONT HERE */
+      font-size: 13px;
     }
 
     .ticker-track.animate-marquee {
@@ -646,7 +656,8 @@
       padding: 0 26px;
       background: #EAEAEA;
       color: #000000;
-      font-size: 12px;
+      font-family: 'VCR OSD Mono', monospace !important; /* APPLY VCR FONT HERE */
+      font-size: 13px;
       font-weight: 800;
       letter-spacing: 1.2px;
       border-radius: 18px;
