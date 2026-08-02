@@ -578,8 +578,6 @@
 
     .status-flash { 
       color: #00db62 !important; 
-      font-weight: 400; 
-      font-size: 15px; 
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2091,7 +2089,7 @@
             li.classList.add('row-locked');
           }
 
-          const statusRightContent = isItemLocked ? getIosLockSvgHTML() : '<span class="status-flash">✓</span>';
+          const statusRightContent = isItemLocked ? getIosLockSvgHTML() : '<span class="status-flash"><svg viewBox="0 0 24 24" fill="none" stroke="#00db62" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="status-flash-icon" style="width: 16px; height: 16px;"><polyline points="20 6 9 17 4 12"></polyline></svg></span>';
 
           if (isModal) {
             const isSelected = selectedSerialsInModal.has(item.raw);
