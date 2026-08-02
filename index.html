@@ -226,21 +226,29 @@
       line-height: 32px;
     }
 
-    /* PURE CSS SHAPES 4-DIGIT 7-SEGMENT DISPLAY */
+    /* PURE CSS SHAPES 4-DIGIT 7-SEGMENT DISPLAY (SLIGHT INCLINE + SHARP ANGLED SHAPES) */
     .seg7-display-container {
       position: relative;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
       height: 32px;
       user-select: none;
       -webkit-user-select: none;
+      transform: skewX(-6deg); /* Slight angle incline matching standard digital displays */
+      transform-origin: center center;
+    }
+
+    .seg7-digit-wrapper {
+      position: relative;
+      width: 16px;
+      height: 30px;
     }
 
     .seg7-digit {
       position: relative;
-      width: 15px;
-      height: 28px;
+      width: 100%;
+      height: 100%;
     }
 
     .seg7-segment {
@@ -249,17 +257,35 @@
       transition: background-color 0.1s ease;
     }
 
-    /* Segment positions (horizontal: top, middle, bottom; vertical: top-left, top-right, bottom-left, bottom-right) */
-    .seg-h { height: 3px; left: 2px; right: 2px; }
-    .seg-v { width: 3px; height: 10px; }
-
-    .seg-a { top: 0; }
-    .seg-b { top: 2px; right: 0; }
-    .seg-c { bottom: 2px; right: 0; }
-    .seg-d { bottom: 0; }
-    .seg-e { bottom: 2px; left: 0; }
-    .seg-f { top: 2px; left: 0; }
-    .seg-g { top: 12px; left: 2px; right: 2px; height: 3px; }
+    /* Segment Polygon Sharp Angled Shapes */
+    .seg-a {
+      top: 0; left: 1px; width: 14px; height: 3.5px;
+      clip-path: polygon(0% 0%, 100% 0%, 78% 100%, 22% 100%);
+    }
+    .seg-b {
+      top: 1px; right: 0; width: 3.5px; height: 13.5px;
+      clip-path: polygon(0% 20%, 100% 0%, 100% 100%, 0% 82%);
+    }
+    .seg-c {
+      bottom: 1px; right: 0; width: 3.5px; height: 13.5px;
+      clip-path: polygon(0% 18%, 100% 0%, 100% 100%, 0% 80%);
+    }
+    .seg-d {
+      bottom: 0; left: 1px; width: 14px; height: 3.5px;
+      clip-path: polygon(22% 0%, 78% 0%, 100% 100%, 0% 100%);
+    }
+    .seg-e {
+      bottom: 1px; left: 0; width: 3.5px; height: 13.5px;
+      clip-path: polygon(0% 0%, 100% 18%, 100% 80%, 0% 100%);
+    }
+    .seg-f {
+      top: 1px; left: 0; width: 3.5px; height: 13.5px;
+      clip-path: polygon(0% 0%, 100% 20%, 100% 82%, 0% 100%);
+    }
+    .seg-g {
+      top: 13.25px; left: 1px; width: 14px; height: 3.5px;
+      clip-path: polygon(20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%, 0% 50%);
+    }
 
     /* Layer Styling */
     .seg7-digit.layer-base .seg7-segment {
@@ -278,7 +304,7 @@
     }
     .seg7-digit.layer-top.lit .seg7-segment.active {
       background-color: var(--status-white) !important;
-      box-shadow: 0 0 3px rgba(255, 255, 255, 0.4);
+      box-shadow: 0 0 2px rgba(255, 255, 255, 0.4);
     }
 
     .seg7-layers-wrapper {
@@ -1397,13 +1423,13 @@
       const activeSegments = SEGMENT_MAP[char] || [];
       return `
         <div class="seg7-digit ${layerClass} ${isLit ? 'lit' : ''}">
-          <div class="seg7-segment seg-h seg-a ${activeSegments.includes('a') ? 'active' : ''}"></div>
-          <div class="seg7-segment seg-v seg-b ${activeSegments.includes('b') ? 'active' : ''}"></div>
-          <div class="seg7-segment seg-v seg-c ${activeSegments.includes('c') ? 'active' : ''}"></div>
-          <div class="seg7-segment seg-h seg-d ${activeSegments.includes('d') ? 'active' : ''}"></div>
-          <div class="seg7-segment seg-v seg-e ${activeSegments.includes('e') ? 'active' : ''}"></div>
-          <div class="seg7-segment seg-v seg-f ${activeSegments.includes('f') ? 'active' : ''}"></div>
-          <div class="seg7-segment seg-h seg-g ${activeSegments.includes('g') ? 'active' : ''}"></div>
+          <div class="seg7-segment seg-a ${activeSegments.includes('a') ? 'active' : ''}"></div>
+          <div class="seg7-segment seg-b ${activeSegments.includes('b') ? 'active' : ''}"></div>
+          <div class="seg7-segment seg-c ${activeSegments.includes('c') ? 'active' : ''}"></div>
+          <div class="seg7-segment seg-d ${activeSegments.includes('d') ? 'active' : ''}"></div>
+          <div class="seg7-segment seg-e ${activeSegments.includes('e') ? 'active' : ''}"></div>
+          <div class="seg7-segment seg-f ${activeSegments.includes('f') ? 'active' : ''}"></div>
+          <div class="seg7-segment seg-g ${activeSegments.includes('g') ? 'active' : ''}"></div>
         </div>
       `;
     }
@@ -1413,18 +1439,15 @@
       for (let pos = 0; pos < 4; pos++) {
         const digitWrapper = document.createElement('div');
         digitWrapper.className = 'seg7-digit-wrapper';
-        digitWrapper.style.position = 'relative';
-        digitWrapper.style.width = '15px';
-        digitWrapper.style.height = '28px';
 
         digitWrapper.innerHTML = `
-          <div class="seg7-layers-wrapper" style="position:absolute; top:0; left:0;">
+          <div class="seg7-layers-wrapper">
             ${createSingleDigitHTML('8', 'layer-base', true)}
           </div>
-          <div class="seg7-layers-wrapper mid-layer-pos" style="position:absolute; top:0; left:0; pointer-events:none;">
+          <div class="seg7-layers-wrapper mid-layer-pos" style="pointer-events:none;">
             ${createSingleDigitHTML('8', 'layer-mid', false)}
           </div>
-          <div class="seg7-layers-wrapper top-layer-pos" style="position:absolute; top:0; left:0; pointer-events:none; text-align:right;">
+          <div class="seg7-layers-wrapper top-layer-pos" style="pointer-events:none;">
             ${createSingleDigitHTML('8', 'layer-top', false)}
           </div>
         `;
@@ -2247,7 +2270,7 @@
 
         const targetElement = getRowByRawData(listElement, rawInput);
         if (targetElement) {
-          pinRowToTop(listElement, targetElement);
+          pinRowToTop(listElement, rawInput);
           targetElement.classList.add('locked-duplicate-persistent');
           clearTimeout(targetElement.lockedDupTimeout);
           targetElement.lockedDupTimeout = setTimeout(() => {
