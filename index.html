@@ -9,6 +9,13 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
   <style>
+    @font-face {
+      font-family: 'VCR OSD Mono';
+      src: url('vcr_osd_mono.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
     :root {
       --tg-safe-top: 56px;
       --tg-safe-bottom: 24px;
@@ -218,6 +225,7 @@
 
     /* OFFLINE NO SIGNAL TEXT & ANIMATION */
     #no-signal-indicator {
+      font-family: 'VCR OSD Mono', monospace !important;
       font-size: 11px;
       font-weight: 700;
       letter-spacing: 1.2px;
@@ -733,6 +741,7 @@
     }
 
     .ticker-text {
+      font-family: 'VCR OSD Mono', monospace !important;
       white-space: nowrap;
       display: inline-block;
     }
@@ -760,6 +769,7 @@
     }
 
     .done-btn {
+      font-family: 'VCR OSD Mono', monospace !important;
       position: relative;
       z-index: 2;
       height: 48px;
@@ -1606,7 +1616,7 @@
     }
 
     function getIosUnlockSvgHTML() {
-      return `<svg class="ios-lock-icon" viewBox="0 0 24 24"><path d="M17 10H9V7a3 3 0 0 1 6 0h2a5 5 0 0 0-10 0v3H7a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3z"/></svg>`;
+      return `<svg class="ios-lock-icon" viewBox="0 0 24 24"><path d="M17 10H9V7a3 3 0 0 1 6 0h2a5 5 0 0 0-10 0v3H7a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h10a3 3 0 0 3 3-3v-6a3 3 0 0 0-3-3z"/></svg>`;
     }
 
     function sanitizeScannedData(dataStr) {
