@@ -69,7 +69,7 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      z-index: -1;
+      z-index: 0;
       pointer-events: none;
       display: block;
     }
@@ -87,6 +87,7 @@
       position: relative;
       overflow: hidden;
       transition: padding-top 0.2s ease-out;
+      z-index: 1;
     }
 
     .app-container.camera-stopped {
@@ -1428,7 +1429,7 @@
       const ctx = canvas.getContext('2d');
 
       const spacing = 20; 
-      const baseDotSize = 1.2; 
+      const baseDotSize = 1.5; 
       let width = 0;
       let height = 0;
       let time = 0;
@@ -1453,10 +1454,10 @@
             const wave3 = Math.cos(Math.sqrt(x * x + y * y) * 0.004 - time * 0.5);
 
             let intensity = (wave1 + wave2 + wave3 + 3) / 6; // Normalize between 0 and 1
-            intensity = Math.pow(intensity, 2.5); // Steepness curve for organic clusters
+            intensity = Math.pow(intensity, 1.8); // Adjusted curve for optimal visibility
 
-            const opacity = 0.08 + intensity * 0.75;
-            const currentSize = baseDotSize + intensity * 1.0;
+            const opacity = 0.25 + intensity * 0.65;
+            const currentSize = baseDotSize + intensity * 1.2;
 
             ctx.fillStyle = `rgba(255, 255, 255, ${opacity.toFixed(3)})`;
             ctx.beginPath();
