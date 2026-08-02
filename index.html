@@ -1427,8 +1427,8 @@
       const canvas = document.getElementById('bg-grid-canvas');
       const ctx = canvas.getContext('2d');
 
-      const spacing = 8; 
-      const baseDotSize = 0.35; 
+      const spacing = 12; 
+      const baseDotSize = 0.8; 
       let width = 0;
       let height = 0;
       let time = 0;
@@ -1453,11 +1453,10 @@
             const wave3 = Math.cos(Math.sqrt(x * x + y * y) * 0.004 - time * 0.5);
 
             let intensity = (wave1 + wave2 + wave3 + 3) / 6; // Normalize between 0 and 1
-            intensity = Math.pow(intensity, 2.5); // Steepness curve for organic clusters
 
-            // Sharp dot appearance: opacity fades between 0.02 and 0.85 to mimic lit/unlit states cleanly without blur or glow
-            const opacity = 0.02 + intensity * 0.83;
-            const currentSize = baseDotSize + intensity * 0.4;
+            // Sharp dot appearance: opacity fades smoothly between 0.08 and 0.55 for ideal subtle visibility
+            const opacity = 0.08 + intensity * 0.47;
+            const currentSize = baseDotSize + intensity * 0.5;
 
             ctx.fillStyle = `rgba(255, 255, 255, ${opacity.toFixed(3)})`;
             ctx.beginPath();
