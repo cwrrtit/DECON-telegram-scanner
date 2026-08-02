@@ -216,6 +216,40 @@
       gap: 8px;
     }
 
+    /* OFFLINE NO SIGNAL TEXT & ANIMATION */
+    #no-signal-indicator {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      color: var(--status-amber);
+      text-transform: uppercase;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      user-select: none;
+      -webkit-user-select: none;
+      text-shadow: 0 0 6px rgba(255, 189, 46, 0.6);
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    #no-signal-indicator.active {
+      opacity: 1;
+      animation: pulseAmber 2s ease-in-out infinite;
+    }
+
+    @keyframes pulseAmber {
+      0%, 100% {
+        opacity: 1;
+        text-shadow: 0 0 8px rgba(255, 189, 46, 0.8);
+      }
+      50% {
+        opacity: 0.25;
+        text-shadow: 0 0 2px rgba(255, 189, 46, 0.2);
+      }
+    }
+
     h3 {
       margin: 0;
       font-size: 12px;
@@ -226,7 +260,7 @@
       line-height: 32px;
     }
 
-    /* PURE CSS SHAPES 4-DIGIT 7-SEGMENT DISPLAY (SLIGHTLY REDUCED SIZE) */
+    /* PURE CSS SHAPES 4-DIGIT 7-SEGMENT DISPLAY */
     .seg7-display-container {
       position: relative;
       display: flex;
@@ -257,7 +291,6 @@
       transition: background-color 0.1s ease;
     }
 
-    /* Segment Polygon Sharp Angled Shapes (Adjusted for 13x24px scale) */
     .seg-a {
       top: 0; left: 1px; width: 11px; height: 3px;
       clip-path: polygon(0% 0%, 100% 0%, 78% 100%, 22% 100%);
@@ -287,7 +320,6 @@
       clip-path: polygon(20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%, 0% 50%);
     }
 
-    /* Layer Styling */
     .seg7-digit.layer-base .seg7-segment {
       background-color: var(--color-dark2) !important;
     }
@@ -684,7 +716,6 @@
       position: relative;
     }
 
-    /* SMOOTH CONTINUOUS MARQUEE TICKER */
     .ticker-wrapper {
       position: relative;
       overflow: hidden;
@@ -1237,6 +1268,9 @@
           <span id="count" style="display:none;">0</span>
         </div>
         
+        <!-- OFFLINE AMBER PULSING TEXT INDICATOR -->
+        <div id="no-signal-indicator">NO SIGNAL</div>
+
         <!-- 20-SQUARE DOTMATRIX DISPLAY -->
         <div class="dotmatrix-container" id="dotmatrixGroup">
           <div class="dotmatrix-row" id="dotmatrix-row-top">
@@ -1404,6 +1438,19 @@
     const viewfinder = document.getElementById('custom-viewfinder');
     const analysisCanvas = document.getElementById('analysis-canvas');
     const canvasCtx = analysisCanvas.getContext('2d', { willReadFrequently: true });
+    const noSignalIndicator = document.getElementById('no-signal-indicator');
+
+    // NETWORK OFFLINE / NO SIGNAL DETECTOR
+    function checkNetworkConnection() {
+      if (!navigator.onLine) {
+        noSignalIndicator.classList.add('active');
+      } else {
+        noSignalIndicator.classList.remove('active');
+      }
+    }
+
+    window.addEventListener('online', checkNetworkConnection);
+    window.addEventListener('offline', checkNetworkConnection);
 
     // Pure Shape Seven-Segment Logic Mapping
     const SEGMENT_MAP = {
@@ -2787,6 +2834,7 @@
     });
 
     window.onload = () => {
+      checkNetworkConnection();
       setTimeout(() => {
         startScanner();
       }, 300);
@@ -2795,6 +2843,7 @@
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden) {
         ensureCameraRunning();
+        checkNetworkConnection();
       }
     });
 
