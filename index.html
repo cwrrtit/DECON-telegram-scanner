@@ -226,23 +226,23 @@
       line-height: 32px;
     }
 
-    /* PURE CSS SHAPES 4-DIGIT 7-SEGMENT DISPLAY (SLIGHT INCLINE + SHARP ANGLED SHAPES) */
+    /* PURE CSS SHAPES 4-DIGIT 7-SEGMENT DISPLAY (SLIGHTLY REDUCED SIZE) */
     .seg7-display-container {
       position: relative;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       height: 32px;
       user-select: none;
       -webkit-user-select: none;
-      transform: skewX(-6deg); /* Slight angle incline matching standard digital displays */
+      transform: skewX(-6deg);
       transform-origin: center center;
     }
 
     .seg7-digit-wrapper {
       position: relative;
-      width: 16px;
-      height: 30px;
+      width: 13px;
+      height: 24px;
     }
 
     .seg7-digit {
@@ -257,33 +257,33 @@
       transition: background-color 0.1s ease;
     }
 
-    /* Segment Polygon Sharp Angled Shapes */
+    /* Segment Polygon Sharp Angled Shapes (Adjusted for 13x24px scale) */
     .seg-a {
-      top: 0; left: 1px; width: 14px; height: 3.5px;
+      top: 0; left: 1px; width: 11px; height: 3px;
       clip-path: polygon(0% 0%, 100% 0%, 78% 100%, 22% 100%);
     }
     .seg-b {
-      top: 1px; right: 0; width: 3.5px; height: 13.5px;
+      top: 1px; right: 0; width: 3px; height: 10.5px;
       clip-path: polygon(0% 20%, 100% 0%, 100% 100%, 0% 82%);
     }
     .seg-c {
-      bottom: 1px; right: 0; width: 3.5px; height: 13.5px;
+      bottom: 1px; right: 0; width: 3px; height: 10.5px;
       clip-path: polygon(0% 18%, 100% 0%, 100% 100%, 0% 80%);
     }
     .seg-d {
-      bottom: 0; left: 1px; width: 14px; height: 3.5px;
+      bottom: 0; left: 1px; width: 11px; height: 3px;
       clip-path: polygon(22% 0%, 78% 0%, 100% 100%, 0% 100%);
     }
     .seg-e {
-      bottom: 1px; left: 0; width: 3.5px; height: 13.5px;
+      bottom: 1px; left: 0; width: 3px; height: 10.5px;
       clip-path: polygon(0% 0%, 100% 18%, 100% 80%, 0% 100%);
     }
     .seg-f {
-      top: 1px; left: 0; width: 3.5px; height: 13.5px;
+      top: 1px; left: 0; width: 3px; height: 10.5px;
       clip-path: polygon(0% 0%, 100% 20%, 100% 82%, 0% 100%);
     }
     .seg-g {
-      top: 13.25px; left: 1px; width: 14px; height: 3.5px;
+      top: 10.5px; left: 1px; width: 11px; height: 3px;
       clip-path: polygon(20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%, 0% 50%);
     }
 
