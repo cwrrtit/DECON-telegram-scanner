@@ -703,7 +703,7 @@
       stroke: #00db62 !important;
     }
 
-    /* CREATE BUTTON (UPDATED SIZE & CENTERING) */
+    /* CREATE BUTTON (CENTERING FIX) */
 
     .create-btn-static {
       flex-grow: 1;
@@ -749,10 +749,10 @@
     .ticker-text {
       font-family: 'VCR OSD Mono', monospace !important;
       white-space: nowrap;
-      display: inline-flex;
+      display: flex;
       align-items: center;
       justify-content: center;
-      height: 100%;
+      line-height: 1;
     }
 
     .ticker-track.animate-marquee {
@@ -1976,7 +1976,7 @@
           const formattedString = `${activeFocusCategory}\u00A0\u00A0\u00A0\u00A0`;
           createBtnText.innerText = formattedString;
           createBtnTextClone.innerText = formattedString;
-          createBtnTextClone.style.display = 'inline-block';
+          createBtnTextClone.style.display = 'inline-flex';
           tickerTrack.classList.add('animate-marquee');
         } else {
           createBtnText.innerText = activeFocusCategory;
