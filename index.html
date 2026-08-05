@@ -250,7 +250,7 @@
       font-family: 'VCR OSD Mono', monospace !important;
       font-size: 6px;
       color: var(--color-light-gray);
-      margin-top: 5px;
+      margin-top: 2px;
       text-align: right;
       line-height: 1;
       user-select: none;
@@ -286,10 +286,12 @@
     #dot-timer-display {
       display: flex;
       align-items: baseline;
+      justify-content: center;
       height: 32px;
       line-height: 32px;
       user-select: none;
       -webkit-user-select: none;
+      font-variant-numeric: tabular-nums;
     }
 
     .dt-segment {
@@ -297,6 +299,17 @@
       font-size: 18px;
       color: var(--color-dark4);
       transition: color 0.1s ease;
+      display: inline-block;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #dt-hh, #dt-mm, #dt-ss {
+      width: 23px;
+    }
+
+    #dt-c1, #dt-c2 {
+      width: 8px;
     }
 
     .dt-ms {
@@ -304,6 +317,10 @@
       font-size: 12px;
       color: var(--status-white);
       transition: color 0.1s ease;
+      display: inline-block;
+      width: 16px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
     }
 
     .dt-lit {
@@ -1357,7 +1374,7 @@
           </div>
           <!-- OFFLINE AMBER PULSING TEXT INDICATOR -->
           <div id="no-signal-indicator">NO SIGNAL</div>
-          <div class="dash-sublabel">EPS TIME</div>
+          <div class="dash-sublabel" id="eps-time-sublabel">EPS TIME</div>
         </div>
 
         <!-- COLUMN 3: 20-SQUARE DOTMATRIX DISPLAY + PROX LABEL -->
@@ -1532,6 +1549,7 @@
     const canvasCtx = analysisCanvas.getContext('2d', { willReadFrequently: true });
     const noSignalIndicator = document.getElementById('no-signal-indicator');
     const dotTimerDisplay = document.getElementById('dot-timer-display');
+    const epsTimeSublabel = document.getElementById('eps-time-sublabel');
 
     // HIGH ACCURACY DOT TIMER STOPWATCH SYSTEM
     let timerStartTime = Date.now();
@@ -1619,9 +1637,11 @@
       if (!navigator.onLine) {
         noSignalIndicator.classList.add('active');
         dotTimerDisplay.style.display = 'none';
+        if (epsTimeSublabel) epsTimeSublabel.style.display = 'none';
       } else {
         noSignalIndicator.classList.remove('active');
         dotTimerDisplay.style.display = 'flex';
+        if (epsTimeSublabel) epsTimeSublabel.style.display = 'block';
       }
     }
 
