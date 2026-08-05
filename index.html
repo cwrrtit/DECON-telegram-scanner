@@ -217,17 +217,44 @@
     .log-header-row {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin: 0 4px 6px 4px;
+      align-items: flex-end;
+      margin: 0 4px 7px 4px;
       flex-shrink: 0;
-      height: 32px;
       position: relative;
     }
 
-    .header-left-group {
+    .header-col {
       display: flex;
-      align-items: center;
-      gap: 8px;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: flex-end;
+    }
+
+    .header-col-left {
+      align-items: flex-end;
+    }
+
+    .header-col-center {
+      align-items: flex-end;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 0;
+    }
+
+    .header-col-right {
+      align-items: flex-end;
+    }
+
+    .dash-sublabel {
+      font-family: 'VCR OSD Mono', monospace !important;
+      font-size: 6px;
+      color: var(--color-light-gray);
+      margin-top: 5px;
+      text-align: right;
+      line-height: 1;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     /* OFFLINE NO SIGNAL TEXT & ANIMATION (MODIFIED GLOW) */
@@ -244,14 +271,43 @@
       user-select: none;
       -webkit-user-select: none;
       text-shadow: 0 0 4px rgba(255, 189, 46, 0.6);
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
+      display: none;
+      height: 32px;
+      line-height: 32px;
     }
 
     #no-signal-indicator.active {
       opacity: 1;
+      display: block;
       animation: pulseAmber 2s ease-in-out infinite;
+    }
+
+    /* DOT TIMER STYLES */
+    #dot-timer-display {
+      display: flex;
+      align-items: baseline;
+      height: 32px;
+      line-height: 32px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .dt-segment {
+      font-family: 'NDot-55', sans-serif !important;
+      font-size: 18px;
+      color: var(--color-dark4);
+      transition: color 0.1s ease;
+    }
+
+    .dt-ms {
+      font-family: 'NDot-55', sans-serif !important;
+      font-size: 12px;
+      color: var(--status-white);
+      transition: color 0.1s ease;
+    }
+
+    .dt-lit {
+      color: var(--status-white) !important;
     }
 
     @keyframes pulseAmber {
@@ -1285,43 +1341,54 @@
 
     <div id="log-container">
       <div class="log-header-row">
-        <div class="header-left-group">
-          <!-- PURE CSS 4-DIGIT 7-SEGMENT DISPLAY CONTAINER -->
+        <!-- COLUMN 1: 7-SEGMENT DISPLAY + TOTAL LABEL -->
+        <div class="header-col header-col-left">
           <div class="seg7-display-container" id="seg7-container">
             <!-- Rendered programmatically via JS -->
           </div>
           <span id="count" style="display:none;">0</span>
+          <div class="dash-sublabel">TOTAL</div>
         </div>
         
-        <!-- OFFLINE AMBER PULSING TEXT INDICATOR -->
-        <div id="no-signal-indicator">NO SIGNAL</div>
+        <!-- COLUMN 2: DOT TIMER / NO SIGNAL + EPS TIME LABEL -->
+        <div class="header-col header-col-center">
+          <div id="dot-timer-display">
+            <span id="dt-hh" class="dt-segment">00</span><span id="dt-c1" class="dt-segment">:</span><span id="dt-mm" class="dt-segment">00</span><span id="dt-c2" class="dt-segment">:</span><span id="dt-ss" class="dt-segment">00</span><span id="dt-ms" class="dt-ms">00</span>
+          </div>
+          <!-- OFFLINE AMBER PULSING TEXT INDICATOR -->
+          <div id="no-signal-indicator">NO SIGNAL</div>
+          <div class="dash-sublabel">EPS TIME</div>
+        </div>
 
-        <!-- 20-SQUARE DOTMATRIX DISPLAY -->
-        <div class="dotmatrix-container" id="dotmatrixGroup">
-          <div class="dotmatrix-row" id="dotmatrix-row-top">
-            <div class="dotmatrix-square" id="sq-1"></div>
-            <div class="dotmatrix-square" id="sq-2"></div>
-            <div class="dotmatrix-square" id="sq-3"></div>
-            <div class="dotmatrix-square" id="sq-4"></div>
-            <div class="dotmatrix-square" id="sq-5"></div>
-            <div class="dotmatrix-square" id="sq-6"></div>
-            <div class="dotmatrix-square" id="sq-7"></div>
-            <div class="dotmatrix-square" id="sq-8"></div>
-            <div class="dotmatrix-square" id="sq-9"></div>
-            <div class="dotmatrix-square" id="sq-10"></div>
+        <!-- COLUMN 3: 20-SQUARE DOTMATRIX DISPLAY + PROX LABEL -->
+        <div class="header-col header-col-right">
+          <div class="dotmatrix-container" id="dotmatrixGroup">
+            <div class="dotmatrix-row" id="dotmatrix-row-top">
+              <div class="dotmatrix-square" id="sq-1"></div>
+              <div class="dotmatrix-square" id="sq-2"></div>
+              <div class="dotmatrix-square" id="sq-3"></div>
+              <div class="dotmatrix-square" id="sq-4"></div>
+              <div class="dotmatrix-square" id="sq-5"></div>
+              <div class="dotmatrix-square" id="sq-6"></div>
+              <div class="dotmatrix-square" id="sq-7"></div>
+              <div class="dotmatrix-square" id="sq-8"></div>
+              <div class="dotmatrix-square" id="sq-9"></div>
+              <div class="dotmatrix-square" id="sq-10"></div>
+            </div>
+            <div class="dotmatrix-row" id="dotmatrix-row-bottom">
+              <div class="dotmatrix-square" id="sq-11"></div>
+              <div class="dotmatrix-square" id="sq-12"></div>
+              <div class="dotmatrix-square" id="sq-13"></div>
+              <div class="dotmatrix-square" id="sq-14"></div>
+              <div class="dotmatrix-square" id="sq-15"></div>
+              <div class="dotmatrix-square" id="sq-16"></div>
+              <div class="dotmatrix-square" id="sq-17"></div>
+              <div class="dotmatrix-square" id="sq-18"></div>
+              <div class="dotmatrix-square" id="sq-19"></div>
+              <div class="dotmatrix-square" id="sq-20"></div>
+            </div>
           </div>
-          <div class="dotmatrix-row" id="dotmatrix-row-bottom">
-            <div class="dotmatrix-square" id="sq-11"></div>
-            <div class="dotmatrix-square" id="sq-12"></div>
-            <div class="dotmatrix-square" id="sq-13"></div>
-            <div class="dotmatrix-square" id="sq-14"></div>
-            <div class="dotmatrix-square" id="sq-15"></div>
-            <div class="dotmatrix-square" id="sq-16"></div>
-            <div class="dotmatrix-square" id="sq-17"></div>
-            <div class="dotmatrix-square" id="sq-18"></div>
-            <div class="dotmatrix-square" id="sq-19"></div>
-            <div class="dotmatrix-square" id="sq-20"></div>
-          </div>
+          <div class="dash-sublabel">PROX</div>
         </div>
       </div>
       
@@ -1464,13 +1531,97 @@
     const analysisCanvas = document.getElementById('analysis-canvas');
     const canvasCtx = analysisCanvas.getContext('2d', { willReadFrequently: true });
     const noSignalIndicator = document.getElementById('no-signal-indicator');
+    const dotTimerDisplay = document.getElementById('dot-timer-display');
+
+    // HIGH ACCURACY DOT TIMER STOPWATCH SYSTEM
+    let timerStartTime = Date.now();
+    let timerAccumulatedTime = 0;
+    let isTimerRunning = false;
+    let timerFrameId = null;
+
+    const dtHh = document.getElementById('dt-hh');
+    const dtMm = document.getElementById('dt-mm');
+    const dtSs = document.getElementById('dt-ss');
+    const dtMs = document.getElementById('dt-ms');
+    const dtC1 = document.getElementById('dt-c1');
+    const dtC2 = document.getElementById('dt-c2');
+
+    function updateDotTimerUI() {
+      if (!isTimerRunning) return;
+
+      const elapsed = timerAccumulatedTime + (Date.now() - timerStartTime);
+
+      const msVal = Math.floor((elapsed % 1000) / 10);
+      const ssVal = Math.floor((elapsed / 1000) % 60);
+      const mmVal = Math.floor((elapsed / (1000 * 60)) % 60);
+      const hhVal = Math.floor(elapsed / (1000 * 60 * 60));
+
+      dtMs.innerText = String(msVal).padStart(2, '0');
+      dtSs.innerText = String(ssVal).padStart(2, '0');
+      dtMm.innerText = String(mmVal).padStart(2, '0');
+      dtHh.innerText = String(hhVal).padStart(2, '0');
+
+      const isSsLit = elapsed >= 1000;
+      const isMmLit = elapsed >= 60000;
+      const isHhLit = elapsed >= 3600000;
+
+      if (isSsLit) {
+        dtSs.classList.add('dt-lit');
+        dtC2.classList.add('dt-lit');
+      } else {
+        dtSs.classList.remove('dt-lit');
+        dtC2.classList.remove('dt-lit');
+      }
+
+      if (isMmLit) {
+        dtMm.classList.add('dt-lit');
+        dtC1.classList.add('dt-lit');
+      } else {
+        dtMm.classList.remove('dt-lit');
+        dtC1.classList.remove('dt-lit');
+      }
+
+      if (isHhLit) {
+        dtHh.classList.add('dt-lit');
+      } else {
+        dtHh.classList.remove('dt-lit');
+      }
+
+      timerFrameId = requestAnimationFrame(updateDotTimerUI);
+    }
+
+    function startDotTimer() {
+      if (isTimerRunning) return;
+      isTimerRunning = true;
+      timerStartTime = Date.now();
+      timerFrameId = requestAnimationFrame(updateDotTimerUI);
+    }
+
+    function pauseDotTimer() {
+      if (!isTimerRunning) return;
+      isTimerRunning = false;
+      timerAccumulatedTime += Date.now() - timerStartTime;
+      if (timerFrameId) {
+        cancelAnimationFrame(timerFrameId);
+        timerFrameId = null;
+      }
+    }
+
+    function resumeDotTimer() {
+      if (isTimerRunning) return;
+      isTimerRunning = true;
+      timerStartTime = Date.now();
+      timerFrameId = requestAnimationFrame(updateDotTimerUI);
+    }
 
     // NETWORK OFFLINE / NO SIGNAL DETECTOR
     function checkNetworkConnection() {
       if (!navigator.onLine) {
         noSignalIndicator.classList.add('active');
+        dotTimerDisplay.style.display = 'none';
       } else {
         noSignalIndicator.classList.remove('active');
+        dotTimerDisplay.style.display = 'flex';
       }
     }
 
@@ -2860,13 +3011,17 @@
 
     window.onload = () => {
       checkNetworkConnection();
+      startDotTimer();
       setTimeout(() => {
         startScanner();
       }, 300);
     };
 
     document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) {
+      if (document.hidden) {
+        pauseDotTimer();
+      } else {
+        resumeDotTimer();
         ensureCameraRunning();
         checkNetworkConnection();
       }
