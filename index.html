@@ -7,7 +7,6 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 
   <style>
     @font-face {
@@ -1530,10 +1529,7 @@
     }
 
     const SECRET_KEY = "AkBR7!12K8Le#Bzz_ASH%PekMP45K416";
-// ADD ONNX GLOBAL VARIABLES HERE
-    let ortSession = null;
-    let isModelLoading = false;
-    const MODEL_PATH = './best.onnx'; // Ensure best.onnx is served in the same directory or adjust URL
+
     let scannedCodes = [];
     const selectedSerialsInModal = new Set();
     const selectedCategoriesInModal = new Set();
@@ -1650,27 +1646,6 @@
         if (epsTimeSublabel) epsTimeSublabel.style.display = 'block';
       }
     }
-    // ADD ONNX MODEL INITIALIZATION HERE
-    async function loadOnnxModel() {
-      if (isModelLoading || ortSession) return;
-      isModelLoading = true;
-      try {
-        console.log("Loading best.onnx model...");
-        // Initialize ORT Web session
-        ortSession = await ort.InferenceSession.create(MODEL_PATH, {
-          executionProviders: ['webgl', 'wasm'],
-          graphOptimizationLevel: 'all'
-        });
-        console.log("ONNX Model loaded successfully.");
-      } catch (err) {
-        console.error("Failed to load ONNX model:", err);
-      } finally {
-        isModelLoading = false;
-      }
-    }
-
-    // Call model loader on page startup
-    loadOnnxModel();
 
     window.addEventListener('online', checkNetworkConnection);
     window.addEventListener('offline', checkNetworkConnection);
@@ -2068,68 +2043,8 @@
           if (i > 8) {
             const prevR = imgData[i - 8];
             totalContrast += Math.abs(r - prevR);
-            // INSIDE analyzeFrameProximity() FUNCTION:
-    function analyzeFrameProximity() {
-      if (isOverrideState || isModalOpen || isFocusModalOpen) return;
-
-      const videoElement = document.querySelector("#interactive video");
-      if (!videoElement || videoElement.readyState < 2) return;
-
-      try {
-        canvasCtx.drawImage(videoElement, 0, 0, 120, 90);
-        
-        // --- ADD OBJECT RECOGNITION INFERENCE START ---
-        if (ortSession && !isModelLoading) {
-          runObjectRecognitionInference();
-        }
-        // --- ADD OBJECT RECOGNITION INFERENCE END ---
-
-        const imgData = canvasCtx.getImageData(30, 22, 60, 45).data;
-        // ... rest of existing proximity calculations ...
           }
         }
-        // ADD ONNX INFERENCE HELPER FUNCTION
-    async function runObjectRecognitionInference() {
-      if (!ortSession) return;
-
-      try {
-        // 1. Resize/prepare canvas for model input size (assuming standard 640x640 input for YOLO/best.onnx)
-        const inputWidth = 640;
-        const inputHeight = 640;
-        
-        const offscreenCanvas = document.createElement('canvas');
-        offscreenCanvas.width = inputWidth;
-        offscreenCanvas.height = inputHeight;
-        const ctx = offscreenCanvas.getContext('2d');
-
-        const videoElement = document.querySelector("#interactive video");
-        ctx.drawImage(videoElement, 0, 0, inputWidth, inputHeight);
-
-        const imgData = ctx.getImageData(0, 0, inputWidth, inputHeight).data;
-        
-        // 2. Preprocess: RGB Normalization [3, 640, 640] Float32 Tensor
-        const float32Data = new Float32Array(3 * inputWidth * inputHeight);
-        for (let i = 0; i < inputWidth * inputHeight; i++) {
-          float32Data[i] = imgData[i * 4] / 255.0;                         // Red
-          float32Data[i + inputWidth * inputHeight] = imgData[i * 4 + 1] / 255.0; // Green
-          float32Data[i + 2 * inputWidth * inputHeight] = imgData[i * 4 + 2] / 255.0; // Blue
-        }
-
-        const inputTensor = new ort.Tensor('float32', float32Data, [1, 3, inputHeight, inputWidth]);
-        
-        // 3. Run Inference
-        const feeds = {};
-        feeds[ortSession.inputNames[0]] = inputTensor;
-        const results = await ortSession.run(feeds);
-        
-        // 4. Output Tensor Processing
-        const output = results[ortSession.outputNames[0]];
-        // Process bounding boxes / object recognition outputs here
-        
-      } catch (err) {
-        console.error("Inference error:", err);
-      }
-    }
 
         const avgContrast = totalContrast / (imgData.length / 8);
 
