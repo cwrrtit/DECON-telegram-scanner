@@ -260,77 +260,6 @@
       -webkit-user-select: none;
     }
 
-    /* OFFLINE NO SIGNAL TEXT & ANIMATION (MODIFIED GLOW) */
-    #no-signal-indicator {
-      font-family: 'NDot-55', sans-serif !important;
-      font-size: 13px;
-      font-weight: 400;
-      letter-spacing: 1.2px;
-      color: var(--status-amber);
-      text-transform: uppercase;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-      user-select: none;
-      -webkit-user-select: none;
-      text-shadow: 0 0 4px rgba(255, 189, 46, 0.6);
-      display: none;
-      height: 32px;
-      line-height: 32px;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #no-signal-indicator.active {
-      opacity: 1;
-      display: flex;
-      animation: pulseAmber 2s ease-in-out infinite;
-    }
-
-    /* DOT TIMER STYLES */
-    #dot-timer-display {
-      display: flex;
-      align-items: baseline;
-      justify-content: center;
-      height: 32px;
-      line-height: 32px;
-      user-select: none;
-      -webkit-user-select: none;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .dt-segment {
-      font-family: 'NDot-55', sans-serif !important;
-      font-size: 18px;
-      color: var(--color-dark4);
-      transition: color 0.1s ease;
-      display: inline-block;
-      text-align: center;
-      font-variant-numeric: tabular-nums;
-    }
-
-    #dt-hh, #dt-mm, #dt-ss {
-      width: 23px;
-    }
-
-    #dt-c1, #dt-c2 {
-      width: 8px;
-    }
-
-    .dt-ms {
-      font-family: 'NDot-55', sans-serif !important;
-      font-size: 12px;
-      color: var(--status-white);
-      transition: color 0.1s ease;
-      display: inline-block;
-      width: 16px;
-      text-align: center;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .dt-lit {
-      color: var(--status-white) !important;
-    }
 
     @keyframes pulseAmber {
       0%, 100% {
@@ -1372,15 +1301,6 @@
           <div class="dash-sublabel">TOTAL</div>
         </div>
         
-        <!-- COLUMN 2: DOT TIMER / NO SIGNAL + EPS TIME LABEL -->
-        <div class="header-col header-col-center">
-          <div id="dot-timer-display">
-            <span id="dt-hh" class="dt-segment">00</span><span id="dt-c1" class="dt-segment">:</span><span id="dt-mm" class="dt-segment">00</span><span id="dt-c2" class="dt-segment">:</span><span id="dt-ss" class="dt-segment">00</span><span id="dt-ms" class="dt-ms">00</span>
-          </div>
-          <!-- OFFLINE AMBER PULSING TEXT INDICATOR -->
-          <div id="no-signal-indicator">NO SIGNAL</div>
-          <div class="dash-sublabel" id="eps-time-sublabel">EPS TIME</div>
-        </div>
 
         <!-- COLUMN 3: 20-SQUARE DOTMATRIX DISPLAY + PROX LABEL -->
         <div class="header-col header-col-right">
@@ -1725,106 +1645,8 @@
         }
       };
     }
-    const noSignalIndicator = document.getElementById('no-signal-indicator');
-    const dotTimerDisplay = document.getElementById('dot-timer-display');
-    const epsTimeSublabel = document.getElementById('eps-time-sublabel');
 
-    // HIGH ACCURACY DOT TIMER STOPWATCH SYSTEM
-    let timerStartTime = Date.now();
-    let timerAccumulatedTime = 0;
-    let isTimerRunning = false;
-    let timerFrameId = null;
 
-    const dtHh = document.getElementById('dt-hh');
-    const dtMm = document.getElementById('dt-mm');
-    const dtSs = document.getElementById('dt-ss');
-    const dtMs = document.getElementById('dt-ms');
-    const dtC1 = document.getElementById('dt-c1');
-    const dtC2 = document.getElementById('dt-c2');
-
-    function updateDotTimerUI() {
-      if (!isTimerRunning) return;
-
-      const elapsed = timerAccumulatedTime + (Date.now() - timerStartTime);
-
-      const msVal = Math.floor((elapsed % 1000) / 10);
-      const ssVal = Math.floor((elapsed / 1000) % 60);
-      const mmVal = Math.floor((elapsed / (1000 * 60)) % 60);
-      const hhVal = Math.floor(elapsed / (1000 * 60 * 60));
-
-      dtMs.innerText = String(msVal).padStart(2, '0');
-      dtSs.innerText = String(ssVal).padStart(2, '0');
-      dtMm.innerText = String(mmVal).padStart(2, '0');
-      dtHh.innerText = String(hhVal).padStart(2, '0');
-
-      const isSsLit = elapsed >= 1000;
-      const isMmLit = elapsed >= 60000;
-      const isHhLit = elapsed >= 3600000;
-
-      if (isSsLit) {
-        dtSs.classList.add('dt-lit');
-        dtC2.classList.add('dt-lit');
-      } else {
-        dtSs.classList.remove('dt-lit');
-        dtC2.classList.remove('dt-lit');
-      }
-
-      if (isMmLit) {
-        dtMm.classList.add('dt-lit');
-        dtC1.classList.add('dt-lit');
-      } else {
-        dtMm.classList.remove('dt-lit');
-        dtC1.classList.remove('dt-lit');
-      }
-
-      if (isHhLit) {
-        dtHh.classList.add('dt-lit');
-      } else {
-        dtHh.classList.remove('dt-lit');
-      }
-
-      timerFrameId = requestAnimationFrame(updateDotTimerUI);
-    }
-
-    function startDotTimer() {
-      if (isTimerRunning) return;
-      isTimerRunning = true;
-      timerStartTime = Date.now();
-      timerFrameId = requestAnimationFrame(updateDotTimerUI);
-    }
-
-    function pauseDotTimer() {
-      if (!isTimerRunning) return;
-      isTimerRunning = false;
-      timerAccumulatedTime += Date.now() - timerStartTime;
-      if (timerFrameId) {
-        cancelAnimationFrame(timerFrameId);
-        timerFrameId = null;
-      }
-    }
-
-    function resumeDotTimer() {
-      if (isTimerRunning) return;
-      isTimerRunning = true;
-      timerStartTime = Date.now();
-      timerFrameId = requestAnimationFrame(updateDotTimerUI);
-    }
-
-    // NETWORK OFFLINE / NO SIGNAL DETECTOR
-    function checkNetworkConnection() {
-      if (!navigator.onLine) {
-        noSignalIndicator.classList.add('active');
-        dotTimerDisplay.style.display = 'none';
-        if (epsTimeSublabel) epsTimeSublabel.style.display = 'none';
-      } else {
-        noSignalIndicator.classList.remove('active');
-        dotTimerDisplay.style.display = 'flex';
-        if (epsTimeSublabel) epsTimeSublabel.style.display = 'block';
-      }
-    }
-
-    window.addEventListener('online', checkNetworkConnection);
-    window.addEventListener('offline', checkNetworkConnection);
 
     // Pure Shape Seven-Segment Logic Mapping
     const SEGMENT_MAP = {
