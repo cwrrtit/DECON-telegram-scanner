@@ -1714,6 +1714,17 @@
     const viewfinder = document.getElementById('custom-viewfinder');
     const analysisCanvas = document.getElementById('analysis-canvas');
     const canvasCtx = analysisCanvas.getContext('2d', { willReadFrequently: true });
+    // Initialize the Web Worker safely
+    let recognitionWorker = null;
+    if (window.Worker) {
+      recognitionWorker = new Worker('scanner.worker.js');
+      recognitionWorker.onmessage = function(e) {
+        // Handle responses returned from the background worker thread
+        if (e.data && e.data.status === 'success') {
+          // Worker finished background calculations successfully
+        }
+      };
+    }
     const noSignalIndicator = document.getElementById('no-signal-indicator');
     const dotTimerDisplay = document.getElementById('dot-timer-display');
     const epsTimeSublabel = document.getElementById('eps-time-sublabel');
@@ -2191,7 +2202,7 @@
       };
     }
 
-    function analyzeFrameProximity() {
+function analyzeFrameProximity() {
       if (isOverrideState || isModalOpen || isFocusModalOpen) return;
 
       const videoElement = document.querySelector("#interactive video");
@@ -2199,19 +2210,29 @@
 
       try {
         canvasCtx.drawImage(videoElement, 0, 0, 120, 90);
-        const imgData = canvasCtx.getImageData(30, 22, 60, 45).data;
+        const imgData = canvasCtx.getImageData(30, 22, 60, 45);
         
-        let totalContrast = 0;
+        // Offload heavy pixel buffer processing to the Web Worker thread
+        if (recognitionWorker) {
+          recognitionWorker.postMessage({
+            imageData: imgData.data.buffer,
+            width: imgData.width,
+            height: imgData.height
+          }, [imgData.data.buffer]); // Transfer buffer ownership efficiently
+        }
 
-        for (let i = 0; i < imgData.length; i += 8) {
-          const r = imgData[i];
+        let totalContrast = 0;
+        const imgBytes = imgData.data;
+
+        for (let i = 0; i < imgBytes.length; i += 8) {
+          const r = imgBytes[i];
           if (i > 8) {
-            const prevR = imgData[i - 8];
+            const prevR = imgBytes[i - 8];
             totalContrast += Math.abs(r - prevR);
           }
         }
 
-        const avgContrast = totalContrast / (imgData.length / 8);
+        const avgContrast = totalContrast / (imgBytes.length / 8);
 
         let calculatedStep = 1;
         if (avgContrast < 8) calculatedStep = 1;
