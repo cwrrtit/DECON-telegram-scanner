@@ -7,6 +7,8 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <!-- ONNX Runtime Web for WebAssembly & Multithreaded Worker support -->
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 
   <style>
     @font-face {
@@ -204,6 +206,17 @@
       filter: drop-shadow(0px 0px 4px rgba(0, 132, 255, 0.75));
     }
 
+    /* ONNX Object Detection Overlay Bounding Boxes */
+    #onnx-detection-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+
     #log-container {
       width: 100%;
       display: flex;
@@ -230,7 +243,6 @@
       gap: 8px;
     }
 
-    /* OFFLINE NO SIGNAL TEXT & ANIMATION (MODIFIED GLOW) */
     #no-signal-indicator {
       font-family: 'NDot-55', sans-serif !important;
       font-size: 13px;
@@ -275,7 +287,6 @@
       line-height: 32px;
     }
 
-    /* PURE CSS SHAPES 4-DIGIT 7-SEGMENT DISPLAY */
     .seg7-display-container {
       position: relative;
       display: flex;
@@ -362,7 +373,6 @@
       height: 100%;
     }
 
-    /* DOTMATRIX DISPLAY GRID */
     .dotmatrix-container {
       display: flex;
       flex-direction: column;
@@ -708,8 +718,6 @@
       stroke: #00db62 !important;
     }
 
-    /* CREATE BUTTON (CENTERING FIX) */
-
     .create-btn-static {
       flex-grow: 1;
       height: 100%;
@@ -783,7 +791,6 @@
       flex-shrink: 0;
     }
 
-    /* DONE BUTTON (UPDATED SIZE & CENTERING) */
     .done-btn {
       font-family: 'VCR OSD Mono', monospace !important;
       position: relative;
@@ -811,7 +818,6 @@
       background-color: #d8d8d8;
     }
 
-    /* MODALS */
     #modal-overlay {
       position: fixed;
       top: 0;
@@ -1271,6 +1277,9 @@
     <div id="scanner-container">
       <div id="interactive"></div>
       
+      <!-- Bounding Box Canvas Overlay for Object Recognition -->
+      <canvas id="onnx-detection-canvas"></canvas>
+
       <div id="custom-overlay">
         <div id="custom-viewfinder">
           <div class="scanner-corner tl"></div>
@@ -1286,17 +1295,12 @@
     <div id="log-container">
       <div class="log-header-row">
         <div class="header-left-group">
-          <!-- PURE CSS 4-DIGIT 7-SEGMENT DISPLAY CONTAINER -->
-          <div class="seg7-display-container" id="seg7-container">
-            <!-- Rendered programmatically via JS -->
-          </div>
+          <div class="seg7-display-container" id="seg7-container"></div>
           <span id="count" style="display:none;">0</span>
         </div>
         
-        <!-- OFFLINE AMBER PULSING TEXT INDICATOR -->
         <div id="no-signal-indicator">NO SIGNAL</div>
 
-        <!-- 20-SQUARE DOTMATRIX DISPLAY -->
         <div class="dotmatrix-container" id="dotmatrixGroup">
           <div class="dotmatrix-row" id="dotmatrix-row-top">
             <div class="dotmatrix-square" id="sq-1"></div>
@@ -1465,6 +1469,95 @@
     const canvasCtx = analysisCanvas.getContext('2d', { willReadFrequently: true });
     const noSignalIndicator = document.getElementById('no-signal-indicator');
 
+    // ONNX Worker & Frame-Rate Control Setup (7 FPS Limit)
+    let scannerWorker = null;
+    let isWorkerBusy = false;
+    let lastDetectionFrameTime = 0;
+    const DETECTION_FPS_LIMIT = 7;
+    const FRAME_INTERVAL_MS = 1000 / DETECTION_FPS_LIMIT;
+
+    const onnxCanvas = document.getElementById('onnx-detection-canvas');
+    const onnxCtx = onnxCanvas.getContext('2d');
+
+    function initONNXWorker() {
+      if (window.Worker) {
+        scannerWorker = new Worker('scanner.worker.js');
+        
+        scannerWorker.postMessage({
+          type: 'INIT',
+          modelUrl: 'best.onnx'
+        });
+
+        scannerWorker.onmessage = (e) => {
+          const { type, detections } = e.data;
+          if (type === 'DETECTIONS') {
+            renderDetections(detections);
+            isWorkerBusy = false;
+          }
+        };
+      }
+    }
+
+    function renderDetections(detections) {
+      const container = document.getElementById('scanner-container');
+      if (!container) return;
+      
+      onnxCanvas.width = container.clientWidth;
+      onnxCanvas.height = container.clientHeight;
+      onnxCtx.clearRect(0, 0, onnxCanvas.width, onnxCanvas.height);
+
+      if (!detections || detections.length === 0) return;
+
+      detections.forEach(det => {
+        const [x1, y1, x2, y2, score, label] = det;
+        const width = (x2 - x1) * onnxCanvas.width;
+        const height = (y2 - y1) * onnxCanvas.height;
+        const left = x1 * onnxCanvas.width;
+        const top = y1 * onnxCanvas.height;
+
+        onnxCtx.strokeStyle = '#00DB62';
+        onnxCtx.lineWidth = 2;
+        onnxCtx.strokeRect(left, top, width, height);
+
+        onnxCtx.fillStyle = '#00DB62';
+        onnxCtx.font = '10px "VCR OSD Mono", monospace';
+        onnxCtx.fillText(`${label || 'OBJECT'} ${(score * 100).toFixed(0)}%`, left + 4, top > 15 ? top - 4 : top + 12);
+      });
+    }
+
+    function processFrameForObjectDetection() {
+      if (isWorkerBusy || isModalOpen || isFocusModalOpen) return;
+
+      const now = performance.now();
+      if (now - lastDetectionFrameTime < FRAME_INTERVAL_MS) {
+        return;
+      }
+
+      const videoElement = document.querySelector("#interactive video");
+      if (!videoElement || videoElement.readyState < 2) return;
+
+      lastDetectionFrameTime = now;
+      isWorkerBusy = true;
+
+      try {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = 320;
+        tempCanvas.height = 320;
+        const ctx = tempCanvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(videoElement, 0, 0, 320, 320);
+        const imageData = ctx.getImageData(0, 0, 320, 320);
+
+        scannerWorker.postMessage({
+          type: 'PROCESS_FRAME',
+          buffer: imageData.data.buffer,
+          width: 320,
+          height: 320
+        }, [imageData.data.buffer]);
+      } catch (e) {
+        isWorkerBusy = false;
+      }
+    }
+
     // NETWORK OFFLINE / NO SIGNAL DETECTOR
     function checkNetworkConnection() {
       if (!navigator.onLine) {
@@ -1591,7 +1684,6 @@
     const focusEditDeleteBtn = document.getElementById('focus-edit-delete-btn');
     const focusModalHeader = document.getElementById('focus-modal-header');
 
-    // DOTMATRIX SPECIFIC COLOR CODES
     const COLOR_HEX = {
       blue: "#0084FF",
       amber: "#FFBD2E",
@@ -1605,7 +1697,6 @@
       dark2: "#0E0E0E"
     };
 
-    // Cache elements 1 through 20
     const squareElements = [];
     for (let i = 1; i <= 20; i++) {
       squareElements[i] = document.getElementById(`sq-${i}`);
@@ -1662,7 +1753,6 @@
       return null;
     }
 
-    // DOTMATRIX COLOR MAPPER FUNCTION
     function setDotMatrixColors(colorArray) {
       for (let i = 1; i <= 20; i++) {
         if (squareElements[i]) {
@@ -1681,7 +1771,6 @@
       setDotMatrixColors(Array(20).fill(COLOR_HEX.dark2));
     }
 
-    // PROXIMITY GRADIENT SCALING (1 to 10 steps)
     function setProximityLevel(step) {
       if (step === 1) {
         activeUniqueCode = null;
@@ -1713,8 +1802,8 @@
             colColor = gradientRamp[offset];
           }
         }
-        colors[col - 1] = colColor;       // Top row
-        colors[col + 9] = colColor;      // Bottom row
+        colors[col - 1] = colColor;
+        colors[col + 9] = colColor;
       }
 
       setDotMatrixColors(colors);
@@ -1854,6 +1943,8 @@
     }
 
     function analyzeFrameProximity() {
+      processFrameForObjectDetection();
+
       if (isOverrideState || isModalOpen || isFocusModalOpen) return;
 
       const videoElement = document.querySelector("#interactive video");
@@ -2860,6 +2951,7 @@
 
     window.onload = () => {
       checkNetworkConnection();
+      initONNXWorker();
       setTimeout(() => {
         startScanner();
       }, 300);
