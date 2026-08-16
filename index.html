@@ -3008,9 +3008,8 @@
       }
     });
 
-    window.onload = () => {
+    window.addEventListener('load', () => {
       checkNetworkConnection();
-      initONNXWorker();
       setTimeout(() => {
         startScanner();
       }, 300);
