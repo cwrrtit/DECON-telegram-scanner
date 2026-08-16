@@ -7,9 +7,6 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  
-  <!-- ADDED: ONNX Runtime Web for YOLOv11 -->
-  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 
   <style>
     @font-face {
@@ -220,47 +217,55 @@
     .log-header-row {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      margin: 0 4px 7px 4px;
+      align-items: center;
+      margin: 0 4px 6px 4px;
       flex-shrink: 0;
+      height: 32px;
       position: relative;
     }
 
-    .header-col {
+    .header-left-group {
       display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
     }
 
-    .header-col-left {
-      align-items: flex-end;
-    }
-
-    .header-col-center {
-      align-items: flex-end;
+    /* OFFLINE NO SIGNAL TEXT & ANIMATION (MODIFIED GLOW) */
+    #no-signal-indicator {
+      font-family: 'NDot-55', sans-serif !important;
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 1.2px;
+      color: var(--status-amber);
+      text-transform: uppercase;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      user-select: none;
+      -webkit-user-select: none;
+      text-shadow: 0 0 4px rgba(255, 189, 46, 0.6);
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
-      bottom: 0;
     }
 
-    .header-col-right {
-      align-items: flex-end;
+    #no-signal-indicator.active {
+      opacity: 1;
+      animation: pulseAmber 2s ease-in-out infinite;
     }
 
-    .dash-sublabel {
-      font-family: 'VCR OSD Mono', monospace !important;
-      font-size: 6px;
-      color: var(--color-light-gray);
-      margin-top: 1px;
-      text-align: right;
-      line-height: 1;
-      user-select: none;
-      -webkit-user-select: none;
+    @keyframes pulseAmber {
+      0%, 100% {
+        opacity: 1;
+        text-shadow: 0 0 10px rgba(255, 189, 46, 0.95), 0 0 20px rgba(255, 189, 46, 0.5);
+      }
+      50% {
+        opacity: 0.25;
+        text-shadow: 0 0 2px rgba(255, 189, 46, 0.2);
+      }
     }
 
-       h3 {
+    h3 {
       margin: 0;
       font-size: 12px;
       text-transform: uppercase;
@@ -1280,50 +1285,43 @@
 
     <div id="log-container">
       <div class="log-header-row">
-        <!-- COLUMN 1: 7-SEGMENT DISPLAY + TOTAL LABEL -->
-        <div class="header-col header-col-left">
+        <div class="header-left-group">
+          <!-- PURE CSS 4-DIGIT 7-SEGMENT DISPLAY CONTAINER -->
           <div class="seg7-display-container" id="seg7-container">
             <!-- Rendered programmatically via JS -->
           </div>
           <span id="count" style="display:none;">0</span>
-          <div class="dash-sublabel">TOTAL</div>
         </div>
         
-        <!-- COLUMN 2: REMOVING DOT TIMER -->
-        <div class="header-col header-col-center">
-          <div class="dash-sublabel" id="eps-time-sublabel" style="display: none;"></div>
+        <!-- OFFLINE AMBER PULSING TEXT INDICATOR -->
+        <div id="no-signal-indicator">NO SIGNAL</div>
 
-        </div>
-
-        <!-- COLUMN 3: 20-SQUARE DOTMATRIX DISPLAY + PROX LABEL -->
-        <div class="header-col header-col-right">
-          <div class="dotmatrix-container" id="dotmatrixGroup">
-            <div class="dotmatrix-row" id="dotmatrix-row-top">
-              <div class="dotmatrix-square" id="sq-1"></div>
-              <div class="dotmatrix-square" id="sq-2"></div>
-              <div class="dotmatrix-square" id="sq-3"></div>
-              <div class="dotmatrix-square" id="sq-4"></div>
-              <div class="dotmatrix-square" id="sq-5"></div>
-              <div class="dotmatrix-square" id="sq-6"></div>
-              <div class="dotmatrix-square" id="sq-7"></div>
-              <div class="dotmatrix-square" id="sq-8"></div>
-              <div class="dotmatrix-square" id="sq-9"></div>
-              <div class="dotmatrix-square" id="sq-10"></div>
-            </div>
-            <div class="dotmatrix-row" id="dotmatrix-row-bottom">
-              <div class="dotmatrix-square" id="sq-11"></div>
-              <div class="dotmatrix-square" id="sq-12"></div>
-              <div class="dotmatrix-square" id="sq-13"></div>
-              <div class="dotmatrix-square" id="sq-14"></div>
-              <div class="dotmatrix-square" id="sq-15"></div>
-              <div class="dotmatrix-square" id="sq-16"></div>
-              <div class="dotmatrix-square" id="sq-17"></div>
-              <div class="dotmatrix-square" id="sq-18"></div>
-              <div class="dotmatrix-square" id="sq-19"></div>
-              <div class="dotmatrix-square" id="sq-20"></div>
-            </div>
+        <!-- 20-SQUARE DOTMATRIX DISPLAY -->
+        <div class="dotmatrix-container" id="dotmatrixGroup">
+          <div class="dotmatrix-row" id="dotmatrix-row-top">
+            <div class="dotmatrix-square" id="sq-1"></div>
+            <div class="dotmatrix-square" id="sq-2"></div>
+            <div class="dotmatrix-square" id="sq-3"></div>
+            <div class="dotmatrix-square" id="sq-4"></div>
+            <div class="dotmatrix-square" id="sq-5"></div>
+            <div class="dotmatrix-square" id="sq-6"></div>
+            <div class="dotmatrix-square" id="sq-7"></div>
+            <div class="dotmatrix-square" id="sq-8"></div>
+            <div class="dotmatrix-square" id="sq-9"></div>
+            <div class="dotmatrix-square" id="sq-10"></div>
           </div>
-          <div class="dash-sublabel">PROX</div>
+          <div class="dotmatrix-row" id="dotmatrix-row-bottom">
+            <div class="dotmatrix-square" id="sq-11"></div>
+            <div class="dotmatrix-square" id="sq-12"></div>
+            <div class="dotmatrix-square" id="sq-13"></div>
+            <div class="dotmatrix-square" id="sq-14"></div>
+            <div class="dotmatrix-square" id="sq-15"></div>
+            <div class="dotmatrix-square" id="sq-16"></div>
+            <div class="dotmatrix-square" id="sq-17"></div>
+            <div class="dotmatrix-square" id="sq-18"></div>
+            <div class="dotmatrix-square" id="sq-19"></div>
+            <div class="dotmatrix-square" id="sq-20"></div>
+          </div>
         </div>
       </div>
       
@@ -1408,168 +1406,6 @@
     </div>
   </div>
 
-  <!-- ADDED: YOLOv11 Object Recognition Integration -->
-  <script>
-    (function() {
-      let session = null;
-      const inputShape = [1, 3, 640, 640];
-      
-      async function initYolo() {
-        try {
-          if (typeof ort === 'undefined') return;
-          // Set wasm paths for ONNX runtime web
-          ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/";
-          session = await ort.InferenceSession.create("best.onnx", { executionProviders: ["wasm"] });
-          console.log("YOLOv11 ONNX model loaded successfully.");
-          
-          const checkVideo = setInterval(() => {
-            const videoElement = document.querySelector("#interactive video");
-            if (videoElement && videoElement.videoWidth > 0) {
-              clearInterval(checkVideo);
-              createOverlayCanvas(videoElement);
-            }
-          }, 500);
-        } catch(e) {
-          console.error("Failed to initialize ONNX YOLOv11 model:", e);
-        }
-      }
-
-      function createOverlayCanvas(videoElement) {
-        const canvas = document.createElement("canvas");
-        canvas.id = "yolo-canvas";
-        canvas.style.position = "absolute";
-        canvas.style.top = "0";
-        canvas.style.left = "0";
-        canvas.style.width = "100%";
-        canvas.style.height = "100%";
-        canvas.style.pointerEvents = "none";
-        canvas.style.zIndex = "15"; // Over custom-overlay(10), below control-panel(20)
-        
-        const container = document.getElementById("scanner-container");
-        if(container) {
-          container.appendChild(canvas);
-          requestAnimationFrame(() => detectFrame(videoElement, canvas));
-        }
-      }
-
-      async function detectFrame(videoElement, canvas) {
-        if (!session) return;
-        if (videoElement.paused || videoElement.ended) {
-          requestAnimationFrame(() => detectFrame(videoElement, canvas));
-          return;
-        }
-        
-        canvas.width = videoElement.clientWidth;
-        canvas.height = videoElement.clientHeight;
-        const ctx = canvas.getContext("2d", { willReadFrequently: true });
-        
-        try {
-          const imgData = preprocess(videoElement, 640, 640);
-          const tensor = new ort.Tensor("float32", imgData, inputShape);
-          
-          const results = await session.run({ [session.inputNames[0]]: tensor });
-          const output = results[session.outputNames[0]].data;
-          
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          drawBoxes(output, canvas.width, canvas.height, ctx);
-        } catch(e) {
-          // Silent catch to prevent console spam on frame drop
-        }
-        
-        requestAnimationFrame(() => detectFrame(videoElement, canvas));
-      }
-
-      function preprocess(videoElement, width, height) {
-        const offscreen = document.createElement("canvas");
-        offscreen.width = width;
-        offscreen.height = height;
-        const offCtx = offscreen.getContext("2d", { willReadFrequently: true });
-        offCtx.drawImage(videoElement, 0, 0, width, height);
-        
-        const imgData = offCtx.getImageData(0, 0, width, height).data;
-        const float32Data = new Float32Array(3 * width * height);
-        
-        for (let i = 0; i < width * height; i++) {
-          float32Data[i] = imgData[i * 4] / 255.0; // R
-          float32Data[width * height + i] = imgData[i * 4 + 1] / 255.0; // G
-          float32Data[2 * width * height + i] = imgData[i * 4 + 2] / 255.0; // B
-        }
-        return float32Data;
-      }
-
-      function drawBoxes(output, imgW, imgH, ctx) {
-        const numRows = 8400; // YOLOv11 standard grid length
-        const numClasses = (output.length / numRows) - 4;
-        const boxes = [];
-        
-        for (let i = 0; i < numRows; i++) {
-          let maxClass = -1;
-          let maxConf = 0;
-          for (let c = 0; c < numClasses; c++) {
-            const conf = output[(4 + c) * numRows + i];
-            if (conf > maxConf) {
-              maxConf = conf;
-              maxClass = c;
-            }
-          }
-          
-          if (maxConf > 0.4) {
-            const xc = output[0 * numRows + i];
-            const yc = output[1 * numRows + i];
-            const w = output[2 * numRows + i];
-            const h = output[3 * numRows + i];
-            
-            const x1 = ((xc - w / 2) / 640) * imgW;
-            const y1 = ((yc - h / 2) / 640) * imgH;
-            const w_scaled = (w / 640) * imgW;
-            const h_scaled = (h / 640) * imgH;
-            
-            boxes.push({x: x1, y: y1, w: w_scaled, h: h_scaled, conf: maxConf, cls: maxClass});
-          }
-        }
-        
-        boxes.sort((a, b) => b.conf - a.conf);
-        const finalBoxes = [];
-        while (boxes.length > 0) {
-          const best = boxes.shift();
-          finalBoxes.push(best);
-          for (let i = boxes.length - 1; i >= 0; i--) {
-            const iou = calculateIoU(best, boxes[i]);
-            if (iou > 0.45) {
-              boxes.splice(i, 1);
-            }
-          }
-        }
-        
-        ctx.lineWidth = 2;
-        ctx.font = "14px 'VCR OSD Mono', monospace";
-        for (const box of finalBoxes) {
-          ctx.strokeStyle = "#00DB62"; 
-          ctx.fillStyle = "#00DB62";
-          ctx.strokeRect(box.x, box.y, box.w, box.h);
-          ctx.fillText(`Obj:${box.cls} ${Math.round(box.conf * 100)}%`, box.x, box.y > 20 ? box.y - 6 : box.y + 16);
-        }
-      }
-
-      function calculateIoU(b1, b2) {
-        const xA = Math.max(b1.x, b2.x);
-        const yA = Math.max(b1.y, b2.y);
-        const xB = Math.min(b1.x + b1.w, b2.x + b2.w);
-        const yB = Math.min(b1.y + b1.h, b2.y + b2.h);
-        const interArea = Math.max(0, xB - xA) * Math.max(0, yB - yA);
-        const b1Area = b1.w * b1.h;
-        const b2Area = b2.w * b2.h;
-        return interArea / (b1Area + b2Area - interArea);
-      }
-
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initYolo);
-      } else {
-        initYolo();
-      }
-    })();
-  </script>
-
   <script>
     const tg = window.Telegram?.WebApp;
 
@@ -1627,17 +1463,19 @@
     const viewfinder = document.getElementById('custom-viewfinder');
     const analysisCanvas = document.getElementById('analysis-canvas');
     const canvasCtx = analysisCanvas.getContext('2d', { willReadFrequently: true });
-    // Initialize the Web Worker safely
-    let recognitionWorker = null;
-    if (window.Worker) {
-      recognitionWorker = new Worker('scanner.worker.js');
-      recognitionWorker.onmessage = function(e) {
-        // Handle responses returned from the background worker thread
-        if (e.data && e.data.status === 'success') {
-          // Worker finished background calculations successfully
-        }
-      };
+    const noSignalIndicator = document.getElementById('no-signal-indicator');
+
+    // NETWORK OFFLINE / NO SIGNAL DETECTOR
+    function checkNetworkConnection() {
+      if (!navigator.onLine) {
+        noSignalIndicator.classList.add('active');
+      } else {
+        noSignalIndicator.classList.remove('active');
+      }
     }
+
+    window.addEventListener('online', checkNetworkConnection);
+    window.addEventListener('offline', checkNetworkConnection);
 
     // Pure Shape Seven-Segment Logic Mapping
     const SEGMENT_MAP = {
@@ -2015,7 +1853,7 @@
       };
     }
 
-function analyzeFrameProximity() {
+    function analyzeFrameProximity() {
       if (isOverrideState || isModalOpen || isFocusModalOpen) return;
 
       const videoElement = document.querySelector("#interactive video");
@@ -2023,29 +1861,19 @@ function analyzeFrameProximity() {
 
       try {
         canvasCtx.drawImage(videoElement, 0, 0, 120, 90);
-        const imgData = canvasCtx.getImageData(30, 22, 60, 45);
+        const imgData = canvasCtx.getImageData(30, 22, 60, 45).data;
         
-        // Offload heavy pixel buffer processing to the Web Worker thread
-        if (recognitionWorker) {
-          recognitionWorker.postMessage({
-            imageData: imgData.data.buffer,
-            width: imgData.width,
-            height: imgData.height
-          }, [imgData.data.buffer]); // Transfer buffer ownership efficiently
-        }
-
         let totalContrast = 0;
-        const imgBytes = imgData.data;
 
-        for (let i = 0; i < imgBytes.length; i += 8) {
-          const r = imgBytes[i];
+        for (let i = 0; i < imgData.length; i += 8) {
+          const r = imgData[i];
           if (i > 8) {
-            const prevR = imgBytes[i - 8];
+            const prevR = imgData[i - 8];
             totalContrast += Math.abs(r - prevR);
           }
         }
 
-        const avgContrast = totalContrast / (imgBytes.length / 8);
+        const avgContrast = totalContrast / (imgData.length / 8);
 
         let calculatedStep = 1;
         if (avgContrast < 8) calculatedStep = 1;
@@ -2074,7 +1902,7 @@ function analyzeFrameProximity() {
       }
 
       const config = { 
-        fps: 10, 
+        fps: 15, 
         qrbox: qrboxFunction, 
         aspectRatio: 1.333334 
       };
@@ -2220,7 +2048,7 @@ function analyzeFrameProximity() {
           <div class="category-header-title">
             <span>${headerName} (${categoryCount})</span>
           </div>
-           <div class="row-status-icon">${catLockIcon}</div>
+          <div class="row-status-icon">${catLockIcon}</div>
         `;
 
         if (isModal) {
@@ -3032,17 +2860,13 @@ function analyzeFrameProximity() {
 
     window.onload = () => {
       checkNetworkConnection();
-      startDotTimer();
       setTimeout(() => {
         startScanner();
       }, 300);
     };
 
     document.addEventListener("visibilitychange", () => {
-      if (document.hidden) {
-        pauseDotTimer();
-      } else {
-        resumeDotTimer();
+      if (!document.hidden) {
         ensureCameraRunning();
         checkNetworkConnection();
       }
