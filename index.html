@@ -1471,6 +1471,7 @@
 
     // ONNX Worker & Frame-Rate Control Setup (7 FPS Limit)
     let scannerWorker = null;
+    let onnxSession = null;
     let isWorkerBusy = false;
     let lastDetectionFrameTime = 0;
     const DETECTION_FPS_LIMIT = 7;
@@ -1478,23 +1479,39 @@
 
     const onnxCanvas = document.getElementById('onnx-detection-canvas');
     const onnxCtx = onnxCanvas.getContext('2d');
+    
 
-    function initONNXWorker() {
-      if (window.Worker) {
-        scannerWorker = new Worker('scanner.worker.js');
-        
-        scannerWorker.postMessage({
-          type: 'INIT',
-          modelUrl: 'best.onnx'
-        });
+    async function initONNXWorker() {
+      try {
+        if (window.Worker) {
+          scannerWorker = new Worker('scanner.worker.js');
+          
+          scannerWorker.postMessage({
+            type: 'INIT',
+            modelUrl: 'best.onnx'
+          });
 
-        scannerWorker.onmessage = (e) => {
-          const { type, detections } = e.data;
-          if (type === 'DETECTIONS') {
-            renderDetections(detections);
-            isWorkerBusy = false;
-          }
-        };
+          scannerWorker.onmessage = (e) => {
+            const { type, detections } = e.data;
+            if (type === 'DETECTIONS') {
+              renderDetections(detections);
+              isWorkerBusy = false;
+            }
+          };
+          
+
+          scannerWorker.onerror = async () => {
+            console.warn("Worker error. Falling back to inline ONNX session.");
+            scannerWorker = null;
+            if (typeof ort !== 'undefined') {
+              onnxSession = await ort.InferenceSession.create('best.onnx', { executionProviders: ['wasm'] });
+            }
+          };
+        } else if (typeof ort !== 'undefined') {
+          onnxSession = await ort.InferenceSession.create('best.onnx', { executionProviders: ['wasm'] });
+        }
+      } catch (err) {
+        console.error("ONNX Initialization fallback execution:", err);
       }
     }
 
@@ -1525,7 +1542,7 @@
       });
     }
 
-    function processFrameForObjectDetection() {
+    async function processFrameForObjectDetection() {
       if (isWorkerBusy || isModalOpen || isFocusModalOpen) return;
 
       const now = performance.now();
@@ -1547,16 +1564,57 @@
         ctx.drawImage(videoElement, 0, 0, 320, 320);
         const imageData = ctx.getImageData(0, 0, 320, 320);
 
-        scannerWorker.postMessage({
-          type: 'PROCESS_FRAME',
-          buffer: imageData.data.buffer,
-          width: 320,
-          height: 320
-        }, [imageData.data.buffer]);
+        if (scannerWorker) {
+          scannerWorker.postMessage({
+            type: 'PROCESS_FRAME',
+            buffer: imageData.data.buffer,
+            width: 320,
+            height: 320
+          }, [imageData.data.buffer]);
+        } else if (onnxSession) {
+          const red = [], green = [], blue = [];
+          for (let i = 0; i < imageData.data.length; i += 4) {
+            red.push(imageData.data[i] / 255.0);
+            green.push(imageData.data[i + 1] / 255.0);
+            blue.push(imageData.data[i + 2] / 255.0);
+          }
+          const float32Data = Float32Array.from([...red, ...green, ...blue]);
+          const inputTensor = new ort.Tensor('float32', float32Data, [1, 3, 320, 320]);
+          const feeds = {};
+          feeds[onnxSession.inputNames[0]] = inputTensor;
+          const results = await onnxSession.run(feeds);
+          const outputName = onnxSession.outputNames[0];
+          const outputData = results[outputName].data;
+          
+          const detections = parseONNXOutput(outputData);
+          renderDetections(detections);
+          isWorkerBusy = false;
+        } else {
+          isWorkerBusy = false;
+        }
       } catch (e) {
         isWorkerBusy = false;
       }
     }
+        function parseONNXOutput(data) {
+      const detections = [];
+      const numDetections = data.length / 6;
+      for (let i = 0; i < numDetections; i++) {
+        const score = data[i * 6 + 4];
+        if (score > 0.45) {
+          detections.push([
+            data[i * 6 + 0],
+            data[i * 6 + 1],
+            data[i * 6 + 2],
+            data[i * 6 + 3],
+            score,
+            'OBJECT'
+          ]);
+        }
+      }
+      return detections;
+    }
+
 
     // NETWORK OFFLINE / NO SIGNAL DETECTOR
     function checkNetworkConnection() {
@@ -1983,6 +2041,7 @@
     }
 
     function startScanner() {
+      initONNXWorker();
       html5QrcodeScanner = new Html5Qrcode("interactive");
       
       const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
