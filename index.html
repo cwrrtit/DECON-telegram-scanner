@@ -7,7 +7,7 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <!-- ONNX Runtime Web for WebAssembly & Multithreaded Worker support -->
+  <!-- ONNX Runtime Web for WebAssembly support -->
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 
   <style>
@@ -1469,49 +1469,24 @@
     const canvasCtx = analysisCanvas.getContext('2d', { willReadFrequently: true });
     const noSignalIndicator = document.getElementById('no-signal-indicator');
 
-    // ONNX Worker & Frame-Rate Control Setup (7 FPS Limit)
-    let scannerWorker = null;
+    // Standalone ONNX Frame-Rate Control Setup (7 FPS Limit)
     let onnxSession = null;
-    let isWorkerBusy = false;
+    let isONNXProcessing = false;
     let lastDetectionFrameTime = 0;
     const DETECTION_FPS_LIMIT = 7;
     const FRAME_INTERVAL_MS = 1000 / DETECTION_FPS_LIMIT;
 
     const onnxCanvas = document.getElementById('onnx-detection-canvas');
     const onnxCtx = onnxCanvas.getContext('2d');
-    
 
     async function initONNXWorker() {
       try {
-        if (window.Worker) {
-          scannerWorker = new Worker('scanner.worker.js');
-          
-          scannerWorker.postMessage({
-            type: 'INIT',
-            modelUrl: 'best.onnx'
-          });
-
-          scannerWorker.onmessage = (e) => {
-            const { type, detections } = e.data;
-            if (type === 'DETECTIONS') {
-              renderDetections(detections);
-              isWorkerBusy = false;
-            }
-          };
-          
-
-          scannerWorker.onerror = async () => {
-            console.warn("Worker error. Falling back to inline ONNX session.");
-            scannerWorker = null;
-            if (typeof ort !== 'undefined') {
-              onnxSession = await ort.InferenceSession.create('best.onnx', { executionProviders: ['wasm'] });
-            }
-          };
-        } else if (typeof ort !== 'undefined') {
+        if (typeof ort !== 'undefined') {
           onnxSession = await ort.InferenceSession.create('best.onnx', { executionProviders: ['wasm'] });
+          console.log("ONNX Session loaded successfully.");
         }
       } catch (err) {
-        console.error("ONNX Initialization fallback execution:", err);
+        console.error("ONNX Initialization Error:", err);
       }
     }
 
@@ -1542,8 +1517,8 @@
       });
     }
 
-    async function processFrameForObjectDetection() {
-      if (isWorkerBusy || isModalOpen || isFocusModalOpen) return;
+       async function processFrameForObjectDetection() {
+      if (isONNXProcessing || isModalOpen || isFocusModalOpen || !onnxSession) return;
 
       const now = performance.now();
       if (now - lastDetectionFrameTime < FRAME_INTERVAL_MS) {
@@ -1554,7 +1529,7 @@
       if (!videoElement || videoElement.readyState < 2) return;
 
       lastDetectionFrameTime = now;
-      isWorkerBusy = true;
+      isONNXProcessing = true;
 
       try {
         const tempCanvas = document.createElement('canvas');
@@ -1564,39 +1539,30 @@
         ctx.drawImage(videoElement, 0, 0, 320, 320);
         const imageData = ctx.getImageData(0, 0, 320, 320);
 
-        if (scannerWorker) {
-          scannerWorker.postMessage({
-            type: 'PROCESS_FRAME',
-            buffer: imageData.data.buffer,
-            width: 320,
-            height: 320
-          }, [imageData.data.buffer]);
-        } else if (onnxSession) {
-          const red = [], green = [], blue = [];
-          for (let i = 0; i < imageData.data.length; i += 4) {
-            red.push(imageData.data[i] / 255.0);
-            green.push(imageData.data[i + 1] / 255.0);
-            blue.push(imageData.data[i + 2] / 255.0);
-          }
-          const float32Data = Float32Array.from([...red, ...green, ...blue]);
-          const inputTensor = new ort.Tensor('float32', float32Data, [1, 3, 320, 320]);
-          const feeds = {};
-          feeds[onnxSession.inputNames[0]] = inputTensor;
-          const results = await onnxSession.run(feeds);
-          const outputName = onnxSession.outputNames[0];
-          const outputData = results[outputName].data;
-          
-          const detections = parseONNXOutput(outputData);
-          renderDetections(detections);
-          isWorkerBusy = false;
-        } else {
-          isWorkerBusy = false;
+        const red = [], green = [], blue = [];
+        for (let i = 0; i < imageData.data.length; i += 4) {
+          red.push(imageData.data[i] / 255.0);
+          green.push(imageData.data[i + 1] / 255.0);
+          blue.push(imageData.data[i + 2] / 255.0);
         }
+        const float32Data = Float32Array.from([...red, ...green, ...blue]);
+        const inputTensor = new ort.Tensor('float32', float32Data, [1, 3, 320, 320]);
+        const feeds = {};
+        feeds[onnxSession.inputNames[0]] = inputTensor;
+        const results = await onnxSession.run(feeds);
+        const outputName = onnxSession.outputNames[0];
+        const outputData = results[outputName].data;
+        
+        const detections = parseONNXOutput(outputData);
+        renderDetections(detections);
       } catch (e) {
-        isWorkerBusy = false;
+        console.error("ONNX processing error:", e);
+      } finally {
+        isONNXProcessing = false;
       }
     }
-        function parseONNXOutput(data) {
+
+    function parseONNXOutput(data) {
       const detections = [];
       const numDetections = data.length / 6;
       for (let i = 0; i < numDetections; i++) {
@@ -3008,12 +2974,9 @@
       }
     });
 
-    window.onload = () => {
+    window.addEventListener('load', () => {
+      startScanner();
       checkNetworkConnection();
-      initONNXWorker();
-      setTimeout(() => {
-        startScanner();
-      }, 300);
     };
 
     document.addEventListener("visibilitychange", () => {
