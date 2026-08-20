@@ -150,33 +150,6 @@
       animation: iosShake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
     }
 
-    .telemetry-overlay-bl {
-  position: absolute;
-  bottom: 22px;
-  left: 23px;
-  font-family: 'VCR OSD Mono', monospace !important;
-  font-size: 6px;
-  line-height: 1.2;
-  color: rgba(255, 255, 255, 0.75);
-  pointer-events: none;
-  z-index: 12;
-  text-transform: uppercase;
-}
-
-.telemetry-overlay-br {
-  position: absolute;
-  bottom: 22px;
-  right: 23px;
-  font-family: 'VCR OSD Mono', monospace !important;
-  font-size: 6px;
-  line-height: 1.2;
-  color: rgba(255, 255, 255, 0.75);
-  text-align: right;
-  pointer-events: none;
-  z-index: 12;
-  text-transform: uppercase;
-}
-
     .scanner-corner {
       position: absolute;
       width: 36px; 
@@ -1327,108 +1300,95 @@
 </head>
 <body>
 
-<div class="app-container">
-  <div id="scanner-container">
-    <div id="interactive"></div>
-    
-    <!-- Bounding Box Canvas Overlay for Object Recognition -->
-    <canvas id="onnx-detection-canvas"></canvas>
+  <div class="app-container">
+    <div id="scanner-container">
+      <div id="interactive"></div>
+      
+      <!-- Bounding Box Canvas Overlay for Object Recognition -->
+      <canvas id="onnx-detection-canvas"></canvas>
 
-    <div id="custom-overlay">
-      <div id="custom-viewfinder">
-        <div class="center-reticle"></div>
-        <div class="scanner-corner tl"></div>
-        <div class="scanner-corner tr"></div>
-        <div class="scanner-corner bl"></div>
-        <div class="scanner-corner br"></div>
-
-        <!-- Telemetry Overlay Bottom Left -->
-        <div class="telemetry-overlay-bl">
-          <div>OBJ:</div>
-          <div>L: <span id="telemetry-l">0</span></div>
-          <div>R: <span id="telemetry-r">0</span></div>
+      <div id="custom-overlay">
+        <div id="custom-viewfinder">
+          <div class="center-reticle"></div>
+          <div class="scanner-corner tl"></div>
+          <div class="scanner-corner tr"></div>
+          <div class="scanner-corner bl"></div>
+          <div class="scanner-corner br"></div>
         </div>
+      </div>
+    </div>
 
-        <!-- ONNX Model Display Bottom Right -->
-        <div class="telemetry-overlay-br">
-          <div>ONNX YOLOV11</div>
-          <div>OVERALL C-SCORE:</div>
+    <canvas id="analysis-canvas" width="120" height="90"></canvas>
+
+    <div id="log-container">
+      <div class="log-header-row">
+        <div class="header-left-group">
+          <div class="seg7-display-container" id="seg7-container"></div>
+          <span id="count" style="display:none;">0</span>
         </div>
-      </div> <!-- /#custom-viewfinder -->
-    </div> <!-- /#custom-overlay -->
-  </div> <!-- /#scanner-container -->
+        
+        <div id="no-signal-indicator">NO SIGNAL</div>
 
-  <canvas id="analysis-canvas" width="120" height="90"></canvas>
-
-  <div id="log-container">
-    <div class="log-header-row">
-      <div class="header-left-group">
-        <div class="seg7-display-container" id="seg7-container"></div>
-        <span id="count" style="display:none;">0</span>
+        <div class="dotmatrix-container" id="dotmatrixGroup">
+          <div class="dotmatrix-row" id="dotmatrix-row-top">
+            <div class="dotmatrix-square" id="sq-1"></div>
+            <div class="dotmatrix-square" id="sq-2"></div>
+            <div class="dotmatrix-square" id="sq-3"></div>
+            <div class="dotmatrix-square" id="sq-4"></div>
+            <div class="dotmatrix-square" id="sq-5"></div>
+            <div class="dotmatrix-square" id="sq-6"></div>
+            <div class="dotmatrix-square" id="sq-7"></div>
+            <div class="dotmatrix-square" id="sq-8"></div>
+            <div class="dotmatrix-square" id="sq-9"></div>
+            <div class="dotmatrix-square" id="sq-10"></div>
+          </div>
+          <div class="dotmatrix-row" id="dotmatrix-row-bottom">
+            <div class="dotmatrix-square" id="sq-11"></div>
+            <div class="dotmatrix-square" id="sq-12"></div>
+            <div class="dotmatrix-square" id="sq-13"></div>
+            <div class="dotmatrix-square" id="sq-14"></div>
+            <div class="dotmatrix-square" id="sq-15"></div>
+            <div class="dotmatrix-square" id="sq-16"></div>
+            <div class="dotmatrix-square" id="sq-17"></div>
+            <div class="dotmatrix-square" id="sq-18"></div>
+            <div class="dotmatrix-square" id="sq-19"></div>
+            <div class="dotmatrix-square" id="sq-20"></div>
+          </div>
+        </div>
       </div>
       
-      <div id="no-signal-indicator">NO SIGNAL</div>
-
-      <div class="dotmatrix-container" id="dotmatrixGroup">
-        <div class="dotmatrix-row" id="dotmatrix-row-top">
-          <div class="dotmatrix-square" id="sq-1"></div>
-          <div class="dotmatrix-square" id="sq-2"></div>
-          <div class="dotmatrix-square" id="sq-3"></div>
-          <div class="dotmatrix-square" id="sq-4"></div>
-          <div class="dotmatrix-square" id="sq-5"></div>
-          <div class="dotmatrix-square" id="sq-6"></div>
-          <div class="dotmatrix-square" id="sq-7"></div>
-          <div class="dotmatrix-square" id="sq-8"></div>
-          <div class="dotmatrix-square" id="sq-9"></div>
-          <div class="dotmatrix-square" id="sq-10"></div>
-        </div>
-        <div class="dotmatrix-row" id="dotmatrix-row-bottom">
-          <div class="dotmatrix-square" id="sq-11"></div>
-          <div class="dotmatrix-square" id="sq-12"></div>
-          <div class="dotmatrix-square" id="sq-13"></div>
-          <div class="dotmatrix-square" id="sq-14"></div>
-          <div class="dotmatrix-square" id="sq-15"></div>
-          <div class="dotmatrix-square" id="sq-16"></div>
-          <div class="dotmatrix-square" id="sq-17"></div>
-          <div class="dotmatrix-square" id="sq-18"></div>
-          <div class="dotmatrix-square" id="sq-19"></div>
-          <div class="dotmatrix-square" id="sq-20"></div>
-        </div>
-      </div>
+      <ul id="scanned-list"></ul>
     </div>
-    
-    <ul id="scanned-list"></ul>
-  </div> <!-- /#log-container -->
 
-  <div id="control-panel">
-    <div class="action-bar">
-      <button type="button" class="action-btn-undo" id="undo-btn" aria-label="Undo">
-        <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
-      </button>
-
-      <div class="middle-bar" id="middle-bar-container">
-        <button type="button" class="copy-hitbox" id="base-copy-btn" aria-label="Copy">
-          <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    <div id="control-panel">
+      <div class="action-bar">
+        <button type="button" class="action-btn-undo" id="undo-btn" aria-label="Undo">
+          <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
         </button>
-        <div class="create-btn-static" id="create-btn-target">
-          <div class="ticker-wrapper" id="create-btn-ticker-wrap">
-            <div class="ticker-track" id="ticker-track">
-              <span class="ticker-text" id="create-btn-text">CREATE</span>
-              <span class="ticker-text" id="create-btn-text-clone" style="display: none;"></span>
+
+        <div class="middle-bar" id="middle-bar-container">
+          <button type="button" class="copy-hitbox" id="base-copy-btn" aria-label="Copy">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+          <div class="create-btn-static" id="create-btn-target">
+            <div class="ticker-wrapper" id="create-btn-ticker-wrap">
+              <div class="ticker-track" id="ticker-track">
+                <span class="ticker-text" id="create-btn-text">CREATE</span>
+                <span class="ticker-text" id="create-btn-text-clone" style="display: none;"></span>
+              </div>
             </div>
+            <svg class="updown-arrow-icon" id="create-btn-arrow" style="display: none;" viewBox="0 0 24 24">
+              <path d="M12 5l-5 5h10l-5-5zm0 14l5-5H7l5 5z"/>
+            </svg>
           </div>
-          <svg class="updown-arrow-icon" id="create-btn-arrow" style="display: none;" viewBox="0 0 24 24">
-            <path d="M12 5l-5 5h10l-5-5zm0 14l5-5H7l5 5z"/>
-          </svg>
+        </div>
+
+        <div class="done-btn-wrap">
+          <button type="button" class="done-btn" id="done-btn">DONE</button>
         </div>
       </div>
-
-      <div class="done-btn-wrap">
-        <button type="button" class="done-btn" id="done-btn">DONE</button>
-      </div>
     </div>
-  </div> <!-- /#control-panel -->
-</div> <!-- /.app-container -->
+  </div>
 
   <div id="modal-overlay">
     <div class="modal-card" id="modal-card">
@@ -1695,47 +1655,6 @@
 
     window.addEventListener('online', checkNetworkConnection);
     window.addEventListener('offline', checkNetworkConnection);
-
-    let targetL = 0;
-let targetR = 0;
-let telemetryAnimFrame = null;
-
-const telemetryLEl = document.getElementById('telemetry-l');
-const telemetryREl = document.getElementById('telemetry-r');
-
-function handleDeviceOrientation(event) {
-  // beta: front-to-back tilt [-180, 180]
-  // gamma: left-to-right tilt [-90, 90]
-  const beta = event.beta || 0;
-  const gamma = event.gamma || 0;
-
-  // Map tilt angles to telemetry reference values
-  targetL = Math.round((beta + 90) * 12);
-  targetR = Math.round((gamma + 90) * 12);
-
-  if (!telemetryAnimFrame) {
-    telemetryAnimFrame = requestAnimationFrame(updateTelemetryDOM);
-  }
-}
-
-function updateTelemetryDOM() {
-  if (telemetryLEl) telemetryLEl.innerText = targetL;
-  if (telemetryREl) telemetryREl.innerText = targetR;
-  telemetryAnimFrame = null;
-}
-
-// Request permission for iOS 13+ devices if required, otherwise listen directly
-if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-  DeviceOrientationEvent.requestPermission()
-    .then(permissionState => {
-      if (permissionState === 'granted') {
-        window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
-      }
-    })
-    .catch(console.error);
-} else if (window.DeviceOrientationEvent) {
-  window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
-}
 
     // Pure Shape Seven-Segment Logic Mapping
     const SEGMENT_MAP = {
