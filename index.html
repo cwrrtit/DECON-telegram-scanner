@@ -150,6 +150,33 @@
       animation: iosShake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
     }
 
+    .telemetry-overlay-bl {
+  position: absolute;
+  bottom: 22px;
+  left: 23px;
+  font-family: 'VCR OSD Mono', monospace !important;
+  font-size: 6px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.75);
+  pointer-events: none;
+  z-index: 12;
+  text-transform: uppercase;
+}
+
+.telemetry-overlay-br {
+  position: absolute;
+  bottom: 22px;
+  right: 23px;
+  font-family: 'VCR OSD Mono', monospace !important;
+  font-size: 6px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.75);
+  text-align: right;
+  pointer-events: none;
+  z-index: 12;
+  text-transform: uppercase;
+}
+
     .scanner-corner {
       position: absolute;
       width: 36px; 
@@ -1308,13 +1335,24 @@
       <canvas id="onnx-detection-canvas"></canvas>
 
       <div id="custom-overlay">
-        <div id="custom-viewfinder">
-          <div class="center-reticle"></div>
-          <div class="scanner-corner tl"></div>
-          <div class="scanner-corner tr"></div>
-          <div class="scanner-corner bl"></div>
-          <div class="scanner-corner br"></div>
-        </div>
+    <div id="custom-viewfinder">
+      <div class="center-reticle"></div>
+      <div class="scanner-corner tl"></div>
+      <div class="scanner-corner tr"></div>
+      <div class="scanner-corner bl"></div>
+      <div class="scanner-corner br"></div>
+
+  <!-- Telemetry Overlay Bottom Left -->
+      <div class="telemetry-overlay-bl">
+        <div>OBJ:</div>
+        <div>L: <span id="telemetry-l">0</span></div>
+        <div>R: <span id="telemetry-r">0</span></div>
+      </div>
+
+  <!-- ONNX Model Display Bottom Right -->
+      <div class="telemetry-overlay-br">
+        <div>ONNX YOLOV11</div>
+        <div>OVERALL C-SCORE:</div>
       </div>
     </div>
 
@@ -1655,6 +1693,47 @@
 
     window.addEventListener('online', checkNetworkConnection);
     window.addEventListener('offline', checkNetworkConnection);
+
+    let targetL = 0;
+let targetR = 0;
+let telemetryAnimFrame = null;
+
+const telemetryLEl = document.getElementById('telemetry-l');
+const telemetryREl = document.getElementById('telemetry-r');
+
+function handleDeviceOrientation(event) {
+  // beta: front-to-back tilt [-180, 180]
+  // gamma: left-to-right tilt [-90, 90]
+  const beta = event.beta || 0;
+  const gamma = event.gamma || 0;
+
+  // Map tilt angles to telemetry reference values
+  targetL = Math.round((beta + 90) * 12);
+  targetR = Math.round((gamma + 90) * 12);
+
+  if (!telemetryAnimFrame) {
+    telemetryAnimFrame = requestAnimationFrame(updateTelemetryDOM);
+  }
+}
+
+function updateTelemetryDOM() {
+  if (telemetryLEl) telemetryLEl.innerText = targetL;
+  if (telemetryREl) telemetryREl.innerText = targetR;
+  telemetryAnimFrame = null;
+}
+
+// Request permission for iOS 13+ devices if required, otherwise listen directly
+if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+  DeviceOrientationEvent.requestPermission()
+    .then(permissionState => {
+      if (permissionState === 'granted') {
+        window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
+      }
+    })
+    .catch(console.error);
+} else if (window.DeviceOrientationEvent) {
+  window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
+}
 
     // Pure Shape Seven-Segment Logic Mapping
     const SEGMENT_MAP = {
