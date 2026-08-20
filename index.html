@@ -158,6 +158,22 @@
       transition: border-color 0.3s ease, filter 0.3s ease, opacity 0.3s ease;
     }
 
+    .center-reticle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 16px;
+      height: 16px;
+      transform: translate(-50%, -50%);
+      box-sizing: border-box;
+      border: 2px solid #FFFFFF;
+      border-radius: 1px;
+      opacity: 0.5; /* 50% opacity */
+      background: transparent; /* hollow / no fill */
+      pointer-events: none;
+      z-index: 2;
+    }
+    
     .tl {
       top: 54px; left: 23px;
       width: 23px;
@@ -1293,6 +1309,7 @@
 
       <div id="custom-overlay">
         <div id="custom-viewfinder">
+          <div class="center-reticle"></div>
           <div class="scanner-corner tl"></div>
           <div class="scanner-corner tr"></div>
           <div class="scanner-corner bl"></div>
