@@ -158,6 +158,31 @@
       transition: border-color 0.3s ease, filter 0.3s ease, opacity 0.3s ease;
     }
 
+    .hud-corner {
+      position: absolute;
+      font-family: 'VCR OSD Mono', monospace !important;
+      font-size: 6px !important;
+      line-height: 1.2;
+      color: rgba(255, 255, 255, 0.75) !important;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+      z-index: 12;
+      white-space: nowrap;
+    }
+
+    .bottom-left-hud {
+      bottom: 37px;
+      left: 50px; /* Positioned just right of the .bl corner bracket */
+      text-align: left;
+    }
+
+    .bottom-right-hud {
+      bottom: 37px;
+      right: 50px; /* Positioned just left of the .br corner bracket */
+      text-align: right;
+    }
+
     .center-reticle {
       position: absolute;
       top: 50%;
@@ -1314,6 +1339,17 @@
           <div class="scanner-corner tr"></div>
           <div class="scanner-corner bl"></div>
           <div class="scanner-corner br"></div>
+          <!-- Bottom Left Dynamic Telemetry Overlay -->
+    <div class="hud-corner bottom-left-hud">
+      <div>OBJ: <span id="hud-obj-val"></span></div>
+      <div>L: <span id="hud-tilt-l">0</span></div>
+      <div>R: <span id="hud-tilt-r">0</span></div>
+    </div>
+
+    <!-- Bottom Right ONNX Model Overlay -->
+    <div class="hud-corner bottom-right-hud">
+      <div>ONNX YOLOV11</div>
+      <div>OVERALL C-SCORE: <span id="hud-cscore-val"></span></div>
         </div>
       </div>
     </div>
@@ -1439,6 +1475,56 @@
   </div>
 
   <script>
+
+// Telemetry & Dynamic Overlay DOM Elements
+const tiltLElement = document.getElementById('hud-tilt-l');
+const tiltRElement = document.getElementById('hud-tilt-r');
+const hudObjElement = document.getElementById('hud-obj-val');
+const hudCScoreElement = document.getElementById('hud-cscore-val');
+
+let latestGamma = 0;
+let latestBeta = 0;
+let tiltUpdatePending = false;
+
+function handleOrientation(event) {
+  // Gamma handles left/right tilt (-90 to 90), Beta handles front/back tilt (-180 to 180)
+  if (event.gamma !== null && event.beta !== null) {
+    latestGamma = Math.round(event.gamma);
+    latestBeta = Math.round(event.beta);
+
+    if (!tiltUpdatePending) {
+      tiltUpdatePending = true;
+      requestAnimationFrame(updateTiltHUD);
+    }
+  }
+}
+
+function updateTiltHUD() {
+  // Maps roll/pitch into responsive L and R dynamic visual indicators
+  let baseTilt = 2000;
+  let tiltL = Math.max(0, baseTilt + (latestGamma * 10) - (latestBeta * 5));
+  let tiltR = Math.max(0, baseTilt - (latestGamma * 10) + (latestBeta * 5));
+
+  if (tiltLElement) tiltLElement.innerText = Math.round(tiltL);
+  if (tiltRElement) tiltRElement.innerText = Math.round(tiltR);
+
+  tiltUpdatePending = false;
+}
+
+// Request permission for iOS 13+ device orientation if required, otherwise listen directly
+if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+  DeviceOrientationEvent.requestPermission()
+    .then(permissionState => {
+      if (permissionState === 'granted') {
+        window.addEventListener('deviceorientation', handleOrientation, true);
+      }
+    })
+    .catch(console.error);
+} else {
+  window.addEventListener('deviceorientation', handleOrientation, true);
+}
+    //end of telemetry here
+    
     const tg = window.Telegram?.WebApp;
 
     function updateLayoutInsets() {
