@@ -1303,61 +1303,6 @@
     canvas#analysis-canvas {
       display: none;
     }
-
-/* Counters Wrapper & Text Styling */
-.counters-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  position: absolute;
-  right: 0;
-  top: 0;
-  height: 32px;
-}
-
-.counter-group {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: flex-end;
-  position: relative;
-  height: 32px;
-  padding-bottom: 2px;
-}
-
-.counter-number {
-  font-family: 'square_dot_matrix', monospace !important;
-  font-size: 21px;
-  color: #FFFFFF;
-  line-height: 1;
-  margin-bottom: 8px; /* 8px above the label text */
-  text-align: right;
-  letter-spacing: 0px;
-}
-
-.counter-label {
-  font-family: 'VCR OSD Mono', monospace !important;
-  font-size: 7px;
-  color: #727272;
-  line-height: 1;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  text-align: right;
-  white-space: nowrap;
-}
-
-/* Make Unserialised interactive as a button */
-.counter-group.interactive {
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.counter-group.interactive:active {
-  opacity: 0.7;
-}
-    
   </style>
 </head>
 <body>
@@ -1383,59 +1328,41 @@
     <canvas id="analysis-canvas" width="120" height="90"></canvas>
 
     <div id="log-container">
-<div class="log-header-row">
-  <div class="header-left-group">
-    <div class="seg7-display-container" id="seg7-container"></div>
-    <span id="count" style="display:none;">0</span>
-  </div>
-  
-  <div id="no-signal-indicator">NO SIGNAL</div>
+      <div class="log-header-row">
+        <div class="header-left-group">
+          <div class="seg7-display-container" id="seg7-container"></div>
+          <span id="count" style="display:none;">0</span>
+        </div>
+        
+        <div id="no-signal-indicator">NO SIGNAL</div>
 
-  <!-- Counters & Dot Matrix Group -->
-  <div style="display: flex; align-items: center; gap: 12px; position: relative;">
-    <div class="counters-wrapper">
-      <!-- Serialised Counter -->
-      <div class="counter-group">
-        <span class="counter-number" id="serialised-count">0</span>
-        <span class="counter-label">SERIALISED</span>
+        <div class="dotmatrix-container" id="dotmatrixGroup">
+          <div class="dotmatrix-row" id="dotmatrix-row-top">
+            <div class="dotmatrix-square" id="sq-1"></div>
+            <div class="dotmatrix-square" id="sq-2"></div>
+            <div class="dotmatrix-square" id="sq-3"></div>
+            <div class="dotmatrix-square" id="sq-4"></div>
+            <div class="dotmatrix-square" id="sq-5"></div>
+            <div class="dotmatrix-square" id="sq-6"></div>
+            <div class="dotmatrix-square" id="sq-7"></div>
+            <div class="dotmatrix-square" id="sq-8"></div>
+            <div class="dotmatrix-square" id="sq-9"></div>
+            <div class="dotmatrix-square" id="sq-10"></div>
+          </div>
+          <div class="dotmatrix-row" id="dotmatrix-row-bottom">
+            <div class="dotmatrix-square" id="sq-11"></div>
+            <div class="dotmatrix-square" id="sq-12"></div>
+            <div class="dotmatrix-square" id="sq-13"></div>
+            <div class="dotmatrix-square" id="sq-14"></div>
+            <div class="dotmatrix-square" id="sq-15"></div>
+            <div class="dotmatrix-square" id="sq-16"></div>
+            <div class="dotmatrix-square" id="sq-17"></div>
+            <div class="dotmatrix-square" id="sq-18"></div>
+            <div class="dotmatrix-square" id="sq-19"></div>
+            <div class="dotmatrix-square" id="sq-20"></div>
+          </div>
+        </div>
       </div>
-
-      <!-- Unserialised Counter (Interactive Button) -->
-      <div class="counter-group interactive" id="unserialised-btn">
-        <span class="counter-number" id="unserialised-count">0</span>
-        <span class="counter-label">UNSERIALISED</span>
-      </div>
-    </div>
-
-    <!-- Retained Dot Matrix Display -->
-    <div class="dotmatrix-container" id="dotmatrixGroup" style="opacity: 0; pointer-events: none;">
-      <div class="dotmatrix-row" id="dotmatrix-row-top">
-        <div class="dotmatrix-square" id="sq-1"></div>
-        <div class="dotmatrix-square" id="sq-2"></div>
-        <div class="dotmatrix-square" id="sq-3"></div>
-        <div class="dotmatrix-square" id="sq-4"></div>
-        <div class="dotmatrix-square" id="sq-5"></div>
-        <div class="dotmatrix-square" id="sq-6"></div>
-        <div class="dotmatrix-square" id="sq-7"></div>
-        <div class="dotmatrix-square" id="sq-8"></div>
-        <div class="dotmatrix-square" id="sq-9"></div>
-        <div class="dotmatrix-square" id="sq-10"></div>
-      </div>
-      <div class="dotmatrix-row" id="dotmatrix-row-bottom">
-        <div class="dotmatrix-square" id="sq-11"></div>
-        <div class="dotmatrix-square" id="sq-12"></div>
-        <div class="dotmatrix-square" id="sq-13"></div>
-        <div class="dotmatrix-square" id="sq-14"></div>
-        <div class="dotmatrix-square" id="sq-15"></div>
-        <div class="dotmatrix-square" id="sq-16"></div>
-        <div class="dotmatrix-square" id="sq-17"></div>
-        <div class="dotmatrix-square" id="sq-18"></div>
-        <div class="dotmatrix-square" id="sq-19"></div>
-        <div class="dotmatrix-square" id="sq-20"></div>
-      </div>
-    </div>
-  </div>
-</div>
       
       <ul id="scanned-list"></ul>
     </div>
@@ -1584,12 +1511,6 @@
     let lastDetectionFrameTime = 0;
     const DETECTION_FPS_LIMIT = 7;
     const FRAME_INTERVAL_MS = 1000 / DETECTION_FPS_LIMIT;
-
-    const serialisedCountElement = document.getElementById('serialised-count');
-const unserialisedCountElement = document.getElementById('unserialised-count');
-const unserialisedBtn = document.getElementById('unserialised-btn');
-
-let unserialisedValue = 0; // Fixed at 0 for now
 
     const onnxCanvas = document.getElementById('onnx-detection-canvas');
     const onnxCtx = onnxCanvas.getContext('2d');
@@ -2536,14 +2457,6 @@ let unserialisedValue = 0; // Fixed at 0 for now
     }
 
     function renderGroupedUI(newlyAddedRaw = null) {
-      // Update serialised count to match scanned codes array length
-  if (serialisedCountElement) {
-    serialisedCountElement.innerText = scannedCodes.length;
-  }
-
-  // Ensure 7-segment display reflects Total (Serialised + Unserialised)
-  const totalCount = scannedCodes.length + unserialisedValue;
-  countElement.innerText = totalCount;
       if (scannedCodes.length > 0) {
         listElement.classList.add('has-items');
       } else {
@@ -3129,14 +3042,6 @@ let unserialisedValue = 0; // Fixed at 0 for now
         sendSerialsBack(scannedCodes);
       }
     });
-
-    unserialisedBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  tg?.HapticFeedback?.impactOccurred('light');
-  
-  // Modal launcher hook (Placeholder to link your future modal)
-  console.log("Unserialised modal trigger clicked.");
-});
 
     window.onload = () => {
       checkNetworkConnection();
